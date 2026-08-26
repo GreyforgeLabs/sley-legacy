@@ -1,0 +1,171 @@
+{
+  "schema": "sley.operational.evidence_registry.v1",
+  "status": "decision_recorded",
+  "release": "1.2.0",
+  "identity": {
+    "registry_source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "reference_replay_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "agent_workflow_comparison_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "agent_workflow_source_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "case_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "controller_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "execution_provenance_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "assembler_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "comparison_assembler_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "registry_schema_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+    "schema_set_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+    "operational_vocabulary_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+  },
+  "entries": {
+    "reference_replay": {
+      "id": "siglum-numerology-reference-v1",
+      "workload_class": "deterministic_reference_replay",
+      "authority_status": "non_authoritative",
+      "artifact": {
+        "schema": "sley.operational.reference_replay.v1",
+        "path": "reports/operational/siglum-numerology-reference-v1.json",
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "status": "passed"
+      },
+      "correctness": {
+        "repeat_count": 2,
+        "case_count": 10000,
+        "exact_match_count": 10000,
+        "mismatch_count": 0,
+        "deterministic": true,
+        "independent_oracle": true
+      },
+      "promotion": {
+        "decision": "deferred",
+        "general_claim_supported": false,
+        "production_claim": false
+      },
+      "known_limitations": [
+        "production_shadow",
+        "production_latency",
+        "fallback",
+        "promotion_authority",
+        "rollback"
+      ],
+      "reproducibility": {
+        "command": ["bin/sley", "reference-replay", "siglum-numerology", "--siglum-root", "$SIGLUM_ROOT", "--execute", "--json"],
+        "private_inputs_required": false
+      },
+      "disclosure": {
+        "public_artifact": true,
+        "private_evidence_required": false,
+        "publication_authorized": false
+      }
+    },
+    "agent_workflow": {
+      "id": "sley-agent-project-cross-module-rename-v1",
+      "workload_class": "controlled_agent_maintenance",
+      "authority_status": "local_isolated_evaluation_only",
+      "artifact": {
+        "schema": "sley.operational.agent_workflow_comparison.v1",
+        "path": "reports/operational/sley-agent-project-cross-module-rename-v1.json",
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "status": "passed"
+      },
+      "comparison": {
+        "trial_count": 1,
+        "failures_retained": true,
+        "outcome": "both_accepted",
+        "recommendation": "retain_for_bounded_followup",
+        "structural_context_effect": "expansion"
+      },
+      "arms": {
+        "raw_source": {
+          "mode": "K1",
+          "strict_success": true,
+          "accepted_change_tokens": 120,
+          "inference_attempts": 1,
+          "total_tokens": 120,
+          "prompt_bytes": 4096,
+          "context_bytes_supplied": 2048,
+          "structural_response_bytes": 0,
+          "tool_calls": 0,
+          "invalid_actions": 0,
+          "repair_loops": 0,
+          "wall_ms": 1000
+        },
+        "sley_structural": {
+          "mode": "K3",
+          "strict_success": true,
+          "accepted_change_tokens": 175,
+          "inference_attempts": 2,
+          "total_tokens": 175,
+          "prompt_bytes": 6144,
+          "context_bytes_supplied": 2048,
+          "structural_response_bytes": 1024,
+          "tool_calls": 1,
+          "invalid_actions": 0,
+          "repair_loops": 0,
+          "wall_ms": 1200
+        }
+      },
+      "promotion": {
+        "decision": "deferred",
+        "general_claim_supported": false,
+        "production_claim": false
+      },
+      "known_limitations": [
+        "SINGLE_TRIAL_ONLY",
+        "MANIFEST_LIMIT_ENFORCEMENT_PARTIAL",
+        "PROVIDER_ORIGIN_ASSERTION_NOT_CRYPTOGRAPHIC"
+      ],
+      "reproducibility": {
+        "command": ["bin/sley", "operational-workflow", "compare", "--controller", "$PRIVATE_CONTROLLER", "--raw-aggregate", "$K1_AGGREGATE", "--raw-evidence", "$K1_EVIDENCE", "--structural-aggregate", "$K3_AGGREGATE", "--structural-evidence", "$K3_EVIDENCE", "--approval-record", "$PRIVATE_APPROVAL", "--execution-provenance", "$PRIVATE_PROVENANCE", "--json"],
+        "private_inputs_required": true
+      },
+      "disclosure": {
+        "public_artifact": true,
+        "private_evidence_required": true,
+        "publication_authorized": false
+      }
+    }
+  },
+  "decision": {
+    "w6_evidence_complete": true,
+    "release_closeout_unblocked": true,
+    "production_promotion": "deferred",
+    "structural_workflow_disposition": "retain_for_bounded_followup",
+    "general_claim_supported": false,
+    "production_claim": false,
+    "rationale": [
+      "single_trial_only",
+      "non_authoritative_reference",
+      "production_evidence_missing",
+      "structural_context_result_limited"
+    ]
+  },
+  "authority": {
+    "mode": "non_authoritative_evidence_only",
+    "repository_mutation": false,
+    "product_runtime_mutation": false,
+    "provider_calls": false,
+    "deploy": false,
+    "publication": false,
+    "promotion_authority": false
+  },
+  "disclosure": {
+    "raw_prompts_embedded": false,
+    "raw_responses_embedded": false,
+    "raw_corpus_embedded": false,
+    "contains_real_user_data": false,
+    "contains_credentials": false,
+    "training_eligible": false,
+    "retrieval_eligible": false,
+    "publication_authorized": false
+  },
+  "issues": [
+    {
+      "code": "SYNTHETIC_CONTRACT_FIXTURE",
+      "message": "This fixture validates registry shape and is not operational evidence."
+    },
+    {
+      "code": "PRODUCTION_PROMOTION_DEFERRED",
+      "message": "The fixture grants no product, provider, deploy, publication, or promotion authority."
+    }
+  ]
+}

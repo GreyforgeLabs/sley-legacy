@@ -1,0 +1,49 @@
+{
+  "schema": "sley.release.manifest.v1",
+  "status": "release_candidate",
+  "release": "1.2.0",
+  "artifact_id": "sley-1.2.0-linux-x86_64",
+  "platform": {
+    "os": "linux",
+    "architecture": "x86_64",
+    "archive_format": "tar.gz",
+    "support_status": "supported"
+  },
+  "source": {
+    "commit": "1111111111111111111111111111111111111111",
+    "payload_tree_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "dirty": false
+  },
+  "payload": {
+    "inventory_scope": "tracked_release_payload_excluding_release_metadata",
+    "file_count": 1,
+    "total_bytes": 12,
+    "files": [
+      {
+        "path": "bin/sley",
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "size": 12,
+        "mode": "0755"
+      }
+    ]
+  },
+  "toolchain": {
+    "sley_version": "sley 1.2.0",
+    "ai_bootstrap_version": "Bootstrap 0.2",
+    "worker_protocol": "sley.worker.v1",
+    "required_tools": ["bash|5", "jq|1.6"]
+  },
+  "entrypoints": ["bin/sley"],
+  "metadata": {
+    "manifest": "release/manifest.json",
+    "license_inventory": "release/licenses.json",
+    "sbom": "release/sbom.spdx.json"
+  },
+  "authority": {
+    "mode": "local_release_candidate_only",
+    "publication_authorized": false,
+    "tag_authorized": false,
+    "upload_authorized": false,
+    "signing_status": "unsigned"
+  }
+}

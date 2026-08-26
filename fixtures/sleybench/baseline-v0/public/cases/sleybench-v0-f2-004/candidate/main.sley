@@ -1,0 +1,5 @@
+module bench.public.f2_004
+
+task main -> Text {
+  return "forge" + "-" + "sley"
+}

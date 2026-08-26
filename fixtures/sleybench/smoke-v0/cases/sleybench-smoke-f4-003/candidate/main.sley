@@ -1,0 +1,5 @@
+module bench.f4_003
+
+task main -> Bool {
+  return 1 + 1 == 2
+}

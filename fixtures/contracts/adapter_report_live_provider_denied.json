@@ -1,0 +1,56 @@
+{
+  "schema": "sley.adapter.report.v0",
+  "status": "blocked",
+  "manifest": {
+    "path": "fixtures/contracts/adapter_manifest_live_provider_denied.json",
+    "schema": "sley.adapter.manifest.v0",
+    "id": "adapter-manifest:live-provider-denied-v0",
+    "digest": null
+  },
+  "adapter": {
+    "id": "local.seeded-host",
+    "version": "0.1.0",
+    "digest": null,
+    "kind": "deterministic_seed",
+    "live_execution": true
+  },
+  "runtime": {
+    "id": "sley.loom.seeded_runtime",
+    "version": "0.1.0",
+    "digest": null
+  },
+  "authority": {
+    "mode": "local_replay_only",
+    "bound": false,
+    "capability_count": 0,
+    "mutation_authority": null
+  },
+  "replay": {
+    "policy": "deterministic_record_required",
+    "key": "replay:live-provider-denied-v0",
+    "expected_record_digest": null,
+    "actual_record_digest": null,
+    "matched": false
+  },
+  "record": null,
+  "summary": {
+    "lifecycle": ["opened", "blocked"],
+    "event_count": 0,
+    "seed_count": 0,
+    "observed_call_count": 0,
+    "diagnostic_count": 0
+  },
+  "isolation": {
+    "class": "deterministic_seed_replay",
+    "os_isolation_enforced": false,
+    "persistent_worker": false,
+    "owner": "S12-502"
+  },
+  "issues": [
+    {
+      "code": "ADAPTER_LIVE_PROVIDER_DENIED",
+      "message": "live provider execution is outside the local deterministic replay boundary",
+      "path": "/adapter/live_execution"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "sley.review.packet.v1",
+  "status": "ready",
+  "packet_id": "review-packet:0000000000000000000000000000000000000000000000000000000000000001",
+  "packet_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+  "transaction_id": "sha256:0000000000000000000000000000000000000000000000000000000000000002",
+  "terminal_outcome": "verified_apply",
+  "final_source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000003",
+  "review_ref": {
+    "schema": "sley.change.review.v0",
+    "review_id": "review:0000000000000000000000000000000000000000000000000000000000000004",
+    "review_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000004"
+  },
+  "seal_ref": {
+    "schema": "sley.change.transaction_seal.v0",
+    "seal_id": "transaction-seal:0000000000000000000000000000000000000000000000000000000000000005",
+    "seal_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000005"
+  },
+  "test_ref": {
+    "schema": "sley.test.report.v1",
+    "report_id": "test-report:0000000000000000000000000000000000000000000000000000000000000006",
+    "report_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006",
+    "suite_id": "minimal",
+    "suite_version": "1.0.0",
+    "status": "passed",
+    "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+  },
+  "binding": {
+    "transaction_match": true,
+    "review_match": true,
+    "seal_match": true,
+    "source_match": true,
+    "test_passed": true
+  },
+  "authority": {
+    "mode": "read_only_evidence_binding",
+    "mutation_authority": false
+  },
+  "issues": []
+}

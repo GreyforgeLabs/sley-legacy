@@ -1,0 +1,47 @@
+{
+  "schema": "sley.validation.report.v1",
+  "status": "passed",
+  "profile": "quick",
+  "target": ".",
+  "authority": {
+    "mode": "repository_local_validation",
+    "repository_mutation": false,
+    "provider_calls": false,
+    "network_calls": false,
+    "deploy": false,
+    "spend": false
+  },
+  "detected_changes": ["self-hosted/src/loom/parser.sley"],
+  "detected_subsystems": ["parser"],
+  "selected_subsystems": ["ai-foundation", "checker", "lint", "parser", "runtime", "self-hosted-core", "shell-tooling", "smoke", "validation-architecture"],
+  "selected_checks": ["fmt", "diff-check", "syntax", "validation-planner", "ai-foundation", "parser-smoke", "checker-smoke", "runtime-smoke", "lint-smoke", "smoke"],
+  "skipped_checks": [{"id": "arena", "reason": "profile_scope"}],
+  "selection_reasons": [],
+  "release_gate": {
+    "required": false,
+    "executed": false,
+    "authoritative_command": ["make", "v1"],
+    "reason": "not required for the detected changes"
+  },
+  "cache": {
+    "validation_result_used": false,
+    "validation_result_policy": "disabled",
+    "source_task_cache_enabled": true,
+    "source_task_cache_scope": "contract_loading_only"
+  },
+  "wall_time_ms": 12,
+  "outcome": "passed",
+  "steps": [{
+    "id": "quick",
+    "command": ["make", "--no-print-directory", "quick"],
+    "status": "passed",
+    "exit_code": 0,
+    "wall_time_ms": 12,
+    "evidence_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+    "evidence_bytes": 42,
+    "evidence_total_bytes": 42,
+    "evidence_truncated": false,
+    "evidence_embedded": false
+  }],
+  "issues": []
+}

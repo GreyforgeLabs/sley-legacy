@@ -839,9 +839,8 @@ Expected next investigation area, once development resumes:
 
 ## External Comparison State
 
-The Sley / Zero comparison packet is prepared outside this repository at:
-
-- `/home/greyforge/sley-zero-public-actions/`
+The Sley / Zero comparison packet is retained in a private external working
+area outside this repository.
 
 Current status:
 
@@ -856,9 +855,9 @@ Current status:
 - The added forks after the 128-fork packet were `Pvmsirish/zero` and
   `mathieuflamant/zero`; both compared identical to upstream and did not
   change the recommendation.
-- Future fork-count drift can be refreshed locally with
-  `/home/greyforge/sley-zero-public-actions/refresh-fork-audit.sh`; the helper
-  was exercised against a temporary snapshot and reproduced the pinned hash.
+- Future fork-count drift can be refreshed with the private packet's local
+  audit helper; it was exercised against a temporary snapshot and reproduced
+  the pinned hash.
 - Doctrine, privacy/secrets, executor-guard, and GitHub-mechanics packet
   reviews are recorded in the external packet.
 - X/social copy is drafted only and remains unposted.
@@ -884,8 +883,8 @@ Completed before pausing:
 
 Completed during the latest non-development verification refresh:
 
-- `/home/greyforge/sley-zero-public-actions/verify-public-actions.sh`
-- `/home/greyforge/sley-zero-public-actions/verify-live-targets.sh`
+- private public-action packet verification
+- private live-target verification
 - `make v1`
 - `bin/sley self-hosting-status --json`
 

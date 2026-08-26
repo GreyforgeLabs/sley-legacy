@@ -1,0 +1,5 @@
+module bench.public.f1_007
+
+task main -> Int {
+  return [9, 8][0]
+}

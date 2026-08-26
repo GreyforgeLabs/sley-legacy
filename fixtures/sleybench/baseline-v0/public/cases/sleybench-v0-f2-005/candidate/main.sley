@@ -1,0 +1,5 @@
+module bench.public.f2_005
+
+task main -> Bool {
+  return 14 == 14
+}

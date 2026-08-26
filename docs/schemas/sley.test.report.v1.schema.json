@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.test.report.v1",
+  "title": "Sley Test Report v1",
+  "type": "object",
+  "required": [
+    "schema", "status", "report_id", "report_digest", "suite", "source",
+    "manifests", "authority", "bounds", "discovery", "selection",
+    "summary", "cases", "coverage", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.test.report.v1"},
+    "status": {"enum": ["passed", "failed"]},
+    "report_id": {"type": "string", "pattern": "^test-report:[a-f0-9]{64}$"},
+    "report_digest": {"$ref": "#/$defs/digest"},
+    "suite": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["target", "digest"],
+      "properties": {
+        "target": {"type": "string", "minLength": 1},
+        "digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "manifests": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "required": ["path", "digest"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "digest": {"$ref": "#/$defs/digest"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "external_provider_calls", "mutation_authority"],
+      "properties": {
+        "mode": {"const": "local_test_only"},
+        "external_provider_calls": {"const": false},
+        "mutation_authority": {"$ref": "sley.test.manifest.v1#/$defs/authority/properties/mutation_authority"}
+      },
+      "additionalProperties": false
+    },
+    "bounds": {"$ref": "sley.test.manifest.v1#/$defs/bounds"},
+    "discovery": {
+      "type": "object",
+      "required": ["root", "convention", "ordered_manifests"],
+      "properties": {
+        "root": {"type": "string", "minLength": 1},
+        "convention": {"const": "sley.test.json_or_star.sley-test.json"},
+        "ordered_manifests": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "selection": {
+      "type": "object",
+      "required": ["mode", "requested_nodes", "expanded_nodes", "selected_cases", "skipped_cases", "uncovered_nodes"],
+      "properties": {
+        "mode": {"enum": ["all", "changed_nodes"]},
+        "requested_nodes": {"$ref": "#/$defs/strings"},
+        "expanded_nodes": {"$ref": "#/$defs/strings"},
+        "selected_cases": {"$ref": "#/$defs/strings"},
+        "skipped_cases": {"$ref": "#/$defs/strings"},
+        "uncovered_nodes": {"$ref": "#/$defs/strings"}
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": ["discovered_case_count", "selected_case_count", "execution_count", "passed_count", "failed_count", "skipped_count"],
+      "properties": {
+        "discovered_case_count": {"type": "integer", "minimum": 0},
+        "selected_case_count": {"type": "integer", "minimum": 0},
+        "execution_count": {"type": "integer", "minimum": 0},
+        "passed_count": {"type": "integer", "minimum": 0},
+        "failed_count": {"type": "integer", "minimum": 0},
+        "skipped_count": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "maxItems": 2048,
+      "items": {"$ref": "#/$defs/caseResult"}
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["tasks", "branches", "effects", "capabilities"],
+      "properties": {
+        "tasks": {"$ref": "#/$defs/coverageDimension"},
+        "branches": {"$ref": "#/$defs/coverageDimension"},
+        "effects": {"$ref": "#/$defs/coverageDimension"},
+        "capabilities": {"$ref": "#/$defs/coverageDimension"}
+      },
+      "additionalProperties": false
+    },
+    "issues": {"type": "array", "maxItems": 256, "items": {"$ref": "#/$defs/issue"}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "strings": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {"type": "string", "minLength": 1},
+        "message": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "subreport": {
+      "type": "object",
+      "required": ["schema", "digest"],
+      "properties": {
+        "schema": {"type": "string", "minLength": 1},
+        "digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "caseResult": {
+      "type": "object",
+      "required": [
+        "case_id", "execution_id", "kind", "status", "manifest", "source",
+        "input_digest", "expected_digest", "actual_digest", "subreport",
+        "observed", "declared", "issues"
+      ],
+      "properties": {
+        "case_id": {"type": "string", "minLength": 1},
+        "execution_id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["table", "property", "effect_mock", "adapter_replay", "diagnostic", "differential"]},
+        "status": {"enum": ["passed", "failed"]},
+        "manifest": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "minLength": 1},
+        "task": {"type": "string", "minLength": 1},
+        "input_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "expected_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "actual_digest": {"type": ["string", "null"], "pattern": "^sha256:[a-f0-9]{64}$"},
+        "subreport": {"oneOf": [{"$ref": "#/$defs/subreport"}, {"type": "null"}]},
+        "observed": {"$ref": "sley.test.manifest.v1#/$defs/coverage"},
+        "declared": {"$ref": "sley.test.manifest.v1#/$defs/coverage"},
+        "issues": {"type": "array", "maxItems": 32, "items": {"$ref": "#/$defs/issue"}}
+      },
+      "additionalProperties": false
+    },
+    "coverageDimension": {
+      "type": "object",
+      "required": ["method", "inventory", "observed", "declared", "unsupported", "unknown", "credited", "uncovered", "credited_ratio"],
+      "properties": {
+        "method": {"enum": ["entrypoint_execution", "passing_manifest_witness", "runtime_authority", "adapter_authority", "mixed", "unsupported"]},
+        "inventory": {"$ref": "#/$defs/strings"},
+        "observed": {"$ref": "#/$defs/strings"},
+        "declared": {"$ref": "#/$defs/strings"},
+        "unsupported": {"$ref": "#/$defs/strings"},
+        "unknown": {"$ref": "#/$defs/strings"},
+        "credited": {"$ref": "#/$defs/strings"},
+        "uncovered": {"$ref": "#/$defs/strings"},
+        "credited_ratio": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

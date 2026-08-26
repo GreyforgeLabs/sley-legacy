@@ -1,0 +1,33 @@
+{
+  "schema": "sley.explain.report.v0",
+  "status": "ok",
+  "query": {
+    "kind": "diagnostic_id",
+    "value": "UNSUPPORTED_RAW_EXPRESSION"
+  },
+  "diagnostic_id": "UNSUPPORTED_RAW_EXPRESSION",
+  "version_context": {
+    "implementation_version": "sley 1.2.0",
+    "target_release": "Sley 1.2",
+    "bootstrap": {
+      "version": "Bootstrap 0.2",
+      "path": "SLEY_AI.md",
+      "digest": "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061"
+    }
+  },
+  "explanation": {
+    "diagnostic_id": "UNSUPPORTED_RAW_EXPRESSION",
+    "title": "Unsupported executable expression",
+    "category": "syntax_context",
+    "context": "Executable Raw fallback reached checker output; runtime must not treat this as runnable Sley.",
+    "message_template": "unsupported executable expression `<expression_text>`; use a checked Sley expression",
+    "checked_spelling": "return false && false",
+    "repair_kind": "rewrite_supported_expression",
+    "repair_path": "Replace the Raw expression with checked expression syntax before running.",
+    "spec_ref": "docs/SleyLanguageSpec.md#executable-syntax-recovery-and-placement",
+    "accepted_example": "fixtures/corpus/accepted/w2_discoverability_forms.sley",
+    "rejected_example": "fixtures/corpus/rejected/unsupported_raw_expression.sley",
+    "command": "sley explain --diagnostic-id UNSUPPORTED_RAW_EXPRESSION"
+  },
+  "diagnostics": []
+}

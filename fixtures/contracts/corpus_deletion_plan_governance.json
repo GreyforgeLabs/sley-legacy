@@ -1,0 +1,44 @@
+{
+  "schema": "sley.corpus.deletion_plan.v0",
+  "status": "passed",
+  "record_id": "sley-corpus-fixture-001",
+  "record_digest": "sha256:4c313da8a055efd1d405fb2c79e71de37df24f36761482a361327965ee1733f1",
+  "requested_at": "2026-08-23T00:00:00Z",
+  "requested_by": "sley-maintainers",
+  "reason": "fixture-removal-test",
+  "dry_run": true,
+  "mutation_performed": false,
+  "targets": [
+    {
+      "kind": "export_eligibility",
+      "identifier": "export:sley-corpus-fixture-001",
+      "action": "revoke"
+    },
+    {
+      "kind": "record",
+      "identifier": "fixtures/corpus_governance/record.json",
+      "action": "remove"
+    },
+    {
+      "kind": "retrieval_entry",
+      "identifier": "retrieval:sley-corpus-fixture-001",
+      "action": "remove"
+    },
+    {
+      "kind": "sidecar",
+      "identifier": "LICENSE-EVIDENCE.md",
+      "action": "remove"
+    },
+    {
+      "kind": "sidecar",
+      "identifier": "oracle.json",
+      "action": "remove"
+    },
+    {
+      "kind": "tombstone",
+      "identifier": "sley-corpus-fixture-001",
+      "action": "write_tombstone"
+    }
+  ],
+  "issues": []
+}

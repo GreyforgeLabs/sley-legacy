@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.review.packet.v1",
+  "title": "Sley Transaction Review Packet v1",
+  "type": "object",
+  "required": [
+    "schema", "status", "packet_id", "packet_digest", "transaction_id",
+    "terminal_outcome", "final_source_digest", "review_ref", "seal_ref",
+    "test_ref", "binding", "authority", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.review.packet.v1"},
+    "status": {"const": "ready"},
+    "packet_id": {"type": "string", "pattern": "^review-packet:[a-f0-9]{64}$"},
+    "packet_digest": {"$ref": "#/$defs/digest"},
+    "transaction_id": {"$ref": "#/$defs/digest"},
+    "terminal_outcome": {"enum": ["verified_apply", "verified_rollback"]},
+    "final_source_digest": {"$ref": "#/$defs/digest"},
+    "review_ref": {
+      "type": "object",
+      "required": ["schema", "review_id", "review_digest"],
+      "properties": {
+        "schema": {"const": "sley.change.review.v0"},
+        "review_id": {"type": "string", "pattern": "^review:[a-f0-9]{64}$"},
+        "review_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "seal_ref": {
+      "type": "object",
+      "required": ["schema", "seal_id", "seal_digest"],
+      "properties": {
+        "schema": {"const": "sley.change.transaction_seal.v0"},
+        "seal_id": {"type": "string", "pattern": "^transaction-seal:[a-f0-9]{64}$"},
+        "seal_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "test_ref": {
+      "type": "object",
+      "required": ["schema", "report_id", "report_digest", "suite_id", "suite_version", "status", "source_digest"],
+      "properties": {
+        "schema": {"const": "sley.test.report.v1"},
+        "report_id": {"type": "string", "pattern": "^test-report:[a-f0-9]{64}$"},
+        "report_digest": {"$ref": "#/$defs/digest"},
+        "suite_id": {"type": "string", "minLength": 1},
+        "suite_version": {"type": "string", "minLength": 1},
+        "status": {"const": "passed"},
+        "source_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "required": ["transaction_match", "review_match", "seal_match", "source_match", "test_passed"],
+      "properties": {
+        "transaction_match": {"const": true},
+        "review_match": {"const": true},
+        "seal_match": {"const": true},
+        "source_match": {"const": true},
+        "test_passed": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "mutation_authority"],
+      "properties": {
+        "mode": {"const": "read_only_evidence_binding"},
+        "mutation_authority": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+  },
+  "additionalProperties": false
+}

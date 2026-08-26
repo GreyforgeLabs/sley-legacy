@@ -1,7 +1,7 @@
 {
   "schema": "sley.claim.manifest.v0",
   "status": "evidence_ready",
-  "last_verified": "2026-08-22",
+  "last_verified": "2026-08-26",
   "canonical_claim": {
     "id": "sley.agent_native_structural.v0",
     "safe_public_wording": "Sley is a self-hosted, agent-native structural programming language for compiler-mediated, human-reviewed software change.",
@@ -140,7 +140,7 @@
     },
     {
       "id": "public_release_ready",
-      "claim": "Strict Sley-written parity, the public evidence packet, and operator approval are present for the v1.1 release.",
+      "claim": "Strict Sley-written parity and the local Sley 1.2 release-candidate evidence packet are present; any public release action still requires separate exact operator approval.",
       "status": "expected_pass",
       "paths": ["docs/PublicReleaseChecklist.md", "docs/SleyClaimEvidence.md"],
       "audit_command": ["make", "public-release-check"]

@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.operational.reference_pins.v1",
+  "title": "Sley Operational Reference Pins v1",
+  "type": "object",
+  "required": ["schema", "workload", "siglum_commit", "paths", "artifacts", "expected"],
+  "properties": {
+    "schema": {"const": "sley.operational.reference_pins.v1"},
+    "workload": {
+      "type": "object",
+      "required": ["id", "version", "authority"],
+      "properties": {
+        "id": {"const": "siglum.numerology"},
+        "version": {"const": "siglum.numerology.reference-v1"},
+        "authority": {"const": "non_authoritative"}
+      },
+      "additionalProperties": false
+    },
+    "siglum_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "paths": {
+      "type": "object",
+      "required": ["candidate_package", "corpus_root", "parity_test", "prior_report"],
+      "properties": {
+        "candidate_package": {"$ref": "#/$defs/relativePath"},
+        "corpus_root": {"$ref": "#/$defs/relativePath"},
+        "parity_test": {"$ref": "#/$defs/relativePath"},
+        "prior_report": {"$ref": "#/$defs/relativePath"}
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "digest"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "path": {"$ref": "#/$defs/relativePath"},
+          "digest": {"$ref": "#/$defs/digest"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "case_count", "candidate_source_digest", "candidate_corpus_digest",
+        "frozen_corpus_digest", "retained_runtime_digest", "retained_repeat_count",
+        "retained_exact_match_count", "retained_mismatch_count"
+      ],
+      "properties": {
+        "case_count": {"const": 10000},
+        "candidate_source_digest": {"$ref": "#/$defs/digest"},
+        "candidate_corpus_digest": {"$ref": "#/$defs/digest"},
+        "frozen_corpus_digest": {"$ref": "#/$defs/digest"},
+        "retained_runtime_digest": {"$ref": "#/$defs/digest"},
+        "retained_repeat_count": {"const": 2},
+        "retained_exact_match_count": {"const": 10000},
+        "retained_mismatch_count": {"const": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\r\\n]+$"
+    }
+  },
+  "additionalProperties": false
+}

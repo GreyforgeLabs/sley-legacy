@@ -9,6 +9,10 @@ export type Diagnostic = {
 
 export task diagnostic_pass_order -> List<Text> {
   return [
+    "control_flow_expression_boundary_diags",
+    "raw_expression_diags",
+    "module_control_flow_diags",
+    "inline_task_parameter_diags",
     "duplicate_effect_diags",
     "duplicate_type_diags",
     "duplicate_task_diags",
@@ -46,6 +50,10 @@ export task diagnostic_pass_order -> List<Text> {
 
 export task diagnostic_pass_descriptors -> List<Text> {
   return [
+    "control_flow_expression_boundary_diags|syntax_context|control_flow_expression_boundary_id|control_flow_expression_boundary_message|expression_text|foreign_conditional_expression|expr",
+    "raw_expression_diags|syntax_context|unsupported_raw_expression_id|unsupported_raw_expression_message|expression_text|executable_raw|expr",
+    "module_control_flow_diags|syntax_context|module_control_flow_not_allowed_id|module_control_flow_not_allowed_message|statement_text|module_control_flow|module",
+    "inline_task_parameter_diags|syntax_context|inline_task_parameter_placement_id|inline_task_parameter_placement_message|task_name|inline_task_parameter|task",
     "duplicate_effect_diags|duplicate_name|duplicate_effect_id|duplicate_effect_message|effect_name|module_effect_name|effect",
     "duplicate_type_diags|duplicate_name|duplicate_type_id|duplicate_type_message|type_name|module_type_name|type",
     "duplicate_task_diags|duplicate_name|duplicate_task_id|duplicate_task_message|task_name|module_task_name|task",
@@ -83,6 +91,10 @@ export task diagnostic_pass_descriptors -> List<Text> {
 
 export task diagnostic_pass_plan -> List<Text> {
   return [
+    "control_flow_expression_boundary_diags|10|syntax_context|control_flow_expression_boundary_id|control_flow_expression_boundary_message|expression_text|foreign_conditional_expression|expr",
+    "raw_expression_diags|10|syntax_context|unsupported_raw_expression_id|unsupported_raw_expression_message|expression_text|executable_raw|expr",
+    "module_control_flow_diags|10|syntax_context|module_control_flow_not_allowed_id|module_control_flow_not_allowed_message|statement_text|module_control_flow|module",
+    "inline_task_parameter_diags|10|syntax_context|inline_task_parameter_placement_id|inline_task_parameter_placement_message|task_name|inline_task_parameter|task",
     "duplicate_effect_diags|4|duplicate_name|duplicate_effect_id|duplicate_effect_message|effect_name|module_effect_name|effect",
     "duplicate_type_diags|4|duplicate_name|duplicate_type_id|duplicate_type_message|type_name|module_type_name|type",
     "duplicate_task_diags|4|duplicate_name|duplicate_task_id|duplicate_task_message|task_name|module_task_name|task",
@@ -129,8 +141,28 @@ export task diagnostic_executors -> List<Text> {
     "collection_shape",
     "call_shape",
     "type_return",
-    "question_result"
+    "question_result",
+    "syntax_context"
   ]
+}
+
+export task diagnostic_explain_catalog -> List<Text> {
+  return [
+    "UNSUPPORTED_RAW_EXPRESSION|Unsupported executable expression|syntax_context|Executable Raw fallback reached checker output; runtime must not treat this as runnable Sley.|unsupported executable expression `<expression_text>`; use a checked Sley expression|return false && false|rewrite_supported_expression|Replace the Raw expression with checked expression syntax before running.|docs/SleyLanguageSpec.md#executable-syntax-recovery-and-placement|fixtures/corpus/accepted/w2_discoverability_forms.sley|fixtures/corpus/rejected/unsupported_raw_expression.sley|sley explain --diagnostic-id UNSUPPORTED_RAW_EXPRESSION",
+    "CONTROL_FLOW_EXPRESSION_BOUNDARY|Conditional expression boundary|syntax_context|Foreign conditional spelling crossed Sley's expression boundary.|unsupported conditional spelling `<expression_text>`; Sley conditionals do not use `then`|return if ready { 1 } else { 0 }|rewrite_conditional|Use Sley block conditional spelling in expression or statement position.|docs/v1.2/ADR-001-multiline-conditionals.md|fixtures/corpus/accepted/w2_discoverability_forms.sley|fixtures/corpus/rejected/foreign_conditional_expression.sley|sley explain --diagnostic-id CONTROL_FLOW_EXPRESSION_BOUNDARY",
+    "MODULE_CONTROL_FLOW_NOT_ALLOWED|Module control-flow boundary|syntax_context|Executable control flow appeared at module scope.|module-level control flow `<statement_text>` is not allowed; move executable control flow into a task body|if ready { return 1 } else { return 0 }|move_control_flow_into_task|Move executable if/for/while/forge control flow inside a task body.|docs/SleyLanguageSpec.md#executable-syntax-recovery-and-placement|fixtures/corpus/accepted/w2_discoverability_forms.sley|fixtures/corpus/rejected/module_control_flow.sley|sley explain --diagnostic-id MODULE_CONTROL_FLOW_NOT_ALLOWED",
+    "INLINE_TASK_PARAMETER_PLACEMENT|Inline task parameter placement|syntax_context|A task declaration tried to declare `take` parameters inline.|inline task parameter placement in `<task_name>` is not supported; declare `take` bindings inside the task body|task name -> Unit { take value: Int }|move_take_into_task_body|Declare each `take` binding inside the task body, before executable statements.|docs/SleyLanguageSpec.md#executable-syntax-recovery-and-placement|fixtures/corpus/accepted/w2_discoverability_forms.sley|fixtures/corpus/rejected/inline_task_parameter.sley|sley explain --diagnostic-id INLINE_TASK_PARAMETER_PLACEMENT"
+  ]
+}
+
+export task explain_unknown_diagnostic_id -> Text {
+  return "UNKNOWN_DIAGNOSTIC_ID"
+}
+
+export task explain_unknown_diagnostic_message -> Text {
+  take diagnostic_id: Text
+
+  return "unknown diagnostic id `" + diagnostic_id + "`"
 }
 
 export task assume_qualified_task_calls_known -> Bool {
@@ -139,6 +171,22 @@ export task assume_qualified_task_calls_known -> Bool {
 
 export task unknown_identifier_id -> Text {
   return "UNKNOWN_IDENTIFIER"
+}
+
+export task unsupported_raw_expression_id -> Text {
+  return "UNSUPPORTED_RAW_EXPRESSION"
+}
+
+export task control_flow_expression_boundary_id -> Text {
+  return "CONTROL_FLOW_EXPRESSION_BOUNDARY"
+}
+
+export task module_control_flow_not_allowed_id -> Text {
+  return "MODULE_CONTROL_FLOW_NOT_ALLOWED"
+}
+
+export task inline_task_parameter_placement_id -> Text {
+  return "INLINE_TASK_PARAMETER_PLACEMENT"
 }
 
 export task unknown_type_id -> Text {
@@ -277,6 +325,30 @@ export task unknown_identifier_message -> Text {
   take identifier_name: Text
 
   return "unknown identifier `" + identifier_name + "`"
+}
+
+export task unsupported_raw_expression_message -> Text {
+  take expression_text: Text
+
+  return "unsupported executable expression `" + expression_text + "`; use a checked Sley expression"
+}
+
+export task control_flow_expression_boundary_message -> Text {
+  take expression_text: Text
+
+  return "unsupported conditional spelling `" + expression_text + "`; Sley conditionals do not use `then`"
+}
+
+export task module_control_flow_not_allowed_message -> Text {
+  take statement_text: Text
+
+  return "module-level control flow `" + statement_text + "` is not allowed; move executable control flow into a task body"
+}
+
+export task inline_task_parameter_placement_message -> Text {
+  take task_name: Text
+
+  return "inline task parameter placement in `" + task_name + "` is not supported; declare `take` bindings inside the task body"
 }
 
 export task unknown_type_message_prefix -> Text {
@@ -737,6 +809,40 @@ export task host_effect_needles -> List<Text> {
   ]
 }
 
+export task foreign_conditional_expression_pattern -> Text {
+  return "^if[[:space:]].*[[:space:]]then[[:space:]].*[[:space:]]else[[:space:]]"
+}
+
+export task module_control_flow_prefixes -> List<Text> {
+  return [
+    "if",
+    "for",
+    "while",
+    "forge"
+  ]
+}
+
+export task inline_task_parameter_pattern -> Text {
+  return "[[:space:]]take[[:space:]]"
+}
+
+export task task_declaration_pattern -> Text {
+  return "^[[:space:]]*(export[[:space:]]+)?task[[:space:]]+"
+}
+
+export task host_adapter_raw_recovery_pattern -> Text {
+  return "^[?]"
+}
+
+export task supported_raw_recovery_patterns -> List<Text> {
+  return [
+    "^[[:space:]]*$",
+    "^map[[:space:]]*[{][[:space:]]*$",
+    "^[{].*[}][?]?$",
+    "^[A-Za-z_][A-Za-z0-9_.]*[[:space:]]*[{].*[}][.][A-Za-z_][A-Za-z0-9_]*[?]?$"
+  ]
+}
+
 export task declare_or_import_task_hint_kind -> Text {
   return "declare_or_import_task"
 }
@@ -755,6 +861,38 @@ export task replace_task_body_hint_kind -> Text {
 
 export task replace_expression_hint_kind -> Text {
   return "replace_expression"
+}
+
+export task rewrite_supported_expression_hint_kind -> Text {
+  return "rewrite_supported_expression"
+}
+
+export task rewrite_supported_expression_hint -> Text {
+  return "false && false"
+}
+
+export task rewrite_conditional_hint_kind -> Text {
+  return "rewrite_conditional"
+}
+
+export task rewrite_conditional_hint -> Text {
+  return "if false { 0 } else { 0 }"
+}
+
+export task move_control_flow_into_task_hint_kind -> Text {
+  return "move_control_flow_into_task"
+}
+
+export task move_control_flow_into_task_hint -> Text {
+  return "task main -> Unit { return () }"
+}
+
+export task move_take_into_task_body_hint_kind -> Text {
+  return "move_take_into_task_body"
+}
+
+export task move_take_into_task_body_hint -> Text {
+  return "task name -> Unit { take value: Int }"
 }
 
 export task int_type_name -> Text {

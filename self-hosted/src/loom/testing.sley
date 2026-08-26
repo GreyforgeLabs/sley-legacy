@@ -1,0 +1,62 @@
+module loom.testing
+
+export task manifest_schema -> Text {
+  return "sley.test.manifest.v1"
+}
+
+export task report_schema -> Text {
+  return "sley.test.report.v1"
+}
+
+export task review_packet_schema -> Text {
+  return "sley.review.packet.v1"
+}
+
+export task discovery_convention -> Text {
+  return "sley.test.json_or_star.sley-test.json"
+}
+
+export task case_kinds -> List<Text> {
+  return [
+    "table",
+    "property",
+    "effect_mock",
+    "adapter_replay",
+    "diagnostic",
+    "differential"
+  ]
+}
+
+export task coverage_dimensions -> List<Text> {
+  return [
+    "tasks",
+    "branches",
+    "effects",
+    "capabilities"
+  ]
+}
+
+export task coverage_evidence_states -> List<Text> {
+  return [
+    "observed",
+    "declared",
+    "unsupported",
+    "unknown"
+  ]
+}
+
+export task property_strategy -> Text {
+  return "cartesian_v1"
+}
+
+export task differential_comparison -> Text {
+  return "canonical_json_exact"
+}
+
+export task authority_mode -> Text {
+  return "local_test_only"
+}
+
+export task review_binding_authority_mode -> Text {
+  return "read_only_evidence_binding"
+}

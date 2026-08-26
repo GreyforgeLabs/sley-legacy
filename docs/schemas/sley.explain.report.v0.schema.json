@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.explain.report.v0",
+  "title": "Sley Explain Report v0",
+  "type": "object",
+  "required": ["schema", "status", "query", "diagnostic_id", "version_context", "diagnostics"],
+  "properties": {
+    "schema": { "const": "sley.explain.report.v0" },
+    "status": { "enum": ["ok", "error"] },
+    "query": { "$ref": "#/$defs/query" },
+    "diagnostic_id": { "type": "string", "minLength": 1 },
+    "version_context": { "$ref": "#/$defs/version_context" },
+    "explanation": {
+      "oneOf": [
+        { "$ref": "#/$defs/explanation" },
+        { "type": "null" }
+      ]
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "ok" } } },
+      "then": {
+        "required": ["explanation"],
+        "properties": {
+          "explanation": { "$ref": "#/$defs/explanation" },
+          "diagnostics": { "maxItems": 0 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "error" } } },
+      "then": {
+        "not": { "required": ["explanation"] },
+        "properties": {
+          "diagnostics": { "minItems": 1 }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "query": {
+      "type": "object",
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": { "const": "diagnostic_id" },
+        "value": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "version_context": {
+      "type": "object",
+      "required": ["implementation_version", "target_release", "bootstrap"],
+      "properties": {
+        "implementation_version": { "type": "string", "minLength": 1 },
+        "target_release": { "const": "Sley 1.2" },
+        "bootstrap": {
+          "type": "object",
+          "required": ["version", "path", "digest"],
+          "properties": {
+            "version": { "const": "Bootstrap 0.2" },
+            "path": { "const": "SLEY_AI.md" },
+            "digest": { "const": "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "explanation": {
+      "type": "object",
+      "required": [
+        "diagnostic_id",
+        "title",
+        "category",
+        "context",
+        "message_template",
+        "checked_spelling",
+        "repair_kind",
+        "repair_path",
+        "spec_ref",
+        "accepted_example",
+        "rejected_example",
+        "command"
+      ],
+      "properties": {
+        "diagnostic_id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "minLength": 1 },
+        "context": { "type": "string", "minLength": 1 },
+        "message_template": { "type": "string", "minLength": 1 },
+        "checked_spelling": { "type": "string", "minLength": 1 },
+        "repair_kind": { "type": "string", "minLength": 1 },
+        "repair_path": { "type": "string", "minLength": 1 },
+        "spec_ref": { "type": "string", "minLength": 1 },
+        "accepted_example": { "type": "string", "minLength": 1 },
+        "rejected_example": { "type": "string", "minLength": 1 },
+        "command": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["id", "severity", "message"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["error", "warning", "info"] },
+        "message": { "type": "string", "minLength": 1 },
+        "node": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

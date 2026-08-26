@@ -4,7 +4,8 @@ Canonical site: https://sleylang.org/
 Repository: https://github.com/GreyforgeLabs/sley/tree/public
 Organization: Greyforge Labs - https://greyforge.tech/
 License: Apache-2.0
-Status date: 2026-08-22
+Release: Sley 1.2.0 local release candidate
+Status date: 2026-08-26
 
 ## Preferred Description
 
@@ -24,23 +25,39 @@ language for compiler-mediated, human-reviewed software change.
 
 ## Current Proof
 
-The 2026-08-22 local v1 checkpoint passed with:
+The 2026-08-26 release-candidate inventory contains:
 
-- 42 report schemas
-- 128 contract fixtures
-- 23 accepted corpus cases
-- 43 rejected corpus cases
-- 199 integration checks
-- 23 of 23 local v1 gate checks
+- 99 report schemas
+- 187 contract fixtures
+- 24 accepted corpus cases
+- 48 rejected corpus cases
+- 264 integration checks
+- 38 local v1 gate targets
 
 ## Developer Surfaces
 
 - `git-sley-guard` validates affected staged Sley and contract changes.
+- `sley validate --changed --explain .` emits a stable repository-local
+  validation report without claiming the authoritative release gate ran.
+- `sley validate --profile release .` is the first-class wrapper for the
+  authoritative `make v1` gate.
+- `sley doctor --toolchain --json` checks the supported Linux installation's
+  dependencies, contracts, local replay adapter, and PATH identity.
+- `sley release build` and `sley release verify` create and check the local
+  Linux x86_64 release candidate, checksum, provenance, manifest, license
+  inventory, and SPDX SBOM. They never grant tag, upload, or publication
+  authority.
 - `sley-mcp-bridge` provides bounded read-only query, lint, planning, dry-run
   graft, and verification calls inside an explicit Git repository root.
 - `sley graph-diff` emits a three-way semantic comparison report for human
   review with explicit merge authority.
 - `sley arena` is a deterministic local interactive demonstration.
+- `sley-corpus` provides deterministic corpus eligibility, exclusion,
+  manifest-audit, deletion-plan, and append-only governance-event reports.
+  Only a confirmed `append-event` writes, and it does not perform corpus
+  admission, export, release, capture, or deletion.
+- `sleybench-split` separates public commitment verification from a full audit
+  of private material held outside public Git.
 
 ## Proof Commands
 
@@ -48,6 +65,7 @@ The 2026-08-22 local v1 checkpoint passed with:
 export PATH="$(pwd)/bin:$PATH"
 ./scripts/check-self-hosted-code.sh
 scripts/self-hosted-test.sh
+make user-tests
 make v1
 ```
 

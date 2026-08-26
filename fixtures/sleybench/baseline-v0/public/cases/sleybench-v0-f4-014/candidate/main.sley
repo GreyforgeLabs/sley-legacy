@@ -1,0 +1,10 @@
+module bench.public.f4_014
+
+task square -> Int {
+  take value: Int
+  return value * value
+}
+
+task main -> Int {
+  return call square(5)
+}

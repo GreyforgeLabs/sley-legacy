@@ -1,0 +1,4 @@
+[project]
+name = "sley-operational-agent-workflow"
+entry = "agent.main"
+source = "src"

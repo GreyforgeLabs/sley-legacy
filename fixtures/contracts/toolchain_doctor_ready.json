@@ -1,0 +1,33 @@
+{
+  "schema": "sley.toolchain.doctor.v1",
+  "status": "ready",
+  "sley_version": "sley 1.2.0",
+  "release": "1.2.0",
+  "root": ".",
+  "dependencies": [
+    {"name": "bash", "minimum_version": "5", "required": true, "found": true, "path": "/usr/bin/bash", "version": "5.2.0", "status": "ready"},
+    {"name": "jq", "minimum_version": "1.6", "required": true, "found": true, "path": "/usr/bin/jq", "version": "1.7", "status": "ready"}
+  ],
+  "contracts": {
+    "schema_dir": "docs/schemas",
+    "schema_count": 99,
+    "required": ["sley.worker.request.v1", "sley.release.manifest.v1"],
+    "missing": [],
+    "status": "ready"
+  },
+  "adapter": {
+    "manifest_schema": "sley.adapter.manifest.v0",
+    "worker_protocol": "sley.worker.v1",
+    "local_replay_available": true,
+    "external_adapters_supported": false,
+    "status": "ready"
+  },
+  "path": {
+    "expected_sley": "./bin/sley",
+    "resolved_sley": "./bin/sley",
+    "conflict": false,
+    "status": "ready"
+  },
+  "issues": [],
+  "next_actions": []
+}

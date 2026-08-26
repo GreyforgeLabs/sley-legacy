@@ -1,0 +1,5 @@
+module bench.public.f3_007
+
+task main -> Int {
+  return call absent()
+}

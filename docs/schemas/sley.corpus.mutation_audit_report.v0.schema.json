@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.corpus.mutation_audit_report.v0",
+  "title": "Sley Corpus Mutation Audit Report v0",
+  "type": "object",
+  "required": [
+    "schema", "command", "status", "subject", "log_id", "event_count",
+    "head_digest", "mutation_performed", "log_digest_before",
+    "log_digest_after", "summary", "checks", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.corpus.mutation_audit_report.v0" },
+    "command": { "enum": ["audit-log", "append-event"] },
+    "status": { "enum": ["passed", "failed"] },
+    "subject": { "type": "string", "minLength": 1 },
+    "log_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" },
+    "event_count": { "type": "integer", "minimum": 0 },
+    "head_digest": { "anyOf": [{ "$ref": "#/$defs/digest" }, { "type": "null" }] },
+    "mutation_performed": { "type": "boolean" },
+    "log_digest_before": { "$ref": "#/$defs/digest" },
+    "log_digest_after": { "$ref": "#/$defs/digest" },
+    "appended_event_digest": { "$ref": "#/$defs/digest" },
+    "summary": {
+      "type": "object",
+      "required": ["check_count", "passed_count", "failed_count", "issue_count"],
+      "properties": {
+        "check_count": { "type": "integer", "minimum": 0 },
+        "passed_count": { "type": "integer", "minimum": 0 },
+        "failed_count": { "type": "integer", "minimum": 0 },
+        "issue_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "message"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]*$" },
+          "status": { "enum": ["passed", "failed"] },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]*$" },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "command": { "const": "audit-log" } } },
+      "then": { "properties": { "mutation_performed": { "const": false } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": { "const": "append-event" },
+          "status": { "const": "passed" }
+        },
+        "required": ["command", "status"]
+      },
+      "then": {
+        "required": ["appended_event_digest"],
+        "properties": { "mutation_performed": { "const": true } }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

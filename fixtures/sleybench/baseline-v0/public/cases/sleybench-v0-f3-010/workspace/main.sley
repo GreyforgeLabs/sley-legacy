@@ -1,0 +1,11 @@
+module bench.public.f3_010
+
+task helper -> Int {
+  take left: Int
+  take right: Int
+  return left + right
+}
+
+task main -> Int {
+  return call helper(4)
+}

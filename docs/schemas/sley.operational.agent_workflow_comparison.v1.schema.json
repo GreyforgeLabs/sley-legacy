@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.operational.agent_workflow_comparison.v1",
+  "title": "Sley Operational Agent Workflow Comparison v1",
+  "type": "object",
+  "required": [
+    "schema", "status", "workflow_id", "identity", "controls", "arms",
+    "deltas", "decision", "methodology", "environment", "authority",
+    "disclosure", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.operational.agent_workflow_comparison.v1"},
+    "status": {"const": "passed"},
+    "workflow_id": {"type": "string", "minLength": 1},
+    "identity": {
+      "type": "object",
+      "required": ["sley_commit", "case_manifest_digest", "raw_run_manifest_digest", "structural_run_manifest_digest", "controller_digest", "execution_approval_digest", "execution_provenance_digest"],
+      "properties": {
+        "sley_commit": {"$ref": "#/$defs/commit"},
+        "case_manifest_digest": {"$ref": "#/$defs/digest"},
+        "raw_run_manifest_digest": {"$ref": "#/$defs/digest"},
+        "structural_run_manifest_digest": {"$ref": "#/$defs/digest"},
+        "controller_digest": {"$ref": "#/$defs/digest"},
+        "execution_approval_digest": {"$ref": "#/$defs/digest"},
+        "execution_provenance_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "controls": {
+      "type": "object",
+      "required": ["equal_task_context_spend_budget_verified", "same_model", "same_task", "same_workspace", "same_oracle", "same_owned_paths", "action_budget_is_controlled_difference"],
+      "properties": {
+        "equal_task_context_spend_budget_verified": {"const": true},
+        "same_model": {"const": true},
+        "same_task": {"const": true},
+        "same_workspace": {"const": true},
+        "same_oracle": {"const": true},
+        "same_owned_paths": {"const": true},
+        "action_budget_is_controlled_difference": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "arms": {
+      "type": "object",
+      "required": ["raw_source", "sley_structural"],
+      "properties": {"raw_source": {"$ref": "#/$defs/arm"}, "sley_structural": {"$ref": "#/$defs/arm"}},
+      "additionalProperties": false
+    },
+    "deltas": {
+      "type": "object",
+      "required": [
+        "inference_attempts", "input_tokens", "output_tokens", "total_tokens", "prompt_bytes",
+        "response_bytes", "context_files_supplied", "context_bytes_supplied",
+        "structural_response_bytes", "wall_ms", "tool_calls", "compiler_cycles",
+        "invalid_actions", "repair_loops", "changed_files", "changed_lines"
+      ],
+      "properties": {
+        "inference_attempts": {"type": "integer"},
+        "input_tokens": {"type": "integer"},
+        "output_tokens": {"type": "integer"},
+        "total_tokens": {"type": "integer"},
+        "prompt_bytes": {"type": "integer"},
+        "response_bytes": {"type": "integer"},
+        "context_files_supplied": {"type": "integer"},
+        "context_bytes_supplied": {"type": "integer"},
+        "structural_response_bytes": {"type": "integer"},
+        "wall_ms": {"type": "integer"},
+        "tool_calls": {"type": "integer"},
+        "compiler_cycles": {"type": "integer"},
+        "invalid_actions": {"type": "integer"},
+        "repair_loops": {"type": "integer"},
+        "changed_files": {"type": "integer"},
+        "changed_lines": {"type": "integer"}
+      },
+      "additionalProperties": false
+    },
+    "decision": {
+      "type": "object",
+      "required": ["outcome", "recommendation", "structural_context_effect", "promotion_decision", "general_claim_supported", "production_claim"],
+      "properties": {
+        "outcome": {"enum": ["structural_advantage_observed", "both_accepted", "structural_disadvantage_observed", "both_failed"]},
+        "recommendation": {"enum": ["retain_for_bounded_followup", "defer_structural_interface"]},
+        "structural_context_effect": {"enum": ["saving", "equal", "expansion"]},
+        "promotion_decision": {"const": "deferred"},
+        "general_claim_supported": {"const": false},
+        "production_claim": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "methodology": {
+      "type": "object",
+      "required": ["trial_count", "failures_retained", "cache_state", "context_budget_basis", "manifest_limit_enforcement", "repair_loop_observability", "single_trial_generalization"],
+      "properties": {
+        "trial_count": {"const": 1},
+        "failures_retained": {"const": true},
+        "cache_state": {"const": "fresh_per_arm"},
+        "context_budget_basis": {"const": "same_model_context_window_and_spend_ceiling"},
+        "manifest_limit_enforcement": {"const": "partial_controller_bounds"},
+        "repair_loop_observability": {"const": "post_submit_repair_unavailable"},
+        "single_trial_generalization": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": ["scope", "os", "kernel", "architecture", "logical_cpus", "memory_bytes"],
+      "properties": {
+        "scope": {"const": "comparison_host"},
+        "os": {"type": "string", "minLength": 1},
+        "kernel": {"type": "string", "minLength": 1},
+        "architecture": {"type": "string", "minLength": 1},
+        "logical_cpus": {"type": "integer", "minimum": 1},
+        "memory_bytes": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "provider_execution_authorized", "repository_mutation", "product_runtime_mutation", "deploy", "publication"],
+      "properties": {
+        "mode": {"const": "local_isolated_evaluation_only"},
+        "provider_execution_authorized": {"const": true},
+        "repository_mutation": {"const": false},
+        "product_runtime_mutation": {"const": false},
+        "deploy": {"const": false},
+        "publication": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "disclosure": {
+      "type": "object",
+      "required": ["raw_prompts_embedded", "raw_responses_embedded", "contains_real_user_data", "contains_credentials", "publication_authorized"],
+      "properties": {
+        "raw_prompts_embedded": {"const": false},
+        "raw_responses_embedded": {"const": false},
+        "contains_real_user_data": {"const": false},
+        "contains_credentials": {"const": false},
+        "publication_authorized": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "arm": {
+      "type": "object",
+      "required": [
+        "mode", "interface", "run_id", "aggregate_digest", "case_result_digest", "evidence_bundle_digest",
+        "accepted_correct_change", "strict_success", "inference_attempts", "input_tokens", "output_tokens", "total_tokens",
+        "accepted_change_tokens", "prompt_bytes", "response_bytes", "context_files_supplied",
+        "context_bytes_supplied", "structural_response_bytes", "wall_ms", "tool_calls",
+        "compiler_cycles", "invalid_actions", "repair_loops", "changed_files", "changed_lines",
+        "human_review_applicable", "human_review_ms"
+      ],
+      "properties": {
+        "mode": {"enum": ["K1", "K3"]},
+        "interface": {"enum": ["raw_workspace", "raw_workspace_plus_read_only_structure"]},
+        "run_id": {"type": "string", "minLength": 1},
+        "aggregate_digest": {"$ref": "#/$defs/digest"},
+        "case_result_digest": {"$ref": "#/$defs/digest"},
+        "evidence_bundle_digest": {"$ref": "#/$defs/digest"},
+        "accepted_correct_change": {"type": "boolean"},
+        "strict_success": {"type": "boolean"},
+        "inference_attempts": {"type": "integer", "minimum": 1, "maximum": 2},
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "total_tokens": {"type": "integer", "minimum": 0},
+        "accepted_change_tokens": {"type": ["number", "null"], "minimum": 0},
+        "prompt_bytes": {"type": "integer", "minimum": 0},
+        "response_bytes": {"type": "integer", "minimum": 0},
+        "context_files_supplied": {"type": "integer", "minimum": 0},
+        "context_bytes_supplied": {"type": "integer", "minimum": 0},
+        "structural_response_bytes": {"type": "integer", "minimum": 0},
+        "wall_ms": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "compiler_cycles": {"type": "integer", "minimum": 0},
+        "invalid_actions": {"type": "integer", "minimum": 0},
+        "repair_loops": {"type": "integer", "minimum": 0},
+        "changed_files": {"type": "integer", "minimum": 0},
+        "changed_lines": {"type": "integer", "minimum": 0},
+        "human_review_applicable": {"const": false},
+        "human_review_ms": {"type": "null"}
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object", "required": ["code", "message"],
+      "properties": {"code": {"type": "string", "minLength": 1}, "message": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

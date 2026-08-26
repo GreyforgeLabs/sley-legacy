@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.change.revocation_record.v0",
+  "title": "Sley Change Revocation Record v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "record_id", "record_digest", "authorization_ref",
+    "grant_ref", "state", "issuer", "reason", "created_at", "expires_at",
+    "ledger_path", "mutations", "internal_mutations", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.change.revocation_record.v0"},
+    "status": {"enum": ["active", "revoked"]},
+    "record_id": {"type": "string", "pattern": "^revocation-record:[a-f0-9]{64}$"},
+    "record_digest": {"$ref": "#/$defs/digest"},
+    "authorization_ref": {"$ref": "#/$defs/authorizationRef"},
+    "grant_ref": {"$ref": "sley.change.apply_authorization.v0#/$defs/grantRef"},
+    "state": {"enum": ["not_revoked", "revoked"]},
+    "issuer": {"$ref": "sley.change.grant.v0#/$defs/assertedPrincipal"},
+    "reason": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "created_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "ledger_path": {"type": "string", "pattern": "^\\.sley/revocations/[a-f0-9]{64}\\.json$"},
+    "mutations": {"$ref": "sley.change.plan.v0#/$defs/mutations"},
+    "internal_mutations": {
+      "type": "object",
+      "required": ["internal_transaction_state"],
+      "properties": {"internal_transaction_state": {"const": true}},
+      "additionalProperties": false
+    },
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "authorizationRef": {
+      "type": "object",
+      "required": ["schema", "authorization_id", "authorization_digest"],
+      "properties": {
+        "schema": {"const": "sley.change.apply_authorization.v0"},
+        "authorization_id": {"type": "string", "pattern": "^apply-authorization:[a-f0-9]{64}$"},
+        "authorization_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

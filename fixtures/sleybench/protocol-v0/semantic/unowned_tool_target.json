@@ -1,0 +1,27 @@
+{
+  "schema": "sley.agent_bench.protocol_replay.v0",
+  "protocol_version": "openclaw-one-shot-v2",
+  "case_id": "unowned-tool-target-rejected",
+  "mode": "K3",
+  "owned_paths": ["src/app/main.sley"],
+  "limits": {
+    "max_turns": 2,
+    "max_tool_calls": 1,
+    "max_input_bytes": 4096,
+    "max_output_bytes": 4096,
+    "max_context_nodes": 128,
+    "max_wall_ms": 5000
+  },
+  "cancellation": {"requested": false, "observed": false, "turn": null},
+  "turns": [
+    {
+      "number": 1,
+      "input_bytes": 100,
+      "output_bytes": 80,
+      "context_nodes": 8,
+      "elapsed_ms": 200,
+      "action": {"kind": "tool", "tool": "check", "target": "main.sley"}
+    }
+  ],
+  "expected": {"status": "rejected", "code": "OWNED_PATH_VIOLATION"}
+}

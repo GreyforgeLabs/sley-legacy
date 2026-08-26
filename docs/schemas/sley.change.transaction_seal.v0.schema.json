@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.change.transaction_seal.v0",
+  "title": "Sley Change Transaction Seal v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "seal_id", "seal_digest", "transaction_id",
+    "terminal_outcome", "source_digest", "graph_digest", "trace_seal_ref",
+    "apply_ref", "rollback_ref", "review_ref", "packet_digest",
+    "bundle_digest", "zjx_digest", "created_at", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.change.transaction_seal.v0"},
+    "status": {"const": "sealed"},
+    "seal_id": {"type": "string", "pattern": "^transaction-seal:[a-f0-9]{64}$"},
+    "seal_digest": {"$ref": "#/$defs/digest"},
+    "transaction_id": {"$ref": "#/$defs/digest"},
+    "terminal_outcome": {"enum": ["verified_apply", "verified_rollback"]},
+    "source_digest": {"$ref": "#/$defs/digest"},
+    "graph_digest": {"$ref": "#/$defs/digest"},
+    "trace_seal_ref": {"$ref": "#/$defs/traceSealRef"},
+    "apply_ref": {"$ref": "#/$defs/applyRef"},
+    "rollback_ref": {"$ref": "#/$defs/rollbackRef"},
+    "review_ref": {"$ref": "#/$defs/reviewRef"},
+    "packet_digest": {"$ref": "#/$defs/digest"},
+    "bundle_digest": {"$ref": "#/$defs/digest"},
+    "zjx_digest": {"$ref": "#/$defs/digest"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "traceSealRef": {
+      "type": "object",
+      "required": ["schema", "seal_digest", "trace_digest"],
+      "properties": {
+        "schema": {"const": "sley.trace.seal.v0"},
+        "seal_digest": {"$ref": "#/$defs/digest"},
+        "trace_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "applyRef": {
+      "type": "object",
+      "required": ["schema", "status", "digest"],
+      "properties": {
+        "schema": {"const": "sley.change.apply.v0"},
+        "status": {"enum": ["verified", "rolled_back"]},
+        "digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "rollbackRef": {
+      "type": "object",
+      "required": ["schema", "status", "digest"],
+      "properties": {
+        "schema": {"type": ["string", "null"]},
+        "status": {"enum": ["not_required", "rolled_back"]},
+        "digest": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/digest"}]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "not_required"}}},
+          "then": {"properties": {"schema": {"type": "null"}, "digest": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "rolled_back"}}},
+          "then": {"properties": {"schema": {"const": "sley.change.rollback.v0"}, "digest": {"$ref": "#/$defs/digest"}}}
+        }
+      ],
+      "additionalProperties": false
+    },
+    "reviewRef": {
+      "type": "object",
+      "required": ["schema", "review_id", "review_digest", "path"],
+      "properties": {
+        "schema": {"const": "sley.change.review.v0"},
+        "review_id": {"type": "string", "pattern": "^review:[a-f0-9]{64}$"},
+        "review_digest": {"$ref": "#/$defs/digest"},
+        "path": {"type": "string", "pattern": "^\\.sley/transactions/[a-f0-9]{64}/review/bundle\\.json$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"terminal_outcome": {"const": "verified_apply"}}},
+      "then": {
+        "properties": {
+          "apply_ref": {"properties": {"status": {"const": "verified"}}},
+          "rollback_ref": {"properties": {"status": {"const": "not_required"}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"terminal_outcome": {"const": "verified_rollback"}}},
+      "then": {
+        "properties": {
+          "rollback_ref": {"properties": {"status": {"enum": ["not_required", "rolled_back"]}}}
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

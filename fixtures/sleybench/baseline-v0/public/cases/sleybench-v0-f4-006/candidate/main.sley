@@ -1,0 +1,5 @@
+module bench.public.f4_006
+
+task main -> Int {
+  return len([2, 4, 6, 8])
+}

@@ -1,0 +1,57 @@
+module machine.fixture
+
+import sley.machine.text as text
+import sley.machine.int as int
+import sley.machine.map as machine_map
+import sley.machine.date as date
+
+type MachineInput = {
+  slot values: List<Int>
+  slot label: Text
+}
+
+type SummaryMeta = {
+  slot count: Int
+  slot first: Int
+}
+
+type Summary = {
+  slot label: Text
+  slot total: Int
+  slot meta: SummaryMeta
+  slot tags: List<Text>
+}
+
+export task summarize -> Summary {
+  take input: MachineInput
+
+  state index = 0
+  state total = 0
+  while index < len(input.values) {
+    set total = total + input.values[index]
+    set index = index + 1
+  }
+
+  return Summary {
+    label: input.label,
+    total: total,
+    meta: SummaryMeta { count: len(input.values), first: input.values[0] },
+    tags: ["machine", input.label]
+  }
+}
+
+export task intrinsic_probe -> Summary {
+  bind folded = call text.ascii_fold_en("Straße")
+  bind emoji_units = call text.utf16_length("😀")
+  bind digits = call int.digits(290)
+  bind probe_map = map { "b": "2", "a": "1" }
+  bind keys = call machine_map.keys(probe_map)
+  bind leap = if call date.is_gregorian("2000-02-29") { 1 } else { 0 }
+
+  return Summary {
+    label: folded,
+    total: emoji_units + call int.modulo(29, 9),
+    meta: SummaryMeta { count: len(digits), first: digits[0] },
+    tags: [call text.slice("1990-05-15", 0, 4), call int.to_text(digits[1]), call int.to_text(len(keys)), call int.to_text(leap)]
+  }
+}

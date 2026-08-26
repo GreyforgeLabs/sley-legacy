@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.diagnostics.report.v1",
+  "title": "Sley Diagnostic Report v1",
+  "type": "object",
+  "required": ["schema", "status", "diagnostics"],
+  "properties": {
+    "schema": { "const": "sley.diagnostics.report.v1" },
+    "status": { "$ref": "sley.diagnostics.report.v0#/properties/status" },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "sley.diagnostics.report.v0#/$defs/diagnostic" }
+    }
+  },
+  "additionalProperties": false
+}

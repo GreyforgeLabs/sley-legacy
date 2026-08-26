@@ -1,0 +1,27 @@
+module agent.pipeline
+
+export task collect_profile -> Result<Text, Error> uses SecretRead, Network {
+  take secret_name: Text
+  take profile_url: Text
+
+  bind token = call secrets.try_get(secret_name)?
+  bind profile = call http.try_get_text(profile_url)?
+
+  if len(token) > 0 {
+    return Ok(profile)
+  }
+
+  return Err("secret seed was empty")
+}
+
+export task compose_plan -> Result<Text, Error> uses ModelCall {
+  take prompt: Text
+
+  return call model.try_complete(prompt)
+}
+
+export task stage_release -> Result<Text, Error> uses Deploy {
+  take target: Text
+
+  return call deploy.try_stage(target)
+}

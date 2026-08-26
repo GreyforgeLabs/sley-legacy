@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.machine.response.v1",
+  "title": "Sley Machine Response v1",
+  "type": "object",
+  "required": [
+    "schema", "protocolVersion", "requestId", "status", "package",
+    "source", "runtime", "counters"
+  ],
+  "properties": {
+    "schema": { "const": "sley.machine.response.v1" },
+    "protocolVersion": { "$ref": "sley.machine.response.v0#/properties/protocolVersion" },
+    "requestId": { "$ref": "sley.machine.response.v0#/properties/requestId" },
+    "status": { "$ref": "sley.machine.response.v0#/properties/status" },
+    "package": { "$ref": "sley.machine.response.v0#/properties/package" },
+    "source": { "$ref": "sley.machine.response.v0#/properties/source" },
+    "runtime": { "$ref": "sley.machine.response.v0#/properties/runtime" },
+    "task": { "$ref": "sley.machine.response.v0#/properties/task" },
+    "input": { "$ref": "sley.machine.response.v0#/properties/input" },
+    "result": { "$ref": "sley.machine.response.v0#/properties/result" },
+    "digests": { "$ref": "sley.machine.response.v0#/properties/digests" },
+    "error": { "$ref": "sley.machine.response.v0#/properties/error" },
+    "counters": { "$ref": "sley.machine.response.v0#/properties/counters" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "ok" } } },
+      "then": { "required": ["task", "input", "result", "digests"] },
+      "else": { "required": ["error"] }
+    }
+  ],
+  "additionalProperties": false
+}

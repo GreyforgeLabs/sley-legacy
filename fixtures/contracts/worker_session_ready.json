@@ -1,0 +1,27 @@
+{
+  "schema": "sley.worker.session.v1",
+  "protocol": "sley.worker.v1",
+  "worker_id": "worker:fixture",
+  "worker_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "runtime_digest": "sha256:5b36de7470d015d2090552587d4f163dadbd062d87b7508320b1f1b638ad2361",
+  "state": "ready",
+  "generation": 1,
+  "request_count": 0,
+  "active_request_id": null,
+  "max_requests": 128,
+  "cache": {
+    "policy": "disabled",
+    "shared_mutable_state": false,
+    "hit_count": 0
+  },
+  "isolation": {
+    "class": "fresh_subprocess_per_invoke",
+    "fresh_process_per_invoke": true,
+    "request_local_tempdir": true,
+    "clean_environment": true,
+    "closed_inherited_fds": true,
+    "resource_limits": true,
+    "process_group_cancellation": true,
+    "namespace_isolation_enforced": false
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.corpus.manifest.v0",
+  "title": "Sley Corpus Manifest v0",
+  "type": "object",
+  "required": [
+    "schema", "corpus_id", "version", "state", "created_at", "record_schema",
+    "sley_compatibility", "tool_versions", "exclusion_ledger", "records",
+    "partition_counts", "lineage_count", "license_summary", "privacy_summary",
+    "known_limitations", "removal_history", "intended_uses", "prohibited_uses"
+  ],
+  "properties": {
+    "schema": { "const": "sley.corpus.manifest.v0" },
+    "corpus_id": { "$ref": "#/$defs/id" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "state": { "enum": ["candidate", "immutable"] },
+    "created_at": { "$ref": "#/$defs/timestamp" },
+    "record_schema": { "const": "sley.corpus.record.v0" },
+    "sley_compatibility": {
+      "type": "object",
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": { "$ref": "#/$defs/version" },
+        "maximum": { "$ref": "#/$defs/version" }
+      },
+      "additionalProperties": false
+    },
+    "tool_versions": {
+      "type": "object",
+      "required": ["admission", "verification", "deduplication"],
+      "properties": {
+        "admission": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "verification": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "deduplication": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "additionalProperties": false
+    },
+    "exclusion_ledger": {
+      "type": "object",
+      "required": ["path", "digest"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "records": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["record_id", "path", "digest", "partition", "semantic_lineage_id", "semantic_lineage_digest"],
+        "properties": {
+          "record_id": { "$ref": "#/$defs/id" },
+          "path": { "$ref": "#/$defs/relativePath" },
+          "digest": { "$ref": "#/$defs/digest" },
+          "partition": { "$ref": "#/$defs/partition" },
+          "semantic_lineage_id": { "$ref": "#/$defs/id" },
+          "semantic_lineage_digest": { "$ref": "#/$defs/digest" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "partition_counts": {
+      "type": "object",
+      "required": ["train", "development", "evaluation_public", "evaluation_private", "quarantine", "rejected"],
+      "properties": {
+        "train": { "type": "integer", "minimum": 0 },
+        "development": { "type": "integer", "minimum": 0 },
+        "evaluation_public": { "type": "integer", "minimum": 0 },
+        "evaluation_private": { "type": "integer", "minimum": 0 },
+        "quarantine": { "type": "integer", "minimum": 0 },
+        "rejected": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "lineage_count": { "type": "integer", "minimum": 0 },
+    "license_summary": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 256 } },
+    "privacy_summary": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 256 } },
+    "known_limitations": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 512 } },
+    "removal_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["record_id", "digest", "removed_at", "reason"],
+        "properties": {
+          "record_id": { "$ref": "#/$defs/id" },
+          "digest": { "$ref": "#/$defs/digest" },
+          "removed_at": { "$ref": "#/$defs/timestamp" },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "intended_uses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 256 } },
+    "prohibited_uses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 256 } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "relativePath": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[A-Za-z0-9._/-]+$" },
+    "timestamp": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?$" },
+    "partition": { "enum": ["train", "development", "evaluation_public", "evaluation_private", "quarantine", "rejected"] }
+  }
+}

@@ -1,0 +1,65 @@
+module loom.release
+
+export task release_version -> Text {
+  return "1.2.0"
+}
+
+export task artifact_id -> Text {
+  return "sley-1.2.0-linux-x86_64"
+}
+
+export task platform_os -> Text {
+  return "linux"
+}
+
+export task platform_architecture -> Text {
+  return "x86_64"
+}
+
+export task archive_format -> Text {
+  return "tar.gz"
+}
+
+export task support_status -> Text {
+  return "supported"
+}
+
+export task authority_mode -> Text {
+  return "local_release_candidate_only"
+}
+
+export task manifest_schema -> Text {
+  return "sley.release.manifest.v1"
+}
+
+export task license_inventory_schema -> Text {
+  return "sley.release.license_inventory.v1"
+}
+
+export task provenance_schema -> Text {
+  return "sley.release.provenance.v1"
+}
+
+export task verification_schema -> Text {
+  return "sley.release.verification.v1"
+}
+
+export task toolchain_doctor_schema -> Text {
+  return "sley.toolchain.doctor.v1"
+}
+
+export task required_tools -> List<Text> {
+  return ["bash|5", "jq|1.6", "git|2", "python3|3.12", "tar|1.30", "gzip|1.10", "make|4", "node|20", "npm|10", "sha256sum|8"]
+}
+
+export task archive_entrypoints -> List<Text> {
+  return ["bin/sley", "bin/sley-contract", "bin/sley-conformance", "bin/sley-lsp", "bin/sley-mcp-bridge", "scripts/sley-worker-local.sh", "clients/python/sley_worker_client/client.py", "clients/node/index.mjs"]
+}
+
+export task release_metadata_paths -> List<Text> {
+  return ["release/manifest.json", "release/licenses.json", "release/sbom.spdx.json"]
+}
+
+export task publication_authorized -> Bool {
+  return false
+}

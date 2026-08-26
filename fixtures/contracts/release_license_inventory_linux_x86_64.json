@@ -1,0 +1,25 @@
+{
+  "schema": "sley.release.license_inventory.v1",
+  "status": "complete",
+  "release": "1.2.0",
+  "artifact_id": "sley-1.2.0-linux-x86_64",
+  "source_commit": "1111111111111111111111111111111111111111",
+  "project_license": {
+    "expression": "Apache-2.0",
+    "path": "LICENSE",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "bundled_components": [
+    {"name": "sley", "version": "1.2.0", "path": ".", "license_expression": "Apache-2.0", "bundled": true},
+    {"name": "sley-worker-client-python", "version": "1.2.0", "path": "clients/python", "license_expression": "Apache-2.0", "bundled": true},
+    {"name": "@sley/worker-client", "version": "1.2.0", "path": "clients/node", "license_expression": "Apache-2.0", "bundled": true}
+  ],
+  "runtime_dependencies": [
+    {"name": "bash", "minimum_version": "5", "bundled": false, "license_review_scope": "host_tool_not_redistributed"},
+    {"name": "jq", "minimum_version": "1.6", "bundled": false, "license_review_scope": "host_tool_not_redistributed"}
+  ],
+  "authority": {
+    "publication_authorized": false,
+    "third_party_binaries_bundled": false
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "schema": "sley.change.grant.v0",
+  "status": "approved",
+  "grant_id": "grant:0000000000000000000000000000000000000000000000000000000000000011",
+  "grant_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000011",
+  "transaction": {
+    "transaction_id": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+    "state": "approved",
+    "history": ["opened", "inspected", "planned", "previewed", "awaiting_approval", "approved"],
+    "repository": {"root": ".", "identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000002"},
+    "base": {
+      "mode": "working_tree",
+      "commit": "0000000000000000000000000000000000000003",
+      "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+      "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+      "trace_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006"
+    },
+    "compiler": {
+      "version": "sley 1.1",
+      "contract_versions": {
+        "diagnostics": "sley.diagnostics.report.v1",
+        "graph_slice": "sley.symbol_graph.slice.v1",
+        "verify": "sley.verify.report.v1",
+        "inspection": "sley.transaction.inspect.v0",
+        "plan": "sley.change.plan.v0",
+        "preview": "sley.change.preview.v0",
+        "approval_request": "sley.change.approval_request.v0",
+        "grant": "sley.change.grant.v0"
+      }
+    },
+    "actor": "operator:test",
+    "goal": "authorize one exact candidate",
+    "nonce": "fixture-grant-001",
+    "created_at": "2026-08-25T00:00:00Z",
+    "expires_at": "2099-01-01T00:00:00Z"
+  },
+  "approval_request_ref": {
+    "schema": "sley.change.approval_request.v0",
+    "request_id": "approval-request:0000000000000000000000000000000000000000000000000000000000000010",
+    "request_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000010",
+    "preview_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000007",
+    "transaction_id": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+  },
+  "issuer": {"id": "operator:test", "source": "explicit_cli_assertion"},
+  "principal": {"id": "agent:test"},
+  "audience": {"id": "sley:local"},
+  "repository": {"root": ".", "identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000002"},
+  "base": {
+    "mode": "working_tree",
+    "commit": "0000000000000000000000000000000000000003",
+    "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+    "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+    "trace_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006"
+  },
+  "candidate": {
+    "candidate_id": "candidate:000000000000000000000000000000000000000000000000000000000000000a",
+    "candidate_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000a",
+    "candidate_source_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000b",
+    "candidate_graph_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000c",
+    "source_projection_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000d",
+    "validation_profile": "compiler_preview_v0"
+  },
+  "allowed": {
+    "operation_classes": ["RenameDeclaration"],
+    "nodes": ["task:app.math.double"],
+    "paths": ["examples/project/src/app/math.sley"],
+    "effects": [],
+    "authority_changes": [],
+    "resource_scopes": [{"kind": "repository_source", "paths": ["examples/project/src/app/math.sley"]}],
+    "review_requirements_acknowledged": ["human_source_review"]
+  },
+  "bounds": {"max_changed_files": 1, "max_source_bytes": 64, "max_candidate_source_bytes": 64, "max_apply_attempts": 1, "max_wall_clock_seconds": 300},
+  "purpose": "authorize only this immutable candidate",
+  "nonce": "fixture-approval-001",
+  "created_at": "2026-08-25T00:00:01Z",
+  "expires_at": "2098-01-01T00:00:00Z",
+  "replay": {"policy": "single_use_at_apply", "enforcement": "deferred_until_s12_404", "replay_key": "sha256:000000000000000000000000000000000000000000000000000000000000000e"},
+  "revocation": {"state": "not_revoked", "checked_at": "2026-08-25T00:00:01Z", "source": {"kind": "operator_assertion", "ref": "operator:test"}},
+  "proofs": [{"kind": "signature", "ref": "local-signature-reference", "status": "unverified"}],
+  "mutations": {"repository_source": false, "git_index": false, "trace_sidecars": false, "external_systems": false, "provider_state": false},
+  "next_actions": [{"kind": "await_apply_implementation", "reason": "apply is unavailable until S12-404"}],
+  "issues": []
+}

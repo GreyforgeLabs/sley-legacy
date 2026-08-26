@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.change.grant.v0",
+  "title": "Sley Change Grant v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "grant_id", "grant_digest", "transaction",
+    "approval_request_ref", "issuer", "principal", "audience", "repository",
+    "base", "candidate", "allowed", "bounds", "purpose", "nonce",
+    "created_at", "expires_at", "replay", "revocation", "proofs",
+    "mutations", "next_actions", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.change.grant.v0"},
+    "status": {"const": "approved"},
+    "grant_id": {"type": "string", "pattern": "^grant:[a-f0-9]{64}$"},
+    "grant_digest": {"$ref": "#/$defs/digest"},
+    "transaction": {"$ref": "#/$defs/transaction"},
+    "approval_request_ref": {"$ref": "#/$defs/approvalRequestReference"},
+    "issuer": {"$ref": "#/$defs/assertedPrincipal"},
+    "principal": {"$ref": "#/$defs/namedPrincipal"},
+    "audience": {"$ref": "#/$defs/namedPrincipal"},
+    "repository": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/repository"},
+    "base": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/base"},
+    "candidate": {"$ref": "#/$defs/candidate"},
+    "allowed": {"$ref": "#/$defs/allowed"},
+    "bounds": {"$ref": "#/$defs/bounds"},
+    "purpose": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "nonce": {"type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "replay": {"$ref": "#/$defs/replay"},
+    "revocation": {"$ref": "#/$defs/revocation"},
+    "proofs": {"type": "array", "maxItems": 2, "uniqueItems": true, "items": {"$ref": "#/$defs/proof"}},
+    "mutations": {"$ref": "sley.change.plan.v0#/$defs/mutations"},
+    "next_actions": {
+      "type": "array",
+      "prefixItems": [{"$ref": "#/$defs/action"}],
+      "items": false,
+      "minItems": 1,
+      "maxItems": 1
+    },
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "safePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+    "transaction": {
+      "type": "object",
+      "required": [
+        "transaction_id", "state", "history", "repository", "base",
+        "compiler", "actor", "goal", "nonce", "created_at", "expires_at"
+      ],
+      "properties": {
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "state": {"const": "approved"},
+        "history": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "opened"}, {"const": "inspected"},
+            {"const": "planned"}, {"const": "previewed"},
+            {"const": "awaiting_approval"}, {"const": "approved"}
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "repository": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/repository"},
+        "base": {"$ref": "sley.change.plan.v0#/$defs/transaction/properties/base"},
+        "compiler": {
+          "type": "object",
+          "required": ["version", "contract_versions"],
+          "properties": {
+            "version": {"type": "string", "minLength": 1},
+            "contract_versions": {
+              "type": "object",
+              "required": [
+                "diagnostics", "graph_slice", "verify", "inspection", "plan",
+                "preview", "approval_request", "grant"
+              ],
+              "properties": {
+                "diagnostics": {"const": "sley.diagnostics.report.v1"},
+                "graph_slice": {"const": "sley.symbol_graph.slice.v1"},
+                "verify": {"const": "sley.verify.report.v1"},
+                "inspection": {"const": "sley.transaction.inspect.v0"},
+                "plan": {"const": "sley.change.plan.v0"},
+                "preview": {"const": "sley.change.preview.v0"},
+                "approval_request": {"const": "sley.change.approval_request.v0"},
+                "grant": {"const": "sley.change.grant.v0"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "actor": {"type": "string", "minLength": 1, "maxLength": 256},
+        "goal": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "nonce": {"type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "expires_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "approvalRequestReference": {
+      "type": "object",
+      "required": ["schema", "request_id", "request_digest", "preview_digest", "transaction_id"],
+      "properties": {
+        "schema": {"const": "sley.change.approval_request.v0"},
+        "request_id": {"type": "string", "pattern": "^approval-request:[a-f0-9]{64}$"},
+        "request_digest": {"$ref": "#/$defs/digest"},
+        "preview_digest": {"$ref": "#/$defs/digest"},
+        "transaction_id": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "assertedPrincipal": {
+      "type": "object",
+      "required": ["id", "source"],
+      "properties": {
+        "id": {"$ref": "#/$defs/principalId"},
+        "source": {"const": "explicit_cli_assertion"}
+      },
+      "additionalProperties": false
+    },
+    "namedPrincipal": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {"id": {"$ref": "#/$defs/principalId"}},
+      "additionalProperties": false
+    },
+    "principalId": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9._:@/-]+$"},
+    "candidate": {
+      "type": "object",
+      "required": [
+        "candidate_id", "candidate_digest", "candidate_source_digest",
+        "candidate_graph_digest", "source_projection_digest", "validation_profile"
+      ],
+      "properties": {
+        "candidate_id": {"type": "string", "pattern": "^candidate:[a-f0-9]{64}$"},
+        "candidate_digest": {"$ref": "#/$defs/digest"},
+        "candidate_source_digest": {"$ref": "#/$defs/digest"},
+        "candidate_graph_digest": {"$ref": "#/$defs/digest"},
+        "source_projection_digest": {"$ref": "#/$defs/digest"},
+        "validation_profile": {"const": "compiler_preview_v0"}
+      },
+      "additionalProperties": false
+    },
+    "allowed": {
+      "type": "object",
+      "required": [
+        "operation_classes", "nodes", "paths", "effects", "authority_changes",
+        "resource_scopes", "review_requirements_acknowledged"
+      ],
+      "properties": {
+        "operation_classes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["RenameDeclaration", "UpdateCallSites", "AddTake", "UpdateCallArgs"]}},
+        "nodes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}},
+        "effects": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "authority_changes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "resource_scopes": {
+          "type": "array", "prefixItems": [{"$ref": "sley.change.approval_request.v0#/$defs/resourceScope"}],
+          "items": false, "minItems": 1, "maxItems": 1
+        },
+        "review_requirements_acknowledged": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"enum": ["human_source_review", "graph_diff_review", "lint_review", "authority_review"]}
+        }
+      },
+      "additionalProperties": false
+    },
+    "bounds": {
+      "type": "object",
+      "required": [
+        "max_changed_files", "max_source_bytes", "max_candidate_source_bytes",
+        "max_apply_attempts", "max_wall_clock_seconds"
+      ],
+      "properties": {
+        "max_changed_files": {"type": "integer", "minimum": 1},
+        "max_source_bytes": {"type": "integer", "minimum": 1},
+        "max_candidate_source_bytes": {"type": "integer", "minimum": 1},
+        "max_apply_attempts": {"const": 1},
+        "max_wall_clock_seconds": {"type": "integer", "minimum": 1, "maximum": 86400}
+      },
+      "additionalProperties": false
+    },
+    "replay": {
+      "type": "object",
+      "required": ["policy", "enforcement", "replay_key"],
+      "properties": {
+        "policy": {"const": "single_use_at_apply"},
+        "enforcement": {"const": "deferred_until_s12_404"},
+        "replay_key": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "revocation": {
+      "type": "object",
+      "required": ["state", "checked_at", "source"],
+      "properties": {
+        "state": {"const": "not_revoked"},
+        "checked_at": {"type": "string", "format": "date-time"},
+        "source": {
+          "type": "object",
+          "required": ["kind", "ref"],
+          "properties": {
+            "kind": {"const": "operator_assertion"},
+            "ref": {"type": "string", "minLength": 1, "maxLength": 512}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "proof": {
+      "type": "object",
+      "required": ["kind", "ref", "status"],
+      "properties": {
+        "kind": {"enum": ["signature", "greynucleus"]},
+        "ref": {"type": "string", "minLength": 1, "maxLength": 512},
+        "status": {"const": "unverified"}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind", "reason"],
+      "properties": {
+        "kind": {"const": "await_apply_implementation"},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

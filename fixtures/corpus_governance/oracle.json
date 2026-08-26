@@ -1,0 +1,5 @@
+{
+  "command": ["sley", "run", "source.sley", "ready", "41"],
+  "expected": 42,
+  "status": "passed"
+}

@@ -1,0 +1,72 @@
+{
+  "schema": "sley.adapter.manifest.v0",
+  "manifest_id": "adapter-manifest:user-test-fixture-v1",
+  "manifest_digest": "sha256:f8e3d001f613a83768d9f32efaf52d8841c2f200ac64442370c328de558056b2",
+  "target": ".",
+  "adapter": {
+    "id": "local.seeded-host",
+    "version": "0.1.0",
+    "digest": "sha256:09ecbc3463a3b841bd42b863ced297ad171e7d082e166a477950eeca4683136d",
+    "kind": "deterministic_seed",
+    "live_execution": false,
+    "supported_effects": ["SecretRead", "Network", "ModelCall", "Deploy"],
+    "supported_operations": ["get", "get_text", "complete_seed", "stage_seed"],
+    "determinism": "deterministic",
+    "replay_support": "required",
+    "timeout_behavior": "host_bounded",
+    "concurrency": "serial",
+    "redaction_policy": "digest_only",
+    "credential_requirements": "none",
+    "compatibility_range": ">=sley-1.2"
+  },
+  "runtime": {
+    "id": "sley.loom.seeded_runtime",
+    "version": "0.1.0",
+    "digest": "sha256:5b36de7470d015d2090552587d4f163dadbd062d87b7508320b1f1b638ad2361"
+  },
+  "authority": {
+    "mode": "local_replay_only",
+    "assertion": "no_external_authority",
+    "external_provider_calls": false,
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "trace": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false,
+      "ephemeral_runtime_state": true
+    }
+  },
+  "capabilities": [
+    {"effect": "SecretRead", "operation": "get", "scope": "api_key"},
+    {"effect": "Network", "operation": "get_text", "scope": "https://example.test/profile"},
+    {"effect": "ModelCall", "operation": "complete_seed", "scope": "deploy-plan"},
+    {"effect": "Deploy", "operation": "stage_seed", "scope": "staging"}
+  ],
+  "seeds": {
+    "files": [],
+    "db_tables": [],
+    "secrets": [{"name": "api_key", "text": "redacted"}],
+    "http_text": [{"url": "https://example.test/profile", "text": "profile ready"}],
+    "shell_outputs": [],
+    "model_outputs": [{"prompt": "deploy-plan", "text": "plan approved"}],
+    "deploy_results": [{"target": "staging", "text": "staged"}],
+    "spend_results": []
+  },
+  "bounds": {
+    "max_steps": 1000,
+    "max_calls": 100,
+    "max_call_depth": 16,
+    "max_input_bytes": 1048576,
+    "max_output_bytes": 1048576,
+    "max_wall_ms": 120000
+  },
+  "replay": {
+    "policy": "deterministic_record_required",
+    "replay_key": "replay:user-test-fixture-v1",
+    "record_digest": "sha256:11e4fb397e2cde2c25747f629b4f6577f309ecc455f9be872987c63874611ff7"
+  },
+  "cancellation": {"requested_at_phase": "none"}
+}

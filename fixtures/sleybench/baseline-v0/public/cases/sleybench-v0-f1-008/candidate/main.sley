@@ -1,0 +1,5 @@
+module bench.public.f1_008
+
+task main -> Int {
+  return { "west": 12, "east": 4 }["west"]
+}

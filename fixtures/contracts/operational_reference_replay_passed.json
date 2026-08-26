@@ -1,0 +1,183 @@
+{
+  "schema": "sley.operational.reference_replay.v1",
+  "status": "passed",
+  "workload": {
+    "id": "siglum.numerology",
+    "version": "siglum.numerology.reference-v1",
+    "scope": "complete_frozen_reference_corpus",
+    "case_count": 10000
+  },
+  "authority": {
+    "mode": "local_replay_only",
+    "incumbent_authoritative": true,
+    "candidate_authoritative": false,
+    "repository_mutation": false,
+    "product_runtime_mutation": false,
+    "network_authority": false,
+    "provider_calls": false,
+    "deploy": false,
+    "spend": false
+  },
+  "identity": {
+    "sley_commit": "b97fba8c85bdc155e1c8a9f39f3dd514f16e2b2b",
+    "siglum_commit": "2721acb64c6c2961c9942cd6755f96f21d480e2a",
+    "candidate_source_digest": "sha256:b98f1d73acf4a8bb64b53424398084fecddd9f95bdd0a9c138121bb8f7f867f4",
+    "runtime_digest": "sha256:e90b620ee4c3760341a4eb84ab11ede1f5a1b0c146d1ccc7a68acd9a723209d7",
+    "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
+    "frozen_corpus_digest": "sha256:e3f4ecf5abbf9d4af10594f6ed9111edb1596dc077023b0d87a8f5b5bb19662d",
+    "corpus_manifest_digest": "sha256:963f6b06d2fc994070eec0b88ca47bb92dee7fe4190236f3d095f4b7889931ee",
+    "prior_parity_report_digest": "sha256:17bec37cdfd36ecffa42bb47f202703c48802f74db5db7c00288ee29efca42fe",
+    "pins_digest": "sha256:85d165f0877af5f8527db7782061751d8725889b152fe6c19dc4a45a1771cfec"
+  },
+  "oracle": {
+    "implementation": "ReferenceTypeScriptSignatureEngine.compute",
+    "boundary": "src/lib/signature/reference-adapter.ts",
+    "contract": "siglum.numerology.input.v1 -> siglum.numerology.result.v1",
+    "independent": true,
+    "frozen_outputs": true
+  },
+  "host_boundary": {
+    "kind": "bounded_persistent_machine_host",
+    "protocol": "sley.machine.invoke.v0",
+    "persistent_probe": true,
+    "fresh_process_per_full_shard": true,
+    "immutable_input_pins": true,
+    "process_limits_enforced": true,
+    "os_network_isolation_enforced": false,
+    "credential_environment_scrubbed": true,
+    "limits": {
+      "overall_wall_ms": 1800000,
+      "shard_wall_ms": 120000,
+      "evaluation_steps": 250000,
+      "call_depth": 128,
+      "collection_length": 4096,
+      "response_bytes": 262144,
+      "shard_output_bytes": 33554432,
+      "per_process_address_space_bytes": 34359738368,
+      "open_files": 128
+    }
+  },
+  "correctness": {
+    "repeat_count": 2,
+    "deterministic": true,
+    "exact_match_count": 10000,
+    "mismatch_count": 0,
+    "runs": [
+      {
+        "run_index": 1,
+        "case_count": 10000,
+        "exact_match_count": 10000,
+        "mismatch_count": 0,
+        "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
+        "mismatch_report_digest": "sha256:5b3585f67cf32dc146d95018c51f2a5db3db88ff30e824220ac079626cda458b",
+        "shard_digests": [
+          "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000002",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000003",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000006",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000007",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000008",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000009",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000010",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000011",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000012",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000013",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000014",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000015",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000016",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000017",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000018",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000019",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000020"
+        ]
+      },
+      {
+        "run_index": 2,
+        "case_count": 10000,
+        "exact_match_count": 10000,
+        "mismatch_count": 0,
+        "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
+        "mismatch_report_digest": "sha256:5b3585f67cf32dc146d95018c51f2a5db3db88ff30e824220ac079626cda458b",
+        "shard_digests": [
+          "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000002",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000003",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000006",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000007",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000008",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000009",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000010",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000011",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000012",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000013",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000014",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000015",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000016",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000017",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000018",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000019",
+          "sha256:0000000000000000000000000000000000000000000000000000000000000020"
+        ]
+      }
+    ]
+  },
+  "performance": {
+    "measurement_class": "local_observation_not_benchmark",
+    "probe": {
+      "request_count": 3,
+      "cold_first_response_ms": 90000,
+      "warm_response_ms": [10, 10],
+      "peak_process_tree_rss_bytes": 268435456,
+      "result_digests": [
+        "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      ],
+      "deterministic": true
+    },
+    "full_replay_controller": {
+      "wall_ms": 2000,
+      "peak_process_tree_rss_bytes": 209715200
+    },
+    "full_runs": [
+      {"run_index": 1, "elapsed_ms": 224575, "cases_per_second": 44.52865226446845, "maximum_steps": 8116, "maximum_calls": 250, "maximum_call_depth": 4, "maximum_response_bytes": 5127},
+      {"run_index": 2, "elapsed_ms": 224638, "cases_per_second": 44.51602326784463, "maximum_steps": 8116, "maximum_calls": 250, "maximum_call_depth": 4, "maximum_response_bytes": 5127}
+    ]
+  },
+  "negative_evidence": [
+    {
+      "code": "MULTILINE_RECORD_LITERAL_RAW_REGRESSION",
+      "status": "observed",
+      "disposition": "fixed",
+      "summary": "The first W6 replay failed closed because multiline typed record constructors were Raw; b97fba8 made them structural RecordLiteral nodes before parity was rerun."
+    },
+    {
+      "code": "PRODUCTION_PROMOTION_EVIDENCE_MISSING",
+      "status": "retained",
+      "disposition": "deferred",
+      "summary": "Offline parity does not provide production shadow, latency, fallback, rollback, or promotion authority evidence."
+    },
+    {
+      "code": "PARITY_CONTROLLER_ADDRESS_SPACE_LIMIT",
+      "status": "observed",
+      "disposition": "fixed",
+      "summary": "Full replay attempts at 4 GiB and 8 GiB failed before corpus execution during Node/V8 WebAssembly reservation. Bounded startup probes below 32 GiB also failed during WebAssembly reservation or V8 heap commit; 32 GiB is retained as a virtual-address ceiling, while sampled RSS records actual memory use."
+    }
+  ],
+  "promotion": {
+    "decision": "deferred",
+    "production_claim": false,
+    "missing_evidence": ["production_shadow", "production_latency", "fallback", "promotion_authority", "rollback"]
+  },
+  "disclosure": {
+    "contains_real_user_data": false,
+    "contains_credentials": false,
+    "publication_authorized": false,
+    "raw_corpus_embedded": false
+  },
+  "issues": []
+}

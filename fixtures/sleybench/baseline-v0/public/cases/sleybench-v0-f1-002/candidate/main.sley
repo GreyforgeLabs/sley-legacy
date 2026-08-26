@@ -1,0 +1,5 @@
+module bench.public.f1_002
+
+task main -> Text {
+  return "north"
+}

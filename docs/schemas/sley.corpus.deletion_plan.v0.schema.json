@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.corpus.deletion_plan.v0",
+  "title": "Sley Corpus Deletion Plan v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "record_id", "record_digest", "requested_at",
+    "requested_by", "reason", "dry_run", "mutation_performed", "targets", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.corpus.deletion_plan.v0" },
+    "status": { "enum": ["passed", "failed"] },
+    "record_id": { "type": "string", "minLength": 1 },
+    "record_digest": { "$ref": "#/$defs/digest" },
+    "requested_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "requested_by": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 512 },
+    "dry_run": { "const": true },
+    "mutation_performed": { "const": false },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "identifier", "action"],
+        "properties": {
+          "kind": { "enum": ["record", "sidecar", "retrieval_entry", "export_eligibility", "tombstone"] },
+          "identifier": { "type": "string", "minLength": 1 },
+          "action": { "enum": ["remove", "revoke", "write_tombstone"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]*$" },
+          "message": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

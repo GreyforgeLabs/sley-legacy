@@ -1,0 +1,80 @@
+{
+  "schema": "sley.test.report.v1",
+  "status": "passed",
+  "report_id": "test-report:0000000000000000000000000000000000000000000000000000000000000001",
+  "report_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+  "suite": {"id": "minimal", "version": "1.0.0"},
+  "source": {
+    "target": "example.sley",
+    "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000002"
+  },
+  "manifests": [
+    {
+      "path": "sley.test.json",
+      "digest": "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+    }
+  ],
+  "authority": {
+    "mode": "local_test_only",
+    "external_provider_calls": false,
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false
+    }
+  },
+  "bounds": {
+    "max_cases": 1,
+    "max_generated_cases": 1,
+    "max_wall_ms": 1000,
+    "max_output_bytes": 4096
+  },
+  "discovery": {
+    "root": ".",
+    "convention": "sley.test.json_or_star.sley-test.json",
+    "ordered_manifests": ["sley.test.json"]
+  },
+  "selection": {
+    "mode": "all",
+    "requested_nodes": [],
+    "expanded_nodes": [],
+    "selected_cases": [],
+    "skipped_cases": [],
+    "uncovered_nodes": []
+  },
+  "summary": {
+    "discovered_case_count": 0,
+    "selected_case_count": 0,
+    "execution_count": 0,
+    "passed_count": 0,
+    "failed_count": 0,
+    "skipped_count": 0
+  },
+  "cases": [],
+  "coverage": {
+    "tasks": {
+      "method": "entrypoint_execution",
+      "inventory": [], "observed": [], "declared": [], "unsupported": [],
+      "unknown": [], "credited": [], "uncovered": [], "credited_ratio": 1
+    },
+    "branches": {
+      "method": "passing_manifest_witness",
+      "inventory": [], "observed": [], "declared": [], "unsupported": [],
+      "unknown": [], "credited": [], "uncovered": [], "credited_ratio": 1
+    },
+    "effects": {
+      "method": "runtime_authority",
+      "inventory": [], "observed": [], "declared": [], "unsupported": [],
+      "unknown": [], "credited": [], "uncovered": [], "credited_ratio": 1
+    },
+    "capabilities": {
+      "method": "adapter_authority",
+      "inventory": [], "observed": [], "declared": [], "unsupported": [],
+      "unknown": [], "credited": [], "uncovered": [], "credited_ratio": 1
+    }
+  },
+  "issues": []
+}

@@ -1,0 +1,6 @@
+module app.main
+
+task main -> Int {
+  bind answer = 23
+  return answer
+}

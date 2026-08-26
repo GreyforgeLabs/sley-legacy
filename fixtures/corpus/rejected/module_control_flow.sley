@@ -1,0 +1,8 @@
+module corpus.rejected_module_control
+
+if true {
+}
+
+task main -> Unit {
+  return ()
+}

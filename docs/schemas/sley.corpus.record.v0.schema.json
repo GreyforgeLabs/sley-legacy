@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.corpus.record.v0",
+  "title": "Sley Corpus Record v0",
+  "type": "object",
+  "required": [
+    "schema", "record_id", "task_id", "semantic_lineage_id", "partition",
+    "visibility", "lifecycle_state", "admitted_at", "versions", "origin",
+    "provenance", "license", "privacy", "artifacts", "digests",
+    "exclusions", "quality", "retention", "admission_gates", "sidecars"
+  ],
+  "properties": {
+    "schema": { "const": "sley.corpus.record.v0" },
+    "record_id": { "$ref": "#/$defs/id" },
+    "task_id": { "$ref": "#/$defs/id" },
+    "semantic_lineage_id": { "$ref": "#/$defs/id" },
+    "partition": { "$ref": "#/$defs/partition" },
+    "visibility": { "enum": ["public", "internal", "private_held_out"] },
+    "lifecycle_state": { "enum": ["candidate", "admitted", "quarantined", "rejected", "deleted"] },
+    "admitted_at": { "$ref": "#/$defs/timestamp" },
+    "versions": {
+      "type": "object",
+      "required": ["sley", "compiler", "formatter", "record_schema", "evaluator"],
+      "properties": {
+        "sley": { "$ref": "#/$defs/version" },
+        "compiler": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "formatter": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "record_schema": { "const": "sley.corpus.record.v0" },
+        "evaluator": { "type": "string", "minLength": 1, "maxLength": 128 }
+      },
+      "additionalProperties": false
+    },
+    "origin": {
+      "type": "object",
+      "required": ["kind", "collection_method"],
+      "properties": {
+        "kind": {
+          "enum": [
+            "human_authored", "model_authored", "synthetic", "translated",
+            "downstream_derived", "compiler_generated", "mixed"
+          ]
+        },
+        "collection_method": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "generator": {
+          "type": "object",
+          "required": ["provider", "model", "parameters_digest", "terms_snapshot"],
+          "properties": {
+            "provider": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "model": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "parameters_digest": { "$ref": "#/$defs/digest" },
+            "seed": { "type": "integer", "minimum": 0 },
+            "terms_snapshot": { "$ref": "#/$defs/relativePath" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source_uri", "source_path", "source_revision", "author", "owner", "authority", "chain"],
+      "properties": {
+        "source_uri": { "type": "string", "minLength": 1, "maxLength": 1024 },
+        "source_path": { "$ref": "#/$defs/relativePath" },
+        "source_revision": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "author": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "owner": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "authority": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "chain": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "license": {
+      "type": "object",
+      "required": ["identifier", "evidence_path", "allowed_uses", "decision", "reviewer"],
+      "properties": {
+        "identifier": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "evidence_path": { "$ref": "#/$defs/relativePath" },
+        "allowed_uses": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["internal_research", "retrieval", "training", "redistribution"] }
+        },
+        "decision": { "enum": ["permitted", "restricted", "denied", "unresolved"] },
+        "reviewer": { "type": "string", "minLength": 1, "maxLength": 256 }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "type": "object",
+      "required": ["class", "sanitization", "secret_scan", "redactions"],
+      "properties": {
+        "class": { "enum": ["public", "internal_sanitized", "private_held_out", "prohibited"] },
+        "sanitization": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "secret_scan": {
+          "type": "object",
+          "required": ["tool", "version", "status"],
+          "properties": {
+            "tool": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "version": { "type": "string", "minLength": 1, "maxLength": 128 },
+            "status": { "enum": ["passed", "failed"] }
+          },
+          "additionalProperties": false
+        },
+        "redactions": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "required": ["placeholder", "reason"],
+            "properties": {
+              "placeholder": { "type": "string", "pattern": "^<[A-Z0-9_]+>$" },
+              "reason": { "type": "string", "minLength": 1, "maxLength": 256 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["primary_role", "source_path", "oracle_result"],
+      "properties": {
+        "primary_role": { "enum": ["source", "candidate", "patch", "trajectory", "diagnostics", "test", "oracle"] },
+        "source_path": { "$ref": "#/$defs/relativePath" },
+        "oracle_result": { "enum": ["passed", "failed", "not_applicable"] },
+        "prompt_digest": { "$ref": "#/$defs/digest" },
+        "context_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "knowledge_mode": { "enum": ["K0", "K1", "K2", "K3", "K4"] },
+        "tool_policy_digest": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "digests": {
+      "type": "object",
+      "required": ["exact", "canonical", "structural", "semantic_lineage"],
+      "properties": {
+        "exact": { "$ref": "#/$defs/digest" },
+        "canonical": { "$ref": "#/$defs/digest" },
+        "structural": { "$ref": "#/$defs/digest" },
+        "semantic_lineage": { "$ref": "#/$defs/digest" }
+      },
+      "additionalProperties": false
+    },
+    "exclusions": {
+      "type": "object",
+      "required": ["ledger_digest", "checked_ids", "decision"],
+      "properties": {
+        "ledger_digest": { "$ref": "#/$defs/digest" },
+        "checked_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/digest" }
+        },
+        "decision": { "enum": ["clear", "suspected_overlap", "contaminated"] }
+      },
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "required": ["labels", "limitations", "verification"],
+      "properties": {
+        "labels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["syntax_valid", "check_valid", "oracle_valid", "human_reviewed", "independently_replayed"]
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "verification": {
+          "type": "object",
+          "required": ["compiler", "oracle", "reviewer"],
+          "properties": {
+            "compiler": { "enum": ["passed", "failed", "not_applicable"] },
+            "oracle": { "enum": ["passed", "failed", "not_applicable"] },
+            "reviewer": { "enum": ["passed", "failed", "not_applicable"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "retention": {
+      "type": "object",
+      "required": ["class", "duration_days", "location", "access_boundary", "backup", "deletion_owner", "retrieval_entry_ids", "export_ids"],
+      "properties": {
+        "class": { "enum": ["ephemeral", "approved_normalized", "immutable_release", "tombstone"] },
+        "duration_days": { "type": "integer", "minimum": 0, "maximum": 36500 },
+        "location": { "$ref": "#/$defs/relativePath" },
+        "access_boundary": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "backup": { "enum": ["none", "encrypted_local", "governed_archive"] },
+        "deletion_owner": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "retrieval_entry_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "export_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "admission_gates": {
+      "type": "object",
+      "required": ["authority", "license", "privacy", "schema_and_digests", "verification", "deduplication", "benchmark_exclusion", "retention", "review"],
+      "properties": {
+        "authority": { "$ref": "#/$defs/gate" },
+        "license": { "$ref": "#/$defs/gate" },
+        "privacy": { "$ref": "#/$defs/gate" },
+        "schema_and_digests": { "$ref": "#/$defs/gate" },
+        "verification": { "$ref": "#/$defs/gate" },
+        "deduplication": { "$ref": "#/$defs/gate" },
+        "benchmark_exclusion": { "$ref": "#/$defs/gate" },
+        "retention": { "$ref": "#/$defs/gate" },
+        "review": { "$ref": "#/$defs/gate" }
+      },
+      "additionalProperties": false
+    },
+    "sidecars": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "required": ["path", "digest", "media_type", "role"],
+        "properties": {
+          "path": { "$ref": "#/$defs/relativePath" },
+          "digest": { "$ref": "#/$defs/digest" },
+          "media_type": { "type": "string", "pattern": "^[a-z0-9.+-]+/[a-zA-Z0-9.+-]+$" },
+          "role": { "enum": ["prompt", "context", "candidate", "patch", "diagnostics", "tool_events", "tests", "oracle", "other"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "origin": { "properties": { "kind": { "enum": ["model_authored", "synthetic", "mixed"] } } } } },
+      "then": { "properties": { "origin": { "required": ["generator"] } } }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "relativePath": { "type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[A-Za-z0-9._/-]+$" },
+    "timestamp": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(?:\\.[0-9]+)?$" },
+    "partition": { "enum": ["train", "development", "evaluation_public", "evaluation_private", "quarantine", "rejected"] },
+    "gate": { "enum": ["passed", "failed", "not_applicable"] }
+  }
+}

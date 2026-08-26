@@ -1,0 +1,72 @@
+{
+  "schema": "sley.adapter.manifest.v0",
+  "manifest_id": "adapter-manifest:agent-pipeline-v0",
+  "manifest_digest": "sha256:e7d45d2ae64a7855818d8f322d36e20d00180c7ac09b05cad5b87085fe6997e2",
+  "target": "../../examples/agent_deploy_pipeline.sley",
+  "adapter": {
+    "id": "local.seeded-host",
+    "version": "0.1.0",
+    "digest": "sha256:09ecbc3463a3b841bd42b863ced297ad171e7d082e166a477950eeca4683136d",
+    "kind": "deterministic_seed",
+    "live_execution": false,
+    "supported_effects": ["SecretRead", "Network", "ModelCall", "Deploy"],
+    "supported_operations": ["get", "get_text", "complete_seed", "stage_seed"],
+    "determinism": "deterministic",
+    "replay_support": "required",
+    "timeout_behavior": "host_bounded",
+    "concurrency": "serial",
+    "redaction_policy": "digest_only",
+    "credential_requirements": "none",
+    "compatibility_range": ">=sley-1.2"
+  },
+  "runtime": {
+    "id": "sley.loom.seeded_runtime",
+    "version": "0.1.0",
+    "digest": "sha256:5b36de7470d015d2090552587d4f163dadbd062d87b7508320b1f1b638ad2361"
+  },
+  "authority": {
+    "mode": "local_replay_only",
+    "assertion": "no_external_authority",
+    "external_provider_calls": false,
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "trace": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false,
+      "ephemeral_runtime_state": true
+    }
+  },
+  "capabilities": [
+    {"effect": "SecretRead", "operation": "get", "scope": "api_key"},
+    {"effect": "Network", "operation": "get_text", "scope": "https://example.test/profile"},
+    {"effect": "ModelCall", "operation": "complete_seed", "scope": "deploy-plan"},
+    {"effect": "Deploy", "operation": "stage_seed", "scope": "staging"}
+  ],
+  "seeds": {
+    "files": [],
+    "db_tables": [],
+    "secrets": [{"name": "api_key", "text": "redacted"}],
+    "http_text": [{"url": "https://example.test/profile", "text": "profile ready"}],
+    "shell_outputs": [],
+    "model_outputs": [{"prompt": "deploy-plan", "text": "plan approved"}],
+    "deploy_results": [{"target": "staging", "text": "staged"}],
+    "spend_results": []
+  },
+  "bounds": {
+    "max_steps": 1000,
+    "max_calls": 100,
+    "max_call_depth": 16,
+    "max_input_bytes": 1048576,
+    "max_output_bytes": 1048576,
+    "max_wall_ms": 120000
+  },
+  "replay": {
+    "policy": "deterministic_record_required",
+    "replay_key": "replay:agent-pipeline-v0",
+    "record_digest": "sha256:457aa02889dbe54f90d8901b5637fde5ac145ae17779903fb644edc1e0d3f62b"
+  },
+  "cancellation": {"requested_at_phase": "none"}
+}

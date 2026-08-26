@@ -1,0 +1,459 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec env SLEYBENCH_SPLIT_ROOT="$ROOT_DIR" python3 - "$@" <<'PY'
+"""Read-only SleyBench public commitment and private split audit."""
+
+from __future__ import annotations
+
+import argparse
+from collections import Counter
+import hashlib
+import json
+import os
+from pathlib import Path
+import sys
+from typing import Any
+
+from jsonschema import Draft202012Validator, FormatChecker
+
+
+REPO_ROOT = Path(os.environ["SLEYBENCH_SPLIT_ROOT"]).resolve()
+MAX_JSON_BYTES = 10 * 1024 * 1024
+FAMILIES = (
+    "syntax_compilation",
+    "semantic_implementation",
+    "diagnosis_repair",
+    "translation_preservation",
+    "structural_tool_use",
+    "repository_patch_integration",
+)
+DIGEST_KINDS = ("exact", "canonical", "structural", "semantic_lineage")
+
+
+def issue(code: str, message: str) -> dict[str, str]:
+    return {"code": code, "message": message}
+
+
+def add_check(checks: list[dict[str, str]], check_id: str, passed: bool, message: str) -> None:
+    checks.append({"id": check_id, "status": "passed" if passed else "failed", "message": message})
+
+
+def load_json(path: Path) -> tuple[Any | None, list[dict[str, str]]]:
+    try:
+        if not path.is_file():
+            return None, [issue("file_missing", f"{path} is not a file")]
+        if path.stat().st_size > MAX_JSON_BYTES:
+            return None, [issue("json_file_too_large", f"{path} exceeds {MAX_JSON_BYTES} bytes")]
+        with path.open(encoding="utf-8") as handle:
+            return json.load(handle), []
+    except json.JSONDecodeError as exc:
+        return None, [issue("invalid_json", f"{path}: {exc}")]
+    except OSError as exc:
+        return None, [issue("file_read_failed", f"{path}: {exc}")]
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
+
+
+def tree_digest(root: Path) -> str:
+    digest = hashlib.sha256()
+    files = sorted(path for path in root.rglob("*") if path.is_file() and not path.is_symlink())
+    for path in files:
+        relative = path.relative_to(root).as_posix()
+        digest.update(relative.encode("utf-8") + b"\0")
+        digest.update(sha256_file(path).removeprefix("sha256:").encode("ascii") + b"\n")
+    return "sha256:" + digest.hexdigest()
+
+
+def training_digest(prompt: Path, workspace: Path) -> str:
+    material = f"{sha256_file(prompt)}\n{tree_digest(workspace)}\n".encode("ascii")
+    return "sha256:" + hashlib.sha256(material).hexdigest()
+
+
+def schema_issues(document: Any, schema_id: str, schema_dir: Path) -> list[dict[str, str]]:
+    schema, problems = load_json(schema_dir / f"{schema_id}.schema.json")
+    if problems:
+        return problems
+    if not isinstance(schema, dict) or schema.get("$id") != schema_id:
+        return [issue("schema_id_mismatch", f"schema file does not declare {schema_id}")]
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    output = []
+    errors = sorted(validator.iter_errors(document), key=lambda item: tuple(str(part) for part in item.absolute_path))
+    for error in errors:
+        location = "/" + "/".join(str(part) for part in error.absolute_path)
+        output.append(issue("json_schema_violation", f"{location or '/'}: {error.message}"))
+    return output
+
+
+def safe_relative(root: Path, value: str) -> Path | None:
+    declared = Path(value)
+    if declared.is_absolute() or ".." in declared.parts:
+        return None
+    try:
+        resolved_root = root.resolve(strict=True)
+        resolved = (resolved_root / declared).resolve(strict=False)
+        resolved.relative_to(resolved_root)
+        return resolved
+    except (OSError, ValueError):
+        return None
+
+
+def has_symlink(root: Path) -> bool:
+    return root.is_symlink() or any(path.is_symlink() for path in root.rglob("*"))
+
+
+def partition_checks(
+    manifest: Any,
+    manifest_path: Path,
+    ledger: Any,
+    ledger_path: Path,
+    expected_suite: str,
+    expected_version: str,
+    expected_visibility: str,
+    expected_count: int,
+    expected_per_family: int,
+    schema_dir: Path,
+    prefix: str,
+) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, Any]]]:
+    checks: list[dict[str, str]] = []
+    problems: list[dict[str, str]] = []
+    manifest_schema_problems = schema_issues(manifest, "sley.agent_bench.case_manifest.v0", schema_dir)
+    ledger_schema_problems = schema_issues(ledger, "sley.corpus.exclusion_ledger.v0", schema_dir)
+    problems.extend(manifest_schema_problems)
+    problems.extend(ledger_schema_problems)
+    add_check(checks, prefix + "case_manifest_schema", not manifest_schema_problems, "case manifest satisfies its strict contract")
+    add_check(checks, prefix + "exclusion_ledger_schema", not ledger_schema_problems, "exclusion ledger satisfies its strict contract")
+    if manifest_schema_problems or ledger_schema_problems or not isinstance(manifest, dict) or not isinstance(ledger, dict):
+        return checks, problems, []
+
+    cases = manifest["cases"]
+    identities_ok = (
+        manifest["suite_id"] == expected_suite
+        and manifest["tier"] == "baseline"
+        and manifest["version"] == expected_version
+    )
+    add_check(checks, prefix + "suite_identity", identities_ok, "partition pins the expected baseline suite identity")
+    if not identities_ok:
+        problems.append(issue("suite_identity_mismatch", f"{prefix.rstrip('.')} suite identity or tier is incorrect"))
+
+    family_counts = Counter(case["family"] for case in cases)
+    shape_ok = (
+        len(cases) == expected_count
+        and len({case["id"] for case in cases}) == expected_count
+        and all(family_counts[family] == expected_per_family for family in FAMILIES)
+        and all(case["id"].startswith("sleybench-v0-") for case in cases)
+        and all(case["sley_version"] == "1.1" for case in cases)
+        and all(case["visibility"] == expected_visibility for case in cases)
+    )
+    add_check(checks, prefix + "partition_shape", shape_ok, "case count, family balance, IDs, and visibility match the declared partition")
+    if not shape_ok:
+        problems.append(issue("partition_shape_mismatch", f"{prefix.rstrip('.')} partition count, family balance, IDs, or visibility is incorrect"))
+
+    baseline_fields_ok = all(
+        all(field in case for field in ("candidate_digest", "semantic_lineage_id", "semantic_lineage_digest"))
+        for case in cases
+    )
+    add_check(checks, prefix + "baseline_identity_fields", baseline_fields_ok, "every baseline case pins candidate content and reviewed semantic lineage")
+    if not baseline_fields_ok:
+        problems.append(issue("baseline_identity_fields_missing", f"{prefix.rstrip('.')} cases do not all carry baseline identity fields"))
+        return checks, problems, []
+
+    lineage_ids: dict[str, set[str]] = {}
+    lineage_digests: dict[str, set[str]] = {}
+    for case in cases:
+        lineage_ids.setdefault(case["semantic_lineage_id"], set()).add(case["semantic_lineage_digest"])
+        lineage_digests.setdefault(case["semantic_lineage_digest"], set()).add(case["semantic_lineage_id"])
+    lineage_mapping_ok = all(len(values) == 1 for values in lineage_ids.values()) and all(
+        len(values) == 1 for values in lineage_digests.values()
+    )
+    add_check(checks, prefix + "lineage_mapping", lineage_mapping_ok, "semantic lineage IDs and normalized digests map one-to-one within the partition")
+    if not lineage_mapping_ok:
+        problems.append(issue("semantic_lineage_mapping_inconsistent", f"{prefix.rstrip('.')} lineage IDs and digests are inconsistent"))
+
+    content_ok = True
+    digest_ids: list[str] = []
+    manifest_root = manifest_path.parent
+    for case in cases:
+        prompt = safe_relative(manifest_root, case["prompt_path"])
+        workspace = safe_relative(manifest_root, case["workspace_path"])
+        candidate = safe_relative(manifest_root, case["candidate_path"])
+        paths_ok = (
+            prompt is not None and prompt.is_file()
+            and workspace is not None and workspace.is_dir()
+            and candidate is not None and candidate.is_dir()
+        )
+        if not paths_ok or prompt.is_symlink() or has_symlink(workspace) or has_symlink(candidate):
+            content_ok = False
+            continue
+        computed = training_digest(prompt, workspace)
+        digest_ids.append(case["training_exclusion_id"])
+        if computed != case["training_exclusion_id"] or tree_digest(candidate) != case["candidate_digest"]:
+            content_ok = False
+    content_ok = content_ok and len(digest_ids) == expected_count and len(set(digest_ids)) == expected_count
+    add_check(checks, prefix + "content_identity", content_ok, "all prompt, workspace, and candidate paths are bounded and exact case digests are unique and reproducible")
+    if not content_ok:
+        problems.append(issue("case_content_identity_failed", f"{prefix.rstrip('.')} case content is incomplete, unsafe, duplicate, or digest-mismatched"))
+
+    entries = ledger["entries"]
+    by_case = {entry["case_id"]: entry for entry in entries}
+    coverage_ok = len(by_case) == len(entries) == expected_count and set(by_case) == {case["id"] for case in cases}
+    if coverage_ok:
+        for case in cases:
+            entry = by_case[case["id"]]
+            if not (
+                entry["visibility"] == expected_visibility
+                and entry["exclusion_id"] == case["training_exclusion_id"]
+                and case["training_exclusion_id"] in entry["exact"]
+                and len(entry["canonical"]) > 0
+                and len(entry["structural"]) > 0
+                and case["semantic_lineage_digest"] in entry["semantic_lineage"]
+            ):
+                coverage_ok = False
+                break
+    add_check(checks, prefix + "exclusion_coverage", coverage_ok, "every case has one visibility-matched exact and semantic-lineage exclusion entry")
+    if not coverage_ok:
+        problems.append(issue("exclusion_coverage_mismatch", f"{prefix.rstrip('.')} exclusion ledger does not cover every case exactly"))
+    return checks, problems, cases
+
+
+def build_report(
+    command: str,
+    subject: str,
+    split: Any,
+    split_digest: str,
+    checks: list[dict[str, str]],
+    problems: list[dict[str, str]],
+    digests: dict[str, str],
+    private_verified: bool,
+) -> dict[str, Any]:
+    failed = sum(item["status"] == "failed" for item in checks)
+    suite_id = split.get("suite_id", "sleybench-v0") if isinstance(split, dict) else "sleybench-v0"
+    split_state = split.get("state", "unknown") if isinstance(split, dict) else "unknown"
+    public_count = split.get("public", {}).get("case_count", 0) if isinstance(split, dict) else 0
+    private_count = split.get("private", {}).get("case_count", 0) if isinstance(split, dict) else 0
+    passed = not failed and not problems
+    values = {
+        "schema": "sley.agent_bench.split_report.v0",
+        "command": command,
+        "status": "passed" if passed else "failed",
+        "verification_level": "full_private_audit" if private_verified else "public_commitment",
+        "subject": subject,
+        "suite_id": suite_id,
+        "split_state": split_state,
+        "private_material_verified": private_verified and passed,
+        "counts": {"public": public_count, "private": private_count, "total": public_count + private_count},
+        "digests": {"split_manifest": split_digest, **digests},
+        "summary": {
+            "check_count": len(checks),
+            "passed_count": len(checks) - failed,
+            "failed_count": failed,
+            "issue_count": len(problems),
+        },
+        "checks": checks,
+        "issues": problems,
+    }
+    return values
+
+
+def load_split(path: Path, schema_dir: Path) -> tuple[Any, str, list[dict[str, str]], list[dict[str, str]]]:
+    split, problems = load_json(path)
+    digest = sha256_file(path) if path.is_file() else "sha256:" + "0" * 64
+    checks: list[dict[str, str]] = []
+    if not problems:
+        split_schema_problems = schema_issues(split, "sley.agent_bench.split_manifest.v0", schema_dir)
+        problems.extend(split_schema_problems)
+        add_check(checks, "split_manifest_schema", not split_schema_problems, "split manifest satisfies its strict contract")
+    return split, digest, checks, problems
+
+
+def public_evidence(split: dict[str, Any], split_path: Path) -> tuple[Path | None, Path | None]:
+    root = split_path.parent
+    return (
+        safe_relative(root, split["public"]["case_manifest_path"]),
+        safe_relative(root, split["public"]["exclusion_ledger_path"]),
+    )
+
+
+def command_verify_public(args: argparse.Namespace) -> int:
+    split_path = Path(args.split).resolve()
+    schema_dir = Path(args.schemas).resolve()
+    split, split_digest, checks, problems = load_split(split_path, schema_dir)
+    digests: dict[str, str] = {}
+    if not problems and isinstance(split, dict):
+        add_check(checks, "private_material_not_inspected", True, "public verification does not inspect or claim verification of held-out material")
+        manifest_path, ledger_path = public_evidence(split, split_path)
+        paths_ok = manifest_path is not None and ledger_path is not None
+        add_check(checks, "public_paths", paths_ok, "public evidence paths resolve below the split manifest directory")
+        if not paths_ok:
+            problems.append(issue("public_path_failed", "public manifest or exclusion path is unsafe"))
+        else:
+            manifest, manifest_problems = load_json(manifest_path)
+            ledger, ledger_problems = load_json(ledger_path)
+            problems.extend(manifest_problems + ledger_problems)
+            if not manifest_problems and not ledger_problems:
+                manifest_digest = sha256_file(manifest_path)
+                ledger_digest = sha256_file(ledger_path)
+                digests["public_case_manifest"] = manifest_digest
+                digests["public_exclusion_ledger"] = ledger_digest
+                pin_ok = (
+                    manifest_digest == split["public"]["case_manifest_digest"]
+                    and ledger_digest == split["public"]["exclusion_ledger_digest"]
+                )
+                add_check(checks, "public_commitments", pin_ok, "public manifest and exclusion ledger match their split commitments")
+                if not pin_ok:
+                    problems.append(issue("public_commitment_mismatch", "public manifest or exclusion ledger digest does not match"))
+                partition_checks_out, partition_problems, _ = partition_checks(
+                    manifest, manifest_path, ledger, ledger_path,
+                    split["public"]["suite_id"], split["version"], "public", 96, 16, schema_dir, "public."
+                )
+                checks.extend(partition_checks_out)
+                problems.extend(partition_problems)
+    result = build_report("verify-public", args.split, split, split_digest, checks, problems, digests, False)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "passed" else 1
+
+
+def command_audit(args: argparse.Namespace) -> int:
+    split_path = Path(args.split).resolve()
+    schema_dir = Path(args.schemas).resolve()
+    split, split_digest, checks, problems = load_split(split_path, schema_dir)
+    digests: dict[str, str] = {}
+    public_cases: list[dict[str, Any]] = []
+    private_cases: list[dict[str, Any]] = []
+    public_ledger: Any = None
+    private_ledger: Any = None
+    if not problems and isinstance(split, dict):
+        state_ok = split["state"] == "pinned" and split["approval"]["status"] == "approved"
+        add_check(checks, "pin_approval", state_ok, "full audit requires a pinned and approved split")
+        if not state_ok:
+            problems.append(issue("split_not_pinned", "full private audit requires pinned state and approval"))
+
+        public_manifest_path, public_ledger_path = public_evidence(split, split_path)
+        private_manifest_path = Path(args.private_manifest).resolve()
+        private_ledger_path = Path(args.private_exclusions).resolve()
+        private_outside_repo = not private_manifest_path.is_relative_to(REPO_ROOT) and not private_ledger_path.is_relative_to(REPO_ROOT)
+        add_check(checks, "private_custody_boundary", private_outside_repo, "private manifest and exclusion ledger remain outside the public repository")
+        if not private_outside_repo:
+            problems.append(issue("private_material_in_public_repository", "private evidence path resolves inside the public repository"))
+
+        path_pairs = (
+            ("public", public_manifest_path, public_ledger_path),
+            ("private", private_manifest_path, private_ledger_path),
+        )
+        loaded: dict[str, tuple[Any, Any]] = {}
+        for label, manifest_path, ledger_path in path_pairs:
+            if manifest_path is None or ledger_path is None:
+                problems.append(issue(f"{label}_path_failed", f"{label} manifest or exclusion path is unsafe"))
+                continue
+            manifest, manifest_problems = load_json(manifest_path)
+            ledger, ledger_problems = load_json(ledger_path)
+            load_problems = manifest_problems + ledger_problems
+            if label == "private" and load_problems:
+                problems.extend(issue(item["code"], "private evidence could not be loaded safely") for item in load_problems)
+            else:
+                problems.extend(load_problems)
+            if manifest_problems or ledger_problems:
+                continue
+            loaded[label] = (manifest, ledger)
+            manifest_digest = sha256_file(manifest_path)
+            ledger_digest = sha256_file(ledger_path)
+            digests[f"{label}_case_manifest"] = manifest_digest
+            digests[f"{label}_exclusion_ledger"] = ledger_digest
+            declared = split[label]
+            pin_ok = manifest_digest == declared["case_manifest_digest"] and ledger_digest == declared["exclusion_ledger_digest"]
+            add_check(checks, f"{label}_commitments", pin_ok, f"{label} manifest and exclusion ledger match their split commitments")
+            if not pin_ok:
+                problems.append(issue(f"{label}_commitment_mismatch", f"{label} manifest or exclusion ledger digest does not match"))
+
+        if "public" in loaded and public_manifest_path is not None and public_ledger_path is not None:
+            public_manifest, public_ledger = loaded["public"]
+            partition_out, partition_problems, public_cases = partition_checks(
+                public_manifest, public_manifest_path, public_ledger, public_ledger_path,
+                split["public"]["suite_id"], split["version"], "public", 96, 16, schema_dir, "public."
+            )
+            checks.extend(partition_out)
+            problems.extend(partition_problems)
+        if "private" in loaded:
+            private_manifest, private_ledger = loaded["private"]
+            partition_out, partition_problems, private_cases = partition_checks(
+                private_manifest, private_manifest_path, private_ledger, private_ledger_path,
+                split["private"]["suite_id"], split["version"], "private_held_out", 24, 4, schema_dir, "private."
+            )
+            checks.extend(partition_out)
+            problems.extend(partition_problems)
+
+        ledgers_pinned = (
+            isinstance(public_ledger, dict) and public_ledger.get("benchmark_split_status") == "pinned"
+            and isinstance(private_ledger, dict) and private_ledger.get("benchmark_split_status") == "pinned"
+        )
+        add_check(checks, "exclusion_ledgers_pinned", ledgers_pinned, "public and private exclusion ledgers declare a pinned benchmark split")
+        if not ledgers_pinned:
+            problems.append(issue("exclusion_ledgers_not_pinned", "full audit requires pinned public and private exclusion ledgers"))
+
+        overlap_ok = bool(public_cases and private_cases)
+        case_id_isolation_ok = overlap_ok
+        if case_id_isolation_ok:
+            public_case_ids = {case["id"] for case in public_cases}
+            private_case_ids = {case["id"] for case in private_cases}
+            case_id_isolation_ok = not (public_case_ids & private_case_ids)
+        add_check(checks, "case_id_split_isolation", case_id_isolation_ok, "public and private case IDs are globally disjoint")
+        if not case_id_isolation_ok:
+            problems.append(issue("case_id_split_overlap", "public and private partitions reuse one or more case IDs"))
+        if overlap_ok:
+            exact_public = {case["training_exclusion_id"] for case in public_cases}
+            exact_private = {case["training_exclusion_id"] for case in private_cases}
+            lineage_ids_public = {case["semantic_lineage_id"] for case in public_cases}
+            lineage_ids_private = {case["semantic_lineage_id"] for case in private_cases}
+            lineage_public = {case["semantic_lineage_digest"] for case in public_cases}
+            lineage_private = {case["semantic_lineage_digest"] for case in private_cases}
+            overlap_ok = not (
+                exact_public & exact_private
+                or lineage_ids_public & lineage_ids_private
+                or lineage_public & lineage_private
+            )
+            if isinstance(public_ledger, dict) and isinstance(private_ledger, dict):
+                for kind in DIGEST_KINDS:
+                    public_values = {value for entry in public_ledger["entries"] for value in entry[kind]}
+                    private_values = {value for entry in private_ledger["entries"] for value in entry[kind]}
+                    overlap_ok = overlap_ok and not (public_values & private_values)
+        add_check(checks, "semantic_split_isolation", overlap_ok, "public and private exact, canonical, structural, and semantic lineages are disjoint")
+        if not overlap_ok:
+            problems.append(issue("semantic_split_overlap", "public and private partitions overlap or could not be compared"))
+
+    result = build_report("audit", args.split, split, split_digest, checks, problems, digests, True)
+    print(json.dumps(result, indent=2))
+    return 0 if result["status"] == "passed" else 1
+
+
+def parser() -> argparse.ArgumentParser:
+    root = argparse.ArgumentParser(prog="sleybench-split")
+    subcommands = root.add_subparsers(dest="command", required=True)
+    public = subcommands.add_parser("verify-public")
+    public.add_argument("--split", required=True)
+    public.add_argument("--schemas", default=str(REPO_ROOT / "docs/schemas"))
+    public.add_argument("--json", action="store_true")
+    public.set_defaults(handler=command_verify_public)
+    audit = subcommands.add_parser("audit")
+    audit.add_argument("--split", required=True)
+    audit.add_argument("--private-manifest", required=True)
+    audit.add_argument("--private-exclusions", required=True)
+    audit.add_argument("--schemas", default=str(REPO_ROOT / "docs/schemas"))
+    audit.add_argument("--json", action="store_true")
+    audit.set_defaults(handler=command_audit)
+    return root
+
+
+def main() -> int:
+    args = parser().parse_args()
+    return args.handler(args)
+
+
+sys.exit(main())
+PY

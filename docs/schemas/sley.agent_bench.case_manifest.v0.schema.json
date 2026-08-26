@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.case_manifest.v0",
+  "title": "Sley Agent Bench Case Manifest v0",
+  "type": "object",
+  "required": ["schema", "suite_id", "tier", "version", "cases"],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.case_manifest.v0" },
+    "suite_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "tier": { "enum": ["smoke", "baseline"] },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/case" }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._/-]+$"
+    },
+    "command": {
+      "type": "object",
+      "required": ["name", "argv", "expected_exit", "assertions"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "argv": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 20,
+          "prefixItems": [{ "const": "sley" }],
+          "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+        },
+        "expected_exit": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "expected_schema": { "type": "string", "pattern": "^sley\\.[a-z0-9_.]+\\.v[0-9]+$" },
+        "assertions": {
+          "type": "array",
+          "maxItems": 20,
+          "items": {
+            "type": "object",
+            "required": ["pointer", "value"],
+            "properties": {
+              "pointer": { "type": "string", "pattern": "^(/([^/~]|~[01])*)*$" },
+              "value": true
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "id", "family", "visibility", "sley_version", "prompt_path",
+        "workspace_path", "candidate_path", "owned_paths", "allowed_context",
+        "allowed_tools", "limits", "policy", "preflight", "oracle",
+        "score_tags", "minimality", "training_exclusion_id"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^sleybench-(smoke|v[0-9]+)-f[1-6]-[0-9]{3}$" },
+        "family": {
+          "enum": [
+            "syntax_compilation", "semantic_implementation", "diagnosis_repair",
+            "translation_preservation", "structural_tool_use",
+            "repository_patch_integration"
+          ]
+        },
+        "visibility": { "enum": ["public", "private_held_out"] },
+        "sley_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        "prompt_path": { "$ref": "#/$defs/relativePath" },
+        "workspace_path": { "$ref": "#/$defs/relativePath" },
+        "candidate_path": { "$ref": "#/$defs/relativePath" },
+        "owned_paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "allowed_context": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/relativePath" }
+        },
+        "allowed_tools": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["ast", "check", "graph", "lint", "plan", "query", "run", "verify"]
+          }
+        },
+        "limits": {
+          "type": "object",
+          "required": ["wall_seconds", "tool_calls", "output_bytes", "processes", "workspace_bytes"],
+          "properties": {
+            "wall_seconds": { "type": "integer", "minimum": 1, "maximum": 600 },
+            "tool_calls": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "output_bytes": { "type": "integer", "minimum": 1024, "maximum": 16777216 },
+            "processes": { "type": "integer", "minimum": 1, "maximum": 256 },
+            "workspace_bytes": { "type": "integer", "minimum": 1024, "maximum": 67108864 }
+          },
+          "additionalProperties": false
+        },
+        "policy": {
+          "type": "object",
+          "required": ["kind"],
+          "properties": { "kind": { "const": "fixture_candidate" } },
+          "additionalProperties": false
+        },
+        "preflight": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "$ref": "#/$defs/command" }
+        },
+        "oracle": {
+          "type": "object",
+          "required": ["commands"],
+          "properties": {
+            "commands": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 20,
+              "items": { "$ref": "#/$defs/command" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "score_tags": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["parse", "compile", "pass", "repair", "semantic", "structural", "repository_patch"]
+          }
+        },
+        "minimality": {
+          "type": "object",
+          "required": ["max_changed_files", "max_changed_lines"],
+          "properties": {
+            "max_changed_files": { "type": "integer", "minimum": 0, "maximum": 20 },
+            "max_changed_lines": { "type": "integer", "minimum": 0, "maximum": 1000 }
+          },
+          "additionalProperties": false
+        },
+        "training_exclusion_id": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "candidate_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+        "semantic_lineage_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" },
+        "semantic_lineage_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "id": { "pattern": "^sleybench-v[0-9]+-" } },
+            "required": ["id"]
+          },
+          "then": {
+            "required": ["candidate_digest", "semantic_lineage_id", "semantic_lineage_digest"]
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

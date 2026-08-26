@@ -1,0 +1,4 @@
+[project]
+name = "sleybench-smoke"
+root = "src"
+entry = "app.main"

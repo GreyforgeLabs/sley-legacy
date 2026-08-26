@@ -1,0 +1,1640 @@
+{
+  "schema": "sley.corpus.exclusion_ledger.v0",
+  "ledger_id": "sleybench-v0-public-exclusions",
+  "version": "0.1",
+  "benchmark_split_status": "pinned",
+  "entries": [
+    {
+      "exclusion_id": "sha256:26ff234b7ce1aa4b5e25363e0011566a2720544af24559bbd0cdb4b3ee752c52",
+      "case_id": "sleybench-v0-f1-001",
+      "visibility": "public",
+      "exact": [
+        "sha256:26ff234b7ce1aa4b5e25363e0011566a2720544af24559bbd0cdb4b3ee752c52"
+      ],
+      "canonical": [
+        "sha256:a3ba98bac23d723fa409685435fabab374c945e9d2a57e5e31b340519d13c172"
+      ],
+      "structural": [
+        "sha256:e43353e3d04945449f8b46b0b62e2989dc55cc5e348379a371230e31ad0a3ba2"
+      ],
+      "semantic_lineage": [
+        "sha256:619a0a57d1364db1f341ed2a94d2367d447214efaaec4acf240640880f937a4f"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:8476bbb369767837d1d5544c5fdd54bd312dd3a3e8145c2554be386c6eb059a2",
+      "case_id": "sleybench-v0-f1-002",
+      "visibility": "public",
+      "exact": [
+        "sha256:8476bbb369767837d1d5544c5fdd54bd312dd3a3e8145c2554be386c6eb059a2"
+      ],
+      "canonical": [
+        "sha256:9a2d9f771717cdc96e8d7f4cd3c0e78861baa4916a51bd4b76f2a0548bb71c6a"
+      ],
+      "structural": [
+        "sha256:0269a1ead909ec60a7508db4f59f2ef624bce33052aff62de49c22d2aaa39b8b"
+      ],
+      "semantic_lineage": [
+        "sha256:584451bfe0523bf23f4a6dfce1beab2bc23180777bc95447d1b98e58e17507d8"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:e60907237652c53612f5db01a87b9aa4aa51716d58db5082da29705d19ed065a",
+      "case_id": "sleybench-v0-f1-003",
+      "visibility": "public",
+      "exact": [
+        "sha256:e60907237652c53612f5db01a87b9aa4aa51716d58db5082da29705d19ed065a"
+      ],
+      "canonical": [
+        "sha256:598b9d2fa201981abd70bc47af0d2bf603eec0378c17705389b5fe9120dd665d"
+      ],
+      "structural": [
+        "sha256:2fdfdbc44c55a1fbcd0016d56f327a26a2e9b591d191bc7449979924f4f6c3a1"
+      ],
+      "semantic_lineage": [
+        "sha256:d7ba6d0920b4334c4c809849e8a6c4985637216f146a72dd6f76935ac814f2ff"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:2abb8ec5d7ccad44689e87e078c0f9431d5b9a280f31472c15b96e6f9a2421d8",
+      "case_id": "sleybench-v0-f1-004",
+      "visibility": "public",
+      "exact": [
+        "sha256:2abb8ec5d7ccad44689e87e078c0f9431d5b9a280f31472c15b96e6f9a2421d8"
+      ],
+      "canonical": [
+        "sha256:c9e834919ca9d9e3dfb41b1bf56ade85395f1f8799f8350bd1df4e4b416e6ab5"
+      ],
+      "structural": [
+        "sha256:b5dc24c22652e37eeab53fdb050a68f79ccdc1117782e97ca95655babdef68b0"
+      ],
+      "semantic_lineage": [
+        "sha256:9c86e0c3ddc7f79a6ae1ce4d82890a44617f9b68562a18cf417d79b5ab68d1b9"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:24e2eba0d1f52b0446dc6a8e9ac04b046f556fd75cb0321f366c99f5cfaad2eb",
+      "case_id": "sleybench-v0-f1-005",
+      "visibility": "public",
+      "exact": [
+        "sha256:24e2eba0d1f52b0446dc6a8e9ac04b046f556fd75cb0321f366c99f5cfaad2eb"
+      ],
+      "canonical": [
+        "sha256:33db5fc94085fb557aad694dff5ce91dd24c22664c46d4c894275db799f7c78d"
+      ],
+      "structural": [
+        "sha256:e8385aed1d46e3b3cb921b921e457327038f84b824c6cc45d54be730ac5cfe68"
+      ],
+      "semantic_lineage": [
+        "sha256:cd323f449f8494fd0f5f465a4e7d570f48bf94774bf3380b4ba9a24e8ded2c46"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:7351608540cce01e48dbe5d8fb1c2fdf77514e1cdde037b7a2fe0340ae93165c",
+      "case_id": "sleybench-v0-f1-006",
+      "visibility": "public",
+      "exact": [
+        "sha256:7351608540cce01e48dbe5d8fb1c2fdf77514e1cdde037b7a2fe0340ae93165c"
+      ],
+      "canonical": [
+        "sha256:02ffd0eadc4295804f457c8513997074e4010a1c2caad811e84feb9adafb397d"
+      ],
+      "structural": [
+        "sha256:a83f6f38f227a9cc57e8dadcc7051c8bdf5aa722413d8126a30c6c41143eb5c1"
+      ],
+      "semantic_lineage": [
+        "sha256:a6f9be0be24a5da52f56ef0818126a74fc2984f535590820783c4b7ada225770"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:f976b21f49f88726b17652aa830b9241c788ec13408d4d58f4443ba58f4fb67e",
+      "case_id": "sleybench-v0-f1-007",
+      "visibility": "public",
+      "exact": [
+        "sha256:f976b21f49f88726b17652aa830b9241c788ec13408d4d58f4443ba58f4fb67e"
+      ],
+      "canonical": [
+        "sha256:0ac4f849ff735a55dfce0b2a0fb9be2d374c539b253af4ad9d82a1f68289a4c9"
+      ],
+      "structural": [
+        "sha256:6ec8f89595c0ac617ba9323202422ea3041b8903c274534f60ffd857ff522626"
+      ],
+      "semantic_lineage": [
+        "sha256:bdc3d0b9dd978bc3c6dc702ec595218262000ea3a42ca7ac206ff862c914e791"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:70b3216f064ef07266e2dd69594ff4c09c7da9c14642b14a55dc729f425a066d",
+      "case_id": "sleybench-v0-f1-008",
+      "visibility": "public",
+      "exact": [
+        "sha256:70b3216f064ef07266e2dd69594ff4c09c7da9c14642b14a55dc729f425a066d"
+      ],
+      "canonical": [
+        "sha256:3121f3a4b3f4f1186b6ee5fbfb2da445b28ec32becea5e86efa31cec4399e697"
+      ],
+      "structural": [
+        "sha256:9cebc310283797b253d9e082f8780fe3c5371653f508dd1313aeb65066e60d13"
+      ],
+      "semantic_lineage": [
+        "sha256:4f3235d42414ee786430b77ffac8800f44e641f985a3ce5784842e95d9586890"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:2d75d744e2ba16785c763acfdbba2367685a1f81d27a9dc599dc3f0a09c4e62b",
+      "case_id": "sleybench-v0-f1-009",
+      "visibility": "public",
+      "exact": [
+        "sha256:2d75d744e2ba16785c763acfdbba2367685a1f81d27a9dc599dc3f0a09c4e62b"
+      ],
+      "canonical": [
+        "sha256:f67f87de80939476f5fb30cc357b100bde3297504bdf14aecf26d2f373d87fae"
+      ],
+      "structural": [
+        "sha256:72572800d8e0f373c3edb86e0edeea9d4055dd8484333ea3b07ba4d4881ad2c3"
+      ],
+      "semantic_lineage": [
+        "sha256:4169a5a5798017048d11d9dad4861fa257008488257bd09b1f68e1d5cf7d695c"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:263c452bbbcf57b1f8ae5287e3716421dbd26053add2e8ce329f9b7beb228a15",
+      "case_id": "sleybench-v0-f1-010",
+      "visibility": "public",
+      "exact": [
+        "sha256:263c452bbbcf57b1f8ae5287e3716421dbd26053add2e8ce329f9b7beb228a15"
+      ],
+      "canonical": [
+        "sha256:7c0c7e53e56b0f5b056d7d136562fa56e7fc92226404ad9ee5d88122c7caa918"
+      ],
+      "structural": [
+        "sha256:ca303f5129a6c8ef3eaba1c92d8c17c6874a5bf9760a771daa43006100d83ac1"
+      ],
+      "semantic_lineage": [
+        "sha256:873019889ba271db0ab76af481275bbb964eccfa7c45792efdb20ba56305dca9"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:d7e7f445c6bbb1a5880372ba47ff3a5bd6fa4a66b79d1bf71dae662f16efb874",
+      "case_id": "sleybench-v0-f1-011",
+      "visibility": "public",
+      "exact": [
+        "sha256:d7e7f445c6bbb1a5880372ba47ff3a5bd6fa4a66b79d1bf71dae662f16efb874"
+      ],
+      "canonical": [
+        "sha256:0175a46801613afa4fcd5b7e7774f5be6697755985a60add1de6c2e80499a8d0"
+      ],
+      "structural": [
+        "sha256:7375fb9badc82e5fb67e87a0f29f5df72c2ae9dd22dc7c996d4c3abd98af5fcb"
+      ],
+      "semantic_lineage": [
+        "sha256:75bb26abd1d15ba404c92cf5e29f67419e553df3c5728a823b86c69432dd91fe"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:3c1399aa32cdea9618f2ca831c6801f4f72a37e0c313831bf0029699d8eac4fc",
+      "case_id": "sleybench-v0-f1-012",
+      "visibility": "public",
+      "exact": [
+        "sha256:3c1399aa32cdea9618f2ca831c6801f4f72a37e0c313831bf0029699d8eac4fc"
+      ],
+      "canonical": [
+        "sha256:adbb073b86c3a63f4bb34000f14ff33ba6bb537a5229dffa0c5ac74bee070703"
+      ],
+      "structural": [
+        "sha256:08509aa95e2bc6002fe0a7ba2df5ce770542b7ea0c566b277afddae038e08377"
+      ],
+      "semantic_lineage": [
+        "sha256:b6f04dd5feb185217fafd908cfb15c89bfea41bd701ec053d24eaba12b1b81f7"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:5a976283483fd8095a35cecd3ac4d12d767ecedeb518a91ee0376697895806ab",
+      "case_id": "sleybench-v0-f1-013",
+      "visibility": "public",
+      "exact": [
+        "sha256:5a976283483fd8095a35cecd3ac4d12d767ecedeb518a91ee0376697895806ab"
+      ],
+      "canonical": [
+        "sha256:d1e4e07f45ae91a5be3e9f1289e26802d64d4502aa936ec7d9f7e473ef0ee908"
+      ],
+      "structural": [
+        "sha256:954681c6412f65142d5544ac77dfc03d03bbe14007fc872b592d5c65893e4546"
+      ],
+      "semantic_lineage": [
+        "sha256:2cccf6ad4ce5c43bc08cb2ba90806cf2013f3e0071af8f83cf0acc5f338310ce"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:6681f08256685eaf2cb72cd53d46195704cd3cc6bd3ff0428d5c5a71f2b9ed39",
+      "case_id": "sleybench-v0-f1-014",
+      "visibility": "public",
+      "exact": [
+        "sha256:6681f08256685eaf2cb72cd53d46195704cd3cc6bd3ff0428d5c5a71f2b9ed39"
+      ],
+      "canonical": [
+        "sha256:7a9e9c1c8032d8a60619b036a1b1865f7d0afba96c2d1d991497c67c4bcdd03f"
+      ],
+      "structural": [
+        "sha256:88302af77af4a9f90634ab0bbe253ef08da0777ae251f6db3582b4a9c6722ef1"
+      ],
+      "semantic_lineage": [
+        "sha256:03f3ccb1e9c49f9b31b9e1d49cd1a47562b63f7915473aed261959334bf06f31"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:7ef0a55b99d08e2098d90225c2ad8fc79d4d357d27a4488de5bcb32ff200f008",
+      "case_id": "sleybench-v0-f1-015",
+      "visibility": "public",
+      "exact": [
+        "sha256:7ef0a55b99d08e2098d90225c2ad8fc79d4d357d27a4488de5bcb32ff200f008"
+      ],
+      "canonical": [
+        "sha256:07670fac1fc2db6432a70fa9ca44611c618532a5784d828160838eaec855b5be"
+      ],
+      "structural": [
+        "sha256:214e76690cb54aabb79408234209850c036b53b3a9481be82d700dec9907ef11"
+      ],
+      "semantic_lineage": [
+        "sha256:71616abc3a70fc89bb67d889f04be33bfe972b4383a087169bb88c76ea03ab00"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:cf872928ecdd89389618caf027e0dca4172bb07949158130ec5ffc7303890c22",
+      "case_id": "sleybench-v0-f1-016",
+      "visibility": "public",
+      "exact": [
+        "sha256:cf872928ecdd89389618caf027e0dca4172bb07949158130ec5ffc7303890c22"
+      ],
+      "canonical": [
+        "sha256:529e27604bfcac30ced76ef34878128081b034497e078b3d1938d22fba1cef73"
+      ],
+      "structural": [
+        "sha256:50bf06e074fd5be688fafe6fe002b935dec29e8c5c7a8c56830bdb2d1a85894f"
+      ],
+      "semantic_lineage": [
+        "sha256:01f7cea4867d36e3889cf979a4a972ea7239b67eca2b5dfc50f943a3247ce775"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:a97896631ad155bec34fa26950da27104e5675b2b0fad1eca75e15b0330505f6",
+      "case_id": "sleybench-v0-f2-001",
+      "visibility": "public",
+      "exact": [
+        "sha256:a97896631ad155bec34fa26950da27104e5675b2b0fad1eca75e15b0330505f6"
+      ],
+      "canonical": [
+        "sha256:f7b59a305b482e2cef954929ae9220a7e49fae44b1a43e9978d2b3c994308afc"
+      ],
+      "structural": [
+        "sha256:2814c04b84d18f11c7be5df6c29e93468ece1adf3da9ae767cd049e2248c17e8"
+      ],
+      "semantic_lineage": [
+        "sha256:77ee4cf4851a3fe442e15e5378f8f8ad7b397f2d4459a0be9fda5f8f31054506"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:08fd83573e0097b38bd42212ce3edbb0aafeb85b3a64dd8042c365d3890d5965",
+      "case_id": "sleybench-v0-f2-002",
+      "visibility": "public",
+      "exact": [
+        "sha256:08fd83573e0097b38bd42212ce3edbb0aafeb85b3a64dd8042c365d3890d5965"
+      ],
+      "canonical": [
+        "sha256:6449b7fe5ea564aaee9bf3798ebb9ac26952bcf3678b0606657d571e12d9c153"
+      ],
+      "structural": [
+        "sha256:6bac694618913256811d62c596b87715101409dc45e7f3371c6c8220c1a88362"
+      ],
+      "semantic_lineage": [
+        "sha256:e34402acbb27941f93f595d30359745d4c28296706263d11f305ca41848e298f"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:529ed5d34a5a5d1bbdf6f472546cff9c8cb13308f780f16ac295857a1b537b8d",
+      "case_id": "sleybench-v0-f2-003",
+      "visibility": "public",
+      "exact": [
+        "sha256:529ed5d34a5a5d1bbdf6f472546cff9c8cb13308f780f16ac295857a1b537b8d"
+      ],
+      "canonical": [
+        "sha256:22befbcffca3cbbbeecd6b4cf06aafca64d5aff5a7b782d803fbaa81c2703136"
+      ],
+      "structural": [
+        "sha256:16df1e59a96d216b78229732a20e16d9c2b2e518492a0acaf69ca4bc9847a595"
+      ],
+      "semantic_lineage": [
+        "sha256:08469eebffc2dba51890a6c3ab2c046366067a0a961b22f19ae5ef8b05c645b0"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:2591ec86e08605db19d38cbab0a5ebe644af9667b3e78391e7248e7b3015ada9",
+      "case_id": "sleybench-v0-f2-004",
+      "visibility": "public",
+      "exact": [
+        "sha256:2591ec86e08605db19d38cbab0a5ebe644af9667b3e78391e7248e7b3015ada9"
+      ],
+      "canonical": [
+        "sha256:aab79d7a39c8a6d53012ac78fee0271e4430bb00d009194f82bd8bff2d3466d1"
+      ],
+      "structural": [
+        "sha256:71268609c73d616dd9e2e2bdc5be25648f3fe53f81d8666c93d4ad2aec43fd21"
+      ],
+      "semantic_lineage": [
+        "sha256:b7a9db11b83f6ea73b88010de5a3f81abf8d02eb492d4968fc183b8966a6c51e"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:6bcbb74cbc094993ef31b506f2020c194d7cb288395136f8f15cd4c4fa8c37e3",
+      "case_id": "sleybench-v0-f2-005",
+      "visibility": "public",
+      "exact": [
+        "sha256:6bcbb74cbc094993ef31b506f2020c194d7cb288395136f8f15cd4c4fa8c37e3"
+      ],
+      "canonical": [
+        "sha256:862d45e9311cf1de609be919e1bc00e7b7722970be95d7d11c7599dc422fceaa"
+      ],
+      "structural": [
+        "sha256:d268beae38e5e753c1393ca415a17c85a1a6425e85efaf6e6ac991a8b45f1713"
+      ],
+      "semantic_lineage": [
+        "sha256:f66a9d03e3fd6a23346548c1f46e9f58a6b30798719bc960f0a1c6b95eefa977"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:e6c56e8f826334d667d567b50e6fa236c11c6cc720df3b23773ef131fe7186af",
+      "case_id": "sleybench-v0-f2-006",
+      "visibility": "public",
+      "exact": [
+        "sha256:e6c56e8f826334d667d567b50e6fa236c11c6cc720df3b23773ef131fe7186af"
+      ],
+      "canonical": [
+        "sha256:4e83149b77483b2a807ecbe0cc4eb097bb888381a55d90b0711edb9c1d6f816d"
+      ],
+      "structural": [
+        "sha256:b5e45168c48c5bb6ac58f0c518780cfb41aa2b89dccf6ea20e329e937e2b9da5"
+      ],
+      "semantic_lineage": [
+        "sha256:eb639577eb833a0e052a76f3475fbb5a4ed0b6743b34e5dcef551e9b4e8040af"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:d5775942d3647858746f6e74ddaab11c2c109907fffa5f555a67d6a5e61549c5",
+      "case_id": "sleybench-v0-f2-007",
+      "visibility": "public",
+      "exact": [
+        "sha256:d5775942d3647858746f6e74ddaab11c2c109907fffa5f555a67d6a5e61549c5"
+      ],
+      "canonical": [
+        "sha256:194d3b54334f8ae5b9608dd0239d52c86647978053657968b54d3f800df6195c"
+      ],
+      "structural": [
+        "sha256:7621ebefa3235cfc62589361e71706b32901d8ae227655f25c9790a448e3eac2"
+      ],
+      "semantic_lineage": [
+        "sha256:d77cef007844882ac4bd488c26344b54c1bc0c34164ba4c1d83e094a1e222e76"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:5bd80bbb2ac1e3b58436edcbbf1fd5ffecb0f2d6df1720e9ed5f25c115416a51",
+      "case_id": "sleybench-v0-f2-008",
+      "visibility": "public",
+      "exact": [
+        "sha256:5bd80bbb2ac1e3b58436edcbbf1fd5ffecb0f2d6df1720e9ed5f25c115416a51"
+      ],
+      "canonical": [
+        "sha256:08497b1c2ea98135a96cb243e6403052e99f29ef10b1d1d0f02a3d95d6d01faf"
+      ],
+      "structural": [
+        "sha256:d5ea3be7d61172322c2f3076badf907f4ccb1e27057af42f5e2245bec36a89d1"
+      ],
+      "semantic_lineage": [
+        "sha256:2d86aa558d259d92b35f21467d92aee1a741453a326860d202e745e8dba83ce7"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:ca04acf55ec82c311421b0c5710110197e0566d5cd3d351646235f8cd9fd0232",
+      "case_id": "sleybench-v0-f2-009",
+      "visibility": "public",
+      "exact": [
+        "sha256:ca04acf55ec82c311421b0c5710110197e0566d5cd3d351646235f8cd9fd0232"
+      ],
+      "canonical": [
+        "sha256:ba5a9781776b06dc331d81d39507871c27f5780a5da953d732287f39532fa5ed"
+      ],
+      "structural": [
+        "sha256:3b68086f326e764cd4b54333bdf25dbeca04f0a35d7e93ecb0b0ec0bcd2dc8f0"
+      ],
+      "semantic_lineage": [
+        "sha256:81ec3219b8909bb54a62b2a3a16051ede97782511606ae6d798df853a5294add"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:38039a9971bdf09af55d57209dd76867c2d5638f471cf402d1659aeaf4e104fd",
+      "case_id": "sleybench-v0-f2-010",
+      "visibility": "public",
+      "exact": [
+        "sha256:38039a9971bdf09af55d57209dd76867c2d5638f471cf402d1659aeaf4e104fd"
+      ],
+      "canonical": [
+        "sha256:387497ab3881992d7e35cd8f90298b370fa7c91a46e6ff24cd71d04cf21fec37"
+      ],
+      "structural": [
+        "sha256:9591597180ee151a93c01bf5dba998faf477a5eac9302434eacafd5ade3f27b0"
+      ],
+      "semantic_lineage": [
+        "sha256:7120849fd2f5a72d6fce0b9ed035e964fcdcf6822cc9223409e077124970196e"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:67c9c92887ceaab88bac41a53ee52023e97735ef473ce7201a24ae6a0dc55ef0",
+      "case_id": "sleybench-v0-f2-011",
+      "visibility": "public",
+      "exact": [
+        "sha256:67c9c92887ceaab88bac41a53ee52023e97735ef473ce7201a24ae6a0dc55ef0"
+      ],
+      "canonical": [
+        "sha256:7236c3bd7722913339a4fdae29c61c3e0c5259bc1aa7619462ac2d7623ddd81e"
+      ],
+      "structural": [
+        "sha256:2b327a59328f3fcf73c11d40d7132aa1f4c6ee15d364c2b9c620748dd3e76e95"
+      ],
+      "semantic_lineage": [
+        "sha256:800bd99a609624a747f53eeeb9d55a2d3d3c09ecb3a6dde699d65fc2cdb10b79"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:4dd81316a9859c1dd3a7a54e4eada9d71c7c20e17fc232babdb60fa6c41268f8",
+      "case_id": "sleybench-v0-f2-012",
+      "visibility": "public",
+      "exact": [
+        "sha256:4dd81316a9859c1dd3a7a54e4eada9d71c7c20e17fc232babdb60fa6c41268f8"
+      ],
+      "canonical": [
+        "sha256:1fb897bdca0b2de11a25d9a575bf8050922a442c26687901ea22e2a7356ed1af"
+      ],
+      "structural": [
+        "sha256:1930aab194114aff002a97219c1c174d2ad6878f578361b8b91b519a2cea1eab"
+      ],
+      "semantic_lineage": [
+        "sha256:339f045cb75c3acf7292e4e1d20bf3f7fc0e0c1b543beabcbba0ee932146b207"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:771a92778982bf59f3898e262804eedf2f33cd06b7dbdf71391605f9fa9a23d8",
+      "case_id": "sleybench-v0-f2-013",
+      "visibility": "public",
+      "exact": [
+        "sha256:771a92778982bf59f3898e262804eedf2f33cd06b7dbdf71391605f9fa9a23d8"
+      ],
+      "canonical": [
+        "sha256:8f82c1b6f6af2d8a68585967ec15b17db4f7f89e8fa6ec8c6c99a6baa25a81e7"
+      ],
+      "structural": [
+        "sha256:2f061e0265b831a969f7593603746448cdc2e723cfe66f264946d122c5bd3f26"
+      ],
+      "semantic_lineage": [
+        "sha256:6591b22f2cf34efc6cc29e2a75101e085b57e9e9257ef6439e3278135854487f"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:86212c0edced17d79d7d10b5966ca32c575dc7f40996c0fc95f8e1ade5b6fc4b",
+      "case_id": "sleybench-v0-f2-014",
+      "visibility": "public",
+      "exact": [
+        "sha256:86212c0edced17d79d7d10b5966ca32c575dc7f40996c0fc95f8e1ade5b6fc4b"
+      ],
+      "canonical": [
+        "sha256:021973da5214c9c5bb6df3e0b0c6c077fc65aff2e6c2090045f6c2ee455cdc3a"
+      ],
+      "structural": [
+        "sha256:1a53153e53946b89a309a21507e6471d80a0d1ba06374f2eb456374c7d960a1c"
+      ],
+      "semantic_lineage": [
+        "sha256:f320de826a601fbd0c0744082d0406e9de30d1dfdcfb17c03bd7281b206d6dd0"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:c6ef647e01c4ea143516c9356449d3070373cefd6b2d1228a585cc42ea599918",
+      "case_id": "sleybench-v0-f2-015",
+      "visibility": "public",
+      "exact": [
+        "sha256:c6ef647e01c4ea143516c9356449d3070373cefd6b2d1228a585cc42ea599918"
+      ],
+      "canonical": [
+        "sha256:63c6849e4ce6e95a1b040ec4c657c43c05b80043533471004a643b7811767194"
+      ],
+      "structural": [
+        "sha256:bf6c077c3bcab96bd4982a8d6a42816b54590cc87d07c49d067fe29b60d103b3"
+      ],
+      "semantic_lineage": [
+        "sha256:36db938793a61461b9608a92337dc8dc291df224d31abe8129b76da62c3e5426"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:005fc04ff1b8a6d3ea42b2ae6b10671a90b145ec33a0a6dda3236e3ba4bc07a3",
+      "case_id": "sleybench-v0-f2-016",
+      "visibility": "public",
+      "exact": [
+        "sha256:005fc04ff1b8a6d3ea42b2ae6b10671a90b145ec33a0a6dda3236e3ba4bc07a3"
+      ],
+      "canonical": [
+        "sha256:d7002a9304a36a26b30c46585805217959ba28a47e5bed2eb31ee96ce23ff84a"
+      ],
+      "structural": [
+        "sha256:00cc98a61da233cd238dcf51a672d51a6a299963c10b3a6c05b75136e40c324b"
+      ],
+      "semantic_lineage": [
+        "sha256:c891f010ec25a64ec42c92f521c7fef828341d56635a3ddd95686aef0b3d7fd9"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:62bb6d8ab98871b5f93ae6988493fbda576c54f22a1cfbaf91a94cc51eb5283e",
+      "case_id": "sleybench-v0-f3-001",
+      "visibility": "public",
+      "exact": [
+        "sha256:62bb6d8ab98871b5f93ae6988493fbda576c54f22a1cfbaf91a94cc51eb5283e"
+      ],
+      "canonical": [
+        "sha256:e964cbd0c0a617f827b7a9575e19797193bd53c0192a30aa43d496fe45bc2885"
+      ],
+      "structural": [
+        "sha256:a293d04429979d0507b8a9c80ce362d779e3e1aa338de579c23c96da064f9973"
+      ],
+      "semantic_lineage": [
+        "sha256:0f662230310add672813fff2d2886a9c436125c8b1014ea8edb1fe3f1a16de36"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:4be61b74cf05023779178a49bffe95a448544d0c7019eea51459205786b36cc7",
+      "case_id": "sleybench-v0-f3-002",
+      "visibility": "public",
+      "exact": [
+        "sha256:4be61b74cf05023779178a49bffe95a448544d0c7019eea51459205786b36cc7"
+      ],
+      "canonical": [
+        "sha256:6b2af8e5ee3e3b190146082c8abf5a55f7d99c00ac4c144b5afb1c8e3686ccf2"
+      ],
+      "structural": [
+        "sha256:f5b06c2ea5195cb87c9bace34390edeed1f7dae6d88e41b72fcd06bf13cccd4e"
+      ],
+      "semantic_lineage": [
+        "sha256:346477128c4c678fff7d93b723c0e6f9ddec994e686b90526b606847dee4c9cf"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:c1647680241929d4af4214f05a7ade99248ab7b8a5128fe27ca86c0a47d2a0b2",
+      "case_id": "sleybench-v0-f3-003",
+      "visibility": "public",
+      "exact": [
+        "sha256:c1647680241929d4af4214f05a7ade99248ab7b8a5128fe27ca86c0a47d2a0b2"
+      ],
+      "canonical": [
+        "sha256:b6f21764f8bdd662d6733312749e64a352c1d5aa89a59ac7d52f8fcd8bccf428"
+      ],
+      "structural": [
+        "sha256:bb7062eff9088d43ab945b65b594ff1f074c0cc581d434716997615d1eef05b0"
+      ],
+      "semantic_lineage": [
+        "sha256:c38ba2b39ebab54dc80202592afdab434e784788a91fc4e0d025e8ee8243a489"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:9d3a551a7d980dfdbf249c0595264f95a026789e5109b4623f1692358d7522cd",
+      "case_id": "sleybench-v0-f3-004",
+      "visibility": "public",
+      "exact": [
+        "sha256:9d3a551a7d980dfdbf249c0595264f95a026789e5109b4623f1692358d7522cd"
+      ],
+      "canonical": [
+        "sha256:ea205a7b4fa80322b9037d2ed0cc8748cbfcd94042ce755e5ed28ad4f8d9b29d"
+      ],
+      "structural": [
+        "sha256:1c9ee54e8c8c3330438f304f5928690b0f3140989ee245fa1c1a50145e2c2b61"
+      ],
+      "semantic_lineage": [
+        "sha256:93ec9b92ca8b44078a4482d7eb490b7e986d005798dce761f33306bb128bb2d4"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:c987df9cec11ef600ec2bbd6d1087f965df42cd6aebd073e24d5af00f9f339ab",
+      "case_id": "sleybench-v0-f3-005",
+      "visibility": "public",
+      "exact": [
+        "sha256:c987df9cec11ef600ec2bbd6d1087f965df42cd6aebd073e24d5af00f9f339ab"
+      ],
+      "canonical": [
+        "sha256:daa44d49c6d89e2335d39fce6f925daa12cca42374885d50bd7bd21cbcc3566d"
+      ],
+      "structural": [
+        "sha256:a5da7b9cda30fce004945d911113c633ab112010eca59a6b83732b68cf79581c"
+      ],
+      "semantic_lineage": [
+        "sha256:1c8447a33b4c1f85a04a09dbc75a00ea303018a31e637e9264d85a4750f84d7d"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:b2e75b276bebbb33e7c7fe5e108662dae45c22b076d83c48eb00d71f3b70c2a9",
+      "case_id": "sleybench-v0-f3-006",
+      "visibility": "public",
+      "exact": [
+        "sha256:b2e75b276bebbb33e7c7fe5e108662dae45c22b076d83c48eb00d71f3b70c2a9"
+      ],
+      "canonical": [
+        "sha256:08b72d56928a00da7931936d1ad8afe0597cf5bde57ac393689fc10a7eb7b289"
+      ],
+      "structural": [
+        "sha256:72f8cef0da0a740f62fe3459af2d7f6119c62dbb2a3d1e5b3cc839df6c8b2e07"
+      ],
+      "semantic_lineage": [
+        "sha256:dea80c938e0e882cc75eb0948da347785fb6addb8181b04c1dc1a77b4d3ffbe2"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:a4c3b736d197bbcaccbf45e9a982010f3680ad400818a5ba730a4c0637854403",
+      "case_id": "sleybench-v0-f3-007",
+      "visibility": "public",
+      "exact": [
+        "sha256:a4c3b736d197bbcaccbf45e9a982010f3680ad400818a5ba730a4c0637854403"
+      ],
+      "canonical": [
+        "sha256:566ddfe3acfe201ca7381e87f1b3829cb338b6dc90d3d6c34b3b091ead198e5a"
+      ],
+      "structural": [
+        "sha256:044f4fb466b4e6aa180e63784a06f47a30ae37d66bc677b6702ee3c21a3bef47"
+      ],
+      "semantic_lineage": [
+        "sha256:ba409a6d54bfde4c85b7fdcd27e2a92dcc68ec8aa6360153a44cd62d7c293e2c"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:aca20e6c9e3c3a4fa3beb32e872dc63e556baa6c0580d802e975cbe904836eea",
+      "case_id": "sleybench-v0-f3-008",
+      "visibility": "public",
+      "exact": [
+        "sha256:aca20e6c9e3c3a4fa3beb32e872dc63e556baa6c0580d802e975cbe904836eea"
+      ],
+      "canonical": [
+        "sha256:509f69b18bf969e6c206350b3de83557d38ec10bfa9fc367005b5cd50288dbec"
+      ],
+      "structural": [
+        "sha256:12eb81920b1a2b56e75db9310f90e9cdb5b0dd52ee83c9f4e36a2b2809148b62"
+      ],
+      "semantic_lineage": [
+        "sha256:847b2d5b51a82a5306c4b74a6e3898a60e6b5d56c9deaaad63c8df8438133f52"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:1a1aa40208e572a86e47c476e6d3807ba53575b31d88d75f3a07c95e972162c3",
+      "case_id": "sleybench-v0-f3-009",
+      "visibility": "public",
+      "exact": [
+        "sha256:1a1aa40208e572a86e47c476e6d3807ba53575b31d88d75f3a07c95e972162c3"
+      ],
+      "canonical": [
+        "sha256:cd715690b38ce6cd45da1f23df2ca6b2c01aa86045ad84dc5465aab6e572bf53"
+      ],
+      "structural": [
+        "sha256:fe2aa7731f6dab89b6652979c9ef213334f47169531685af0ba852ab3395377a"
+      ],
+      "semantic_lineage": [
+        "sha256:37f663f5ae02b2cbdd4959fb2a101e725c8fccc6e21832fc440e97cce3095345"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:2573038c3d60967118ddf91314de611bfc88e6476f8f217d0cbf6221c8a1d781",
+      "case_id": "sleybench-v0-f3-010",
+      "visibility": "public",
+      "exact": [
+        "sha256:2573038c3d60967118ddf91314de611bfc88e6476f8f217d0cbf6221c8a1d781"
+      ],
+      "canonical": [
+        "sha256:271e360e02d138110a1cd676ed58b16a162a8b93a4f3c3be71808aa9d43968d9"
+      ],
+      "structural": [
+        "sha256:8fc751d8462baf91e2f71a31dadb31ab2375e59afc181acfd07c0166a7c8c48e"
+      ],
+      "semantic_lineage": [
+        "sha256:ef19fc62567def4d7d8486800953f39df240d65dc604dde11d82b3b8eea0d821"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:942f70f4dcdce01e4042a8cce2d0811f9a8deca2f7af4142f14c3bc22deec96e",
+      "case_id": "sleybench-v0-f3-011",
+      "visibility": "public",
+      "exact": [
+        "sha256:942f70f4dcdce01e4042a8cce2d0811f9a8deca2f7af4142f14c3bc22deec96e"
+      ],
+      "canonical": [
+        "sha256:de6630605175d7259dd4a791b776e3192df3c7789cd050fc1a38471dfb7788a1"
+      ],
+      "structural": [
+        "sha256:ed419b0d7e1e7820505481925c07f699f7bf8c5ec5bab06a2dfc63558185ed32"
+      ],
+      "semantic_lineage": [
+        "sha256:e4e185832a4f402e37c1316f0bba99cbd31fb5888f366adee9afb26f2b02cf50"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:fd66397e94e17d573b9aed8a96020f97f0066ca47476fb3e86bd5257a13b5bb0",
+      "case_id": "sleybench-v0-f3-012",
+      "visibility": "public",
+      "exact": [
+        "sha256:fd66397e94e17d573b9aed8a96020f97f0066ca47476fb3e86bd5257a13b5bb0"
+      ],
+      "canonical": [
+        "sha256:f46cc5117d4a9d68f45356893c391f3d4c31aae6f978178dbc96445ba3bd5c86"
+      ],
+      "structural": [
+        "sha256:2c08ccf4799b4c44729e05a8e125081ed3933c072d3756b0ff3d6b5436775138"
+      ],
+      "semantic_lineage": [
+        "sha256:d503b8a7b8226522e717c236ac2af3b8f92edbef110e17e3365c841b015f48fa"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:b3682e3bfe3d47ca8903c52d32da6a6421e2b76c4ada88a416df8502bdadf9ba",
+      "case_id": "sleybench-v0-f3-013",
+      "visibility": "public",
+      "exact": [
+        "sha256:b3682e3bfe3d47ca8903c52d32da6a6421e2b76c4ada88a416df8502bdadf9ba"
+      ],
+      "canonical": [
+        "sha256:90057cbadd369f706bd3c11c02fcfb8d284466235d15dbb3d28b34cf9315cfc8"
+      ],
+      "structural": [
+        "sha256:c6f2feb9982ee618aec44122bb182f4b1bbda0dca6bc1aa15756aea6d898f389"
+      ],
+      "semantic_lineage": [
+        "sha256:6a66b39e05d1895f6aa119ced8bcc627f842cc0eaddd5660ee595c9f637e1b94"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:f37eb4d96b38790ebf8526e4d646598df604afb86ea2e4f5cc110db9c9f27e35",
+      "case_id": "sleybench-v0-f3-014",
+      "visibility": "public",
+      "exact": [
+        "sha256:f37eb4d96b38790ebf8526e4d646598df604afb86ea2e4f5cc110db9c9f27e35"
+      ],
+      "canonical": [
+        "sha256:2c5a02c03facc80bc1c66ee379901337464988fd4abe19631f1c413d6ed7083c"
+      ],
+      "structural": [
+        "sha256:3e0d0c7772c5fc77bf4d24e3fdf3d1cceda0d7b267de812d0033baab24a3e910"
+      ],
+      "semantic_lineage": [
+        "sha256:30fa74c892830e2dacb6ccf1559454975d79614473e30d9ae3f3c84bb42fc6ae"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:293a95be79934b4d95593e3f0c13ee9dc425e9af58b941a45d9f75acdc8da68e",
+      "case_id": "sleybench-v0-f3-015",
+      "visibility": "public",
+      "exact": [
+        "sha256:293a95be79934b4d95593e3f0c13ee9dc425e9af58b941a45d9f75acdc8da68e"
+      ],
+      "canonical": [
+        "sha256:21361f66ff7ac735709366476e408b731b2316c2e53eaf9baa907c67c56198a7"
+      ],
+      "structural": [
+        "sha256:4bb208ce1655918d5085131791d1bf296045d62171c82d71f7be48c577b4828b"
+      ],
+      "semantic_lineage": [
+        "sha256:21a1175f3fffaa605508f14530e7ddcfb960a08df83b7bb2f11c1d976d037489"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:1032a1778a9ad8e97294b6dfb0e58fb5b042cc9969e08bc401769888e07b02cf",
+      "case_id": "sleybench-v0-f3-016",
+      "visibility": "public",
+      "exact": [
+        "sha256:1032a1778a9ad8e97294b6dfb0e58fb5b042cc9969e08bc401769888e07b02cf"
+      ],
+      "canonical": [
+        "sha256:9753209076182356d92ef81c70cafab20782f2443296d399615bdf8f9f1943bb"
+      ],
+      "structural": [
+        "sha256:5bc1c6eaf4e5ce258b27f436f3cd977fcbb2005239dc68e7c73c56bb7618b066"
+      ],
+      "semantic_lineage": [
+        "sha256:f35f575f0d2f037227cbb3e3ebec8edea494cc0b39542a0434733f659c8c986f"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:6db5bc9b2c33fd7056ba31976ad85ca364c39a35e69413dcdbcdf1c613a9cd8a",
+      "case_id": "sleybench-v0-f4-001",
+      "visibility": "public",
+      "exact": [
+        "sha256:6db5bc9b2c33fd7056ba31976ad85ca364c39a35e69413dcdbcdf1c613a9cd8a"
+      ],
+      "canonical": [
+        "sha256:780cffdc3a97713b0431551d6c2584e9df2b7cd8f1f6cc2c90a00388ffded735"
+      ],
+      "structural": [
+        "sha256:04efa49ed22c638258325057f1e3f61a282e621137276b2dd9dedc78b149a27a"
+      ],
+      "semantic_lineage": [
+        "sha256:e2614b8c9e9864c49fb9a8803e665ef97eec4bef2b5cecfe96cb20c495652fc3"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:1232ee4f4ab27d08e709548e96f0ba3770b9184402730c0cc5d25dd1b9257262",
+      "case_id": "sleybench-v0-f4-002",
+      "visibility": "public",
+      "exact": [
+        "sha256:1232ee4f4ab27d08e709548e96f0ba3770b9184402730c0cc5d25dd1b9257262"
+      ],
+      "canonical": [
+        "sha256:ff955d34682842e4ad17e103e0e7899a1b7de83124b3f4769b026a4c5faa9823"
+      ],
+      "structural": [
+        "sha256:a0139900f93b3811d25b0142040a952b88fb885921fd4aa0d54c31f182bba9ee"
+      ],
+      "semantic_lineage": [
+        "sha256:5c7478e6199083c97d89c1fff078234f1bbe92db6f7c4d8d09f1d679bd09b946"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:95ea96f7f8fd1cb0549a606bc02360a70a93d7b55a1d21c557bf1ab3c73ce220",
+      "case_id": "sleybench-v0-f4-003",
+      "visibility": "public",
+      "exact": [
+        "sha256:95ea96f7f8fd1cb0549a606bc02360a70a93d7b55a1d21c557bf1ab3c73ce220"
+      ],
+      "canonical": [
+        "sha256:9682f5d3f85ef3670d61d601024dd1fe270d71c78cc7b882827fd850ec518eff"
+      ],
+      "structural": [
+        "sha256:57e295b63e06402e96f19502808ab090f9ea92156091847e2975a8c64da80cdd"
+      ],
+      "semantic_lineage": [
+        "sha256:f8419cecc06347ae186ca25d904e5daa176d15c284e76dbcfb1b2fa761d9be08"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:973fd2c95da4755779d2af0286de9c2c818c243c76e2ab543e056ac494489c2d",
+      "case_id": "sleybench-v0-f4-004",
+      "visibility": "public",
+      "exact": [
+        "sha256:973fd2c95da4755779d2af0286de9c2c818c243c76e2ab543e056ac494489c2d"
+      ],
+      "canonical": [
+        "sha256:4cb72c3345e21e5ca55160769ec11385d3d46b58a621de329b94dc55d12d4174"
+      ],
+      "structural": [
+        "sha256:26641f9977885d26b38436fba23bf4151ec4080787edf8d5ceef48059b77623d"
+      ],
+      "semantic_lineage": [
+        "sha256:a0c4b5d42612d3c0a60fc3a681ee1503742fe3b1d08e446ead6e22110d4bbd6e"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:692b3b9cb1c721fdd7ee8b7df4eb7352d68ed07818d09fc628ab638e8d8ca49f",
+      "case_id": "sleybench-v0-f4-005",
+      "visibility": "public",
+      "exact": [
+        "sha256:692b3b9cb1c721fdd7ee8b7df4eb7352d68ed07818d09fc628ab638e8d8ca49f"
+      ],
+      "canonical": [
+        "sha256:ea57f510d64e76fcfb9b9be2178a2f3a3319009321479f6341812f61cd0f1ba8"
+      ],
+      "structural": [
+        "sha256:36979cbcafce21736e68f19ce33eda2fc46576e2445a7895932e8a4eb0f230e2"
+      ],
+      "semantic_lineage": [
+        "sha256:87e979fef2ed0e4644c2d2f8317aa2206b086886ec6955215e16e1da38893eec"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:4681ccebe3b2fb49a228188f485ffbb2bc8a007b31545d4f47cc5fe30ad4ea96",
+      "case_id": "sleybench-v0-f4-006",
+      "visibility": "public",
+      "exact": [
+        "sha256:4681ccebe3b2fb49a228188f485ffbb2bc8a007b31545d4f47cc5fe30ad4ea96"
+      ],
+      "canonical": [
+        "sha256:cec0dd70fac281bf4e0d79d0b471dde420bdd015ab0ff39346dc86c60d256207"
+      ],
+      "structural": [
+        "sha256:6d818172647c4d8c11fa189af8574d3f9ba9801907fd142f68635681b81193d6"
+      ],
+      "semantic_lineage": [
+        "sha256:8ad8274f348edb211fb8e49420f9a540a2e716fcedfefb7aa4205e4c2923e3a3"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:72f3d04ad3ad988e206a792cfb9fb37a324445f69840b7790f5764c0fe9217a5",
+      "case_id": "sleybench-v0-f4-007",
+      "visibility": "public",
+      "exact": [
+        "sha256:72f3d04ad3ad988e206a792cfb9fb37a324445f69840b7790f5764c0fe9217a5"
+      ],
+      "canonical": [
+        "sha256:17f727c68601680bf8cf38d458e240ab15b2c77983994fa254c5c240653cff99"
+      ],
+      "structural": [
+        "sha256:872c497ebdf7f41c4c856f67d6dc31d1dd9a98d84bee79c14f346ff9151b6d67"
+      ],
+      "semantic_lineage": [
+        "sha256:81484d31c57644a7506c4fca0e2208337d9a72733b21b58c597a09ecd38a6096"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:b46155fc2c4ee3f9585bf6c7f2fa4c6ef83bbe4e4d93cc75043a6c68056c977f",
+      "case_id": "sleybench-v0-f4-008",
+      "visibility": "public",
+      "exact": [
+        "sha256:b46155fc2c4ee3f9585bf6c7f2fa4c6ef83bbe4e4d93cc75043a6c68056c977f"
+      ],
+      "canonical": [
+        "sha256:596fc9c32d0fc03a2f99a1ce0ecb14921e7ee5150c25c8609a02ac7aeb403fe2"
+      ],
+      "structural": [
+        "sha256:eefa1b4d2a2b9fb90e48d0c140915e33e8b397ceb7fa012e5548b513eddf1a2f"
+      ],
+      "semantic_lineage": [
+        "sha256:b643255b6f9fac05729b4e900260833bee0136a3f523170d3c4520358aa64240"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:50d2b78254fa45d1a47d391a927fb2eca17bc366a999ee8cca068dcece734209",
+      "case_id": "sleybench-v0-f4-009",
+      "visibility": "public",
+      "exact": [
+        "sha256:50d2b78254fa45d1a47d391a927fb2eca17bc366a999ee8cca068dcece734209"
+      ],
+      "canonical": [
+        "sha256:a06ed5fe0299fd8e669cf4402b43342dce1ba862fc7e3f29dbf95918604c8a5b"
+      ],
+      "structural": [
+        "sha256:9c22d4cad337451bf82c45e7314b707bb58a51eada3653766b22b5b016e21722"
+      ],
+      "semantic_lineage": [
+        "sha256:ae558f3933d92288495e8d200111bb837108777c727ed3a7b583f6925dda7dce"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:48dff3ab57c55595313614615bdc8747aa7652248b760cce2943819cacba37c6",
+      "case_id": "sleybench-v0-f4-010",
+      "visibility": "public",
+      "exact": [
+        "sha256:48dff3ab57c55595313614615bdc8747aa7652248b760cce2943819cacba37c6"
+      ],
+      "canonical": [
+        "sha256:9f1c6d5547a950af8ac28704cd4254b3b81007ee96a7b600c45345a9918bcf35"
+      ],
+      "structural": [
+        "sha256:8a6ad913b9f2e9b08d3a81336f4f5df1d71bf60dc99830868bc4aa21bb542c50"
+      ],
+      "semantic_lineage": [
+        "sha256:aab727ec6facc338561d5e335120ff292500dfe4f76d9b1c0cb51e672c0d2c08"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:6f6d54557fb01f2592c5a372bbb299608818db0c2311a112723adb650d76ebca",
+      "case_id": "sleybench-v0-f4-011",
+      "visibility": "public",
+      "exact": [
+        "sha256:6f6d54557fb01f2592c5a372bbb299608818db0c2311a112723adb650d76ebca"
+      ],
+      "canonical": [
+        "sha256:59c20af59acecd98e86e8aeb9a7c5eee4f9dd2bfbfa5e235646e59127cd16427"
+      ],
+      "structural": [
+        "sha256:6ec8fe4cb266526c2a7f28693a62b5a1a614684e803445d8f98516546956d6a8"
+      ],
+      "semantic_lineage": [
+        "sha256:49deaf318e52ca831fabb8632903fd054a19dc1893c4fc19c084be00faa27317"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:f2d6cbf57af1bb1edec0f709e7e4e88a113b7c3bb27440f9718bd3724c2c73fd",
+      "case_id": "sleybench-v0-f4-012",
+      "visibility": "public",
+      "exact": [
+        "sha256:f2d6cbf57af1bb1edec0f709e7e4e88a113b7c3bb27440f9718bd3724c2c73fd"
+      ],
+      "canonical": [
+        "sha256:ce1c270773754d68357fbf35168ee8a7976251a45bc0e4b3b4d3aee3e51e9cdb"
+      ],
+      "structural": [
+        "sha256:107ee017ce4caac21eed0cbfe8ae61d37b6e637a526d8c17598991d478f2143e"
+      ],
+      "semantic_lineage": [
+        "sha256:01c3a54692622c18f8d9e25e28d6d585778bf5d6c2f369a3010f35165c3145bb"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:39bb846a9c43482bd8e3cef420c5033a6c533dbc02c1eede671229312e83a748",
+      "case_id": "sleybench-v0-f4-013",
+      "visibility": "public",
+      "exact": [
+        "sha256:39bb846a9c43482bd8e3cef420c5033a6c533dbc02c1eede671229312e83a748"
+      ],
+      "canonical": [
+        "sha256:e140b5362e6a872fa71820f5038493ecd2d89546e9e62eed571afb9f0829f65b"
+      ],
+      "structural": [
+        "sha256:05f55443e0f364ca61de8f29756493f95db510334e3b1d838a807ac7bea05877"
+      ],
+      "semantic_lineage": [
+        "sha256:f8b99574bc87446d2955b931f74dc5d13069c8dff4956d970bfabd1e5f573de2"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:4cbfdb837d5dbf178006cf44863348a37a0690b1390c2b0712015f198047b3ee",
+      "case_id": "sleybench-v0-f4-014",
+      "visibility": "public",
+      "exact": [
+        "sha256:4cbfdb837d5dbf178006cf44863348a37a0690b1390c2b0712015f198047b3ee"
+      ],
+      "canonical": [
+        "sha256:f74478490895c38ece8208ecd9456e37fda47f9250320224a9a122a723c76c87"
+      ],
+      "structural": [
+        "sha256:069e3c15062c80ef3527e4aaf68e27de2f1940d8924d9eefde1dad68b163d3c5"
+      ],
+      "semantic_lineage": [
+        "sha256:bb95fc1b5085b3c9710d9617494d00412331aaf5f942a12541adddc26a9f680e"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:e992ef03b2c8225a3ea063a573db5e5a7904cea49c55bc7dddb8a1d3f4fb0d0f",
+      "case_id": "sleybench-v0-f4-015",
+      "visibility": "public",
+      "exact": [
+        "sha256:e992ef03b2c8225a3ea063a573db5e5a7904cea49c55bc7dddb8a1d3f4fb0d0f"
+      ],
+      "canonical": [
+        "sha256:1ee61761209dcbec9ac6d04e967d036adf61ceb9e5f69e0035c4edfdc4bf5efc"
+      ],
+      "structural": [
+        "sha256:8fdaae20135f5913d5e689adc406f89a896e10c339ea4403c35edaf362a3adec"
+      ],
+      "semantic_lineage": [
+        "sha256:cae180e356bf5401110766807d3f0d36300d11087701050e9aa469dc5243517a"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:922f42d4013696222598b315863b20416225de7d3d531bf70cf9bb9a84b545c7",
+      "case_id": "sleybench-v0-f4-016",
+      "visibility": "public",
+      "exact": [
+        "sha256:922f42d4013696222598b315863b20416225de7d3d531bf70cf9bb9a84b545c7"
+      ],
+      "canonical": [
+        "sha256:b6afdc4e72bb3faa43f4d9c00a4a39c06b15241da76b28b68be374db3d79f023"
+      ],
+      "structural": [
+        "sha256:18cfba3356621e3202432c1e127887c2df7c9789997a74ebc17a96585cf94471"
+      ],
+      "semantic_lineage": [
+        "sha256:16df63d7feb4723c86490756be83fcfce6ec1b3ab5a790662d3b9567c6fbce02"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:070f8094c239caffda3b064fd5aa4d40beee9191f19d2a2814efe4b781b2a40a",
+      "case_id": "sleybench-v0-f5-001",
+      "visibility": "public",
+      "exact": [
+        "sha256:070f8094c239caffda3b064fd5aa4d40beee9191f19d2a2814efe4b781b2a40a"
+      ],
+      "canonical": [
+        "sha256:d7b722443fb4a6e84329e2fcb92636efeec58516fbbb40a5dd4fcef8044a4d7c"
+      ],
+      "structural": [
+        "sha256:204fc7db61f4805715809af1246fbd7e8ab3eb931340a6b15be5e4ee5be3fea6"
+      ],
+      "semantic_lineage": [
+        "sha256:01eb08296091a1dec770b47135047c1f6e4808014dc7fa3ecd97b606521b045b"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:5461d1c0ae4e20f6c354c9929decf51658674f881fa93d0529c96a0dced92769",
+      "case_id": "sleybench-v0-f5-002",
+      "visibility": "public",
+      "exact": [
+        "sha256:5461d1c0ae4e20f6c354c9929decf51658674f881fa93d0529c96a0dced92769"
+      ],
+      "canonical": [
+        "sha256:374f8d406a41bf9f27a7312f8bc244937c4a6a2c99cc9add0f34bcb8c14c6a53"
+      ],
+      "structural": [
+        "sha256:5023587b547f47a853251bc9e9ba3bcb58c8673fd1e0c56d9493ecc31e07a0b8"
+      ],
+      "semantic_lineage": [
+        "sha256:a6a3192870d8c004159c495b7d41ec31f2aeead7d80c7f2b7a28a030a48dd4ff"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:61ab0ec59ada19a27c7b60579cde2b168764856a201430e4fad0cf9c02a16a9d",
+      "case_id": "sleybench-v0-f5-003",
+      "visibility": "public",
+      "exact": [
+        "sha256:61ab0ec59ada19a27c7b60579cde2b168764856a201430e4fad0cf9c02a16a9d"
+      ],
+      "canonical": [
+        "sha256:87b8c2d24479a4bcfbbe0c8cf7d1a0641ad35d464e5bc51d70e58f5688e00f72"
+      ],
+      "structural": [
+        "sha256:df09171191c5b069ec24d8f11fa2ec2e43d1d2dec0a69a2ea0ad785d8a76f018"
+      ],
+      "semantic_lineage": [
+        "sha256:b66fdfdd39e2eeff28f35fba8e324b2c63fd33ab8e4b79a4fd11d980aa29a74a"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:e88633d42c6681d50a27689a4574123a2a5b4c9b429af76356d47d0ae2faedef",
+      "case_id": "sleybench-v0-f5-004",
+      "visibility": "public",
+      "exact": [
+        "sha256:e88633d42c6681d50a27689a4574123a2a5b4c9b429af76356d47d0ae2faedef"
+      ],
+      "canonical": [
+        "sha256:5452ace5a0d1251630df847f2e012c48020c435cd88d5dd7a0e07e3290e49f34"
+      ],
+      "structural": [
+        "sha256:8ce5564d4ff169956e996d18f324799649aff79413d34fb35fa0ec517430a10d"
+      ],
+      "semantic_lineage": [
+        "sha256:81bb55b37db524eeb2785f0580e67a13e284b6ca668a1e1c26c9f319e1a03eaf"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:6395041089034c5029e002c1fa5154e592fdbe3d461662aba61fcb583603fe0b",
+      "case_id": "sleybench-v0-f5-005",
+      "visibility": "public",
+      "exact": [
+        "sha256:6395041089034c5029e002c1fa5154e592fdbe3d461662aba61fcb583603fe0b"
+      ],
+      "canonical": [
+        "sha256:f2548b0d7b74faf5d2e8438590889307a154205bd4b8183431fa01f6e1b195c0"
+      ],
+      "structural": [
+        "sha256:90d89273b3569e4cf5957c728cbdc98109f08f46982643c143f52c1b3a6b258f"
+      ],
+      "semantic_lineage": [
+        "sha256:b8884171afa254b9cade5373fdab9bdcab3eb521b43103b2c21d39c964b207ed"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:0dc0e7e9a3b961f938cadf4d6b6e86ec3cf62a8e8c71c605c9be9c1e871b2d72",
+      "case_id": "sleybench-v0-f5-006",
+      "visibility": "public",
+      "exact": [
+        "sha256:0dc0e7e9a3b961f938cadf4d6b6e86ec3cf62a8e8c71c605c9be9c1e871b2d72"
+      ],
+      "canonical": [
+        "sha256:7aa5318fa112e228ca0f8a5e283bf70ee1db874580a09b11ae16cc37e35b691b"
+      ],
+      "structural": [
+        "sha256:881558b3323f9cc4d39f18211336c8200484854dfc9ef7db1c569ea1f258a27e"
+      ],
+      "semantic_lineage": [
+        "sha256:2b06c190bd55ee115aa9296b8dc31ab0e6f3b18e1c508b4c3897accdbbab3645"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:165dcd6435a50f21c9f20ab212c8bbd0fef7523be02df25c24462510e0055d0b",
+      "case_id": "sleybench-v0-f5-007",
+      "visibility": "public",
+      "exact": [
+        "sha256:165dcd6435a50f21c9f20ab212c8bbd0fef7523be02df25c24462510e0055d0b"
+      ],
+      "canonical": [
+        "sha256:8c444c13f91c38946ac4656bed0ea71e95b215e208ec6f00af94060dfcda370c"
+      ],
+      "structural": [
+        "sha256:459a1901df016a47f19948c6f4d8ac4bed4db040988556dc76bd425bdc9146ee"
+      ],
+      "semantic_lineage": [
+        "sha256:f95ab9f240148a8be42966e02317457c55bd820dba995e8cdbfb77035d2b5d84"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:46207967f29e61dcfda1a30afa2884693b7d08edc638761ec0edce46dc97b922",
+      "case_id": "sleybench-v0-f5-008",
+      "visibility": "public",
+      "exact": [
+        "sha256:46207967f29e61dcfda1a30afa2884693b7d08edc638761ec0edce46dc97b922"
+      ],
+      "canonical": [
+        "sha256:b22df606e9f4e270585d56b902677ef03bdda672f16dd3b0264e59c0c5cf23c4"
+      ],
+      "structural": [
+        "sha256:47441e150b407ab6e512fc8fd90f1bb1b5a580e6f9f340a015b329bd2272a2de"
+      ],
+      "semantic_lineage": [
+        "sha256:3ebfa558d426895ed3094016093e5429997d1dc4bb225ec54c50201237cd482d"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:abd6799bcd6d66df3bf856ffccb4888a57a595024e4496ff2f172a01bd2eb9bb",
+      "case_id": "sleybench-v0-f5-009",
+      "visibility": "public",
+      "exact": [
+        "sha256:abd6799bcd6d66df3bf856ffccb4888a57a595024e4496ff2f172a01bd2eb9bb"
+      ],
+      "canonical": [
+        "sha256:c8acef22b64bc7d2e3aa0b3d5ab60a2d704885a18e52299e05364f2fdc7a6a63"
+      ],
+      "structural": [
+        "sha256:fd21e5517161ddc6c42eccd98a5f5f659eecf6ca0f2ca86957c95d67a0af0641"
+      ],
+      "semantic_lineage": [
+        "sha256:49f9ab987dfbf8619a423480f64509b0852fcfb45c14eee74de6cee5a74b6099"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:c0e15b445074c1489709cd7bea9e5f0c42ef3d953550802c59a3b47ef45310d4",
+      "case_id": "sleybench-v0-f5-010",
+      "visibility": "public",
+      "exact": [
+        "sha256:c0e15b445074c1489709cd7bea9e5f0c42ef3d953550802c59a3b47ef45310d4"
+      ],
+      "canonical": [
+        "sha256:e7d1936e3200c6f588cb2d93a56825c1eb5262e02c632e6dfc5642ad6d59402c"
+      ],
+      "structural": [
+        "sha256:5479a28f4b4c305db6626edb0c275f1877abfcbc55dcf32fc980535b321c8e25"
+      ],
+      "semantic_lineage": [
+        "sha256:ed762dd0faf0de04fb3ce8d77d80e6be3bde3f5925229d4192807493614592e6"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:e46a8b7d1e0d549fca4c00a97c0f0b042cb91b74fc23791955292d1a3964191d",
+      "case_id": "sleybench-v0-f5-011",
+      "visibility": "public",
+      "exact": [
+        "sha256:e46a8b7d1e0d549fca4c00a97c0f0b042cb91b74fc23791955292d1a3964191d"
+      ],
+      "canonical": [
+        "sha256:a55844d1956fa958f916c125052941c0e168a4eec607216e41258f01c7342b86"
+      ],
+      "structural": [
+        "sha256:8939f40b72beb1f042581b865fa56aeac41bbe877c79998a17874746a332efdd"
+      ],
+      "semantic_lineage": [
+        "sha256:a94182176f94081d453aaffb2c6291048517e0d2e1a42f82e34a1031d5070aa3"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:89ae214d4070c2c245e135c9fe65bcfbee049463c32a7d3a6588c4e13ad82bc4",
+      "case_id": "sleybench-v0-f5-012",
+      "visibility": "public",
+      "exact": [
+        "sha256:89ae214d4070c2c245e135c9fe65bcfbee049463c32a7d3a6588c4e13ad82bc4"
+      ],
+      "canonical": [
+        "sha256:7afd6f28b612e13d2b902195cf79e3813d0f74f7d2a8d58bb43659638b94b9c4"
+      ],
+      "structural": [
+        "sha256:104fa1e06dc4ea6b3d908c99933588e0a0c2b481c3707195c18d455e9c114b98"
+      ],
+      "semantic_lineage": [
+        "sha256:a6c8923d8558b4b03477cf9236ca734458a55df3004f98670142c53b169fd916"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:2d79e5109cbc1798b6256ada64d4049c8ef3af62ee87c58fa889020d67bcc6bf",
+      "case_id": "sleybench-v0-f5-013",
+      "visibility": "public",
+      "exact": [
+        "sha256:2d79e5109cbc1798b6256ada64d4049c8ef3af62ee87c58fa889020d67bcc6bf"
+      ],
+      "canonical": [
+        "sha256:9a60210d07ade0c9c55fa7c965898da5ecf4415f0784758af46c1446d45d63f8"
+      ],
+      "structural": [
+        "sha256:cb6f412a042a908ddc433ca2018862f5224ac9644199dfa12f300106ae03800b"
+      ],
+      "semantic_lineage": [
+        "sha256:019675583beb0c6f05687eaa99385768a11591b129070d9d044e3ad9caaf49c7"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:ccddf520d9f20d4e16e98d57c06898cc1ed202e97a9bbacac8cf6ec5acb4c003",
+      "case_id": "sleybench-v0-f5-014",
+      "visibility": "public",
+      "exact": [
+        "sha256:ccddf520d9f20d4e16e98d57c06898cc1ed202e97a9bbacac8cf6ec5acb4c003"
+      ],
+      "canonical": [
+        "sha256:0f71cb41fb3d42750e50cdc0552cf75536a7e6f76c1eb9c4b68a3f1006badfc4"
+      ],
+      "structural": [
+        "sha256:14461bea01eee367d8eb9f1900e189797f1bbfa5fc28f4fa1c529673e6189f7a"
+      ],
+      "semantic_lineage": [
+        "sha256:83e611b3d40475636fdaf1e26e5cc7e3bbb9a6664fee5de8be128dc3f628f07a"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:9560a08f7f3053e82d7aece6a7ede182160cc2f5148bfb94bf620d5d88b8d329",
+      "case_id": "sleybench-v0-f5-015",
+      "visibility": "public",
+      "exact": [
+        "sha256:9560a08f7f3053e82d7aece6a7ede182160cc2f5148bfb94bf620d5d88b8d329"
+      ],
+      "canonical": [
+        "sha256:6f3cb9ad0e444dacdf6b29f27ee6119e1458a20e0c5de7f32accdc7fcaafd3d8"
+      ],
+      "structural": [
+        "sha256:ab6868f11d45a3a9a9df3c4449542bdd11ec726b7822ab4db8b7b0cb8c25bce8"
+      ],
+      "semantic_lineage": [
+        "sha256:a6b0e10faffb71c058e81facf69410741171167e6491d6abbc9a9b84d4976616"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:a36930ec67b2654f7f885afe57139bcac799068eca959b56faa3458c80f17136",
+      "case_id": "sleybench-v0-f5-016",
+      "visibility": "public",
+      "exact": [
+        "sha256:a36930ec67b2654f7f885afe57139bcac799068eca959b56faa3458c80f17136"
+      ],
+      "canonical": [
+        "sha256:dddebd95150475732d3d5dfcff8eb2188b1957c21ca77b1c084703a3d0224ae7"
+      ],
+      "structural": [
+        "sha256:601d4d4931fd4adf463f91efb595e4dde5ec1fab2b932f5a72442403f2475c28"
+      ],
+      "semantic_lineage": [
+        "sha256:9cc626887ba4906e331007ab43a93693e17ecf354ff26d5c09cfa265c9f7266c"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:10c7c3c1a477d5b3b46f7d8713548bde94c9a7408940dc8310e4521592bd25bd",
+      "case_id": "sleybench-v0-f6-001",
+      "visibility": "public",
+      "exact": [
+        "sha256:10c7c3c1a477d5b3b46f7d8713548bde94c9a7408940dc8310e4521592bd25bd"
+      ],
+      "canonical": [
+        "sha256:f2087d675a5e5c2e6edd7a81158bb7931e7545e2f09f39178176dbb34893eb89"
+      ],
+      "structural": [
+        "sha256:6c2f94a6c823a5b83b3dae9fe4651035d9aa38599d112eb45a923c390faa96a8"
+      ],
+      "semantic_lineage": [
+        "sha256:d7602336bb3d54451844edcffc5d670eb49e79b63f90ab4986f3c566268dd8a5"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:ae70e999a35805b892d5ff627c1cfb0323d12ffca677e7d68cb59ddc9f69e801",
+      "case_id": "sleybench-v0-f6-002",
+      "visibility": "public",
+      "exact": [
+        "sha256:ae70e999a35805b892d5ff627c1cfb0323d12ffca677e7d68cb59ddc9f69e801"
+      ],
+      "canonical": [
+        "sha256:85dc0d69917cae995ff720a80ace6fe86cbbbf9b4a5081e0868441a416e945fe"
+      ],
+      "structural": [
+        "sha256:c9214225aec67ddb885dd2e90a2bcbc884c98fad34685bdf8e424b32d635f32b"
+      ],
+      "semantic_lineage": [
+        "sha256:d612a008e7edbab11f5b71bf7eb7dc4e098ed659a7fad6c74fda4c41d89ef92e"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:f70f41e88506520626b7d4ab358fda1e34f967357e1c0a56987e9070458fdaa8",
+      "case_id": "sleybench-v0-f6-003",
+      "visibility": "public",
+      "exact": [
+        "sha256:f70f41e88506520626b7d4ab358fda1e34f967357e1c0a56987e9070458fdaa8"
+      ],
+      "canonical": [
+        "sha256:f64973b27b713f649dddb70b2c4a469279a20ad5289590a76fa743693a9e7118"
+      ],
+      "structural": [
+        "sha256:1ac157fb1bda6a0b6f5843dc2b23c6b0080f9f6b88a512098dec1eb838a0199f"
+      ],
+      "semantic_lineage": [
+        "sha256:a91dcb551f6b8a29466a8273eb328c870770bca56c87dde8be9a51208abab876"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:62b489e97ed1de08ddd334b2b84fdfe1cd166169f1cfdd03160a2a4ca676483e",
+      "case_id": "sleybench-v0-f6-004",
+      "visibility": "public",
+      "exact": [
+        "sha256:62b489e97ed1de08ddd334b2b84fdfe1cd166169f1cfdd03160a2a4ca676483e"
+      ],
+      "canonical": [
+        "sha256:36ba0ebe21ec3043dd0b75dfaa82eeed3d3374415334eb54392911623a8dee0f"
+      ],
+      "structural": [
+        "sha256:cd50229184f576eea636d410ec3406a18a0d9930fdb5c5455aacea728f2d1285"
+      ],
+      "semantic_lineage": [
+        "sha256:c126b74713a3cc49d2ac42aca4717be08015f3cfc11f7efff49bcc24c5af932b"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:72751e4524aa5650381fa3130122464f3d2c5104b17db687d7a6e16f38a08906",
+      "case_id": "sleybench-v0-f6-005",
+      "visibility": "public",
+      "exact": [
+        "sha256:72751e4524aa5650381fa3130122464f3d2c5104b17db687d7a6e16f38a08906"
+      ],
+      "canonical": [
+        "sha256:f339f34cbe1d5a57e76bb5cd582d66af3c4e4c088ba6b4fdb418fe424379387d"
+      ],
+      "structural": [
+        "sha256:95d5cd7a377d455890df93fb7998706ebd351903d036c098cc2ae7b0b77fe4d2"
+      ],
+      "semantic_lineage": [
+        "sha256:11e89f4323f55a7ddd9ad1959411e58760dba8ccafc2c494bc11507742a56bb8"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:195009ac2417074cdee6d5bdb019540a052b71dfb8ad5fbf5c69670f0b223d89",
+      "case_id": "sleybench-v0-f6-006",
+      "visibility": "public",
+      "exact": [
+        "sha256:195009ac2417074cdee6d5bdb019540a052b71dfb8ad5fbf5c69670f0b223d89"
+      ],
+      "canonical": [
+        "sha256:6b1578ee46059cf1b2370cc91bf0f5a1f239201e2263a92961e79409a3f4aee9"
+      ],
+      "structural": [
+        "sha256:b205036b6637dcfad050b9db2e938b16810a0ebb1d3170411cdc795c2a8daa90"
+      ],
+      "semantic_lineage": [
+        "sha256:e962667bf8775067521a45ed3f31eeb639c77bfbac2e56179b001cff6d8a0abb"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:3559969211464eeadcf9bbaa2ddc14704f9c0ea16a450f70c43292df07806fea",
+      "case_id": "sleybench-v0-f6-007",
+      "visibility": "public",
+      "exact": [
+        "sha256:3559969211464eeadcf9bbaa2ddc14704f9c0ea16a450f70c43292df07806fea"
+      ],
+      "canonical": [
+        "sha256:ac7a8452796f0a2fefc9e52e62d4dc7052624038d1e26ffb35b99b78f55abf84"
+      ],
+      "structural": [
+        "sha256:2ebd35672cccdc4e1e57f297997227ebfd2ac87fa34f326ba31237ca189b611f"
+      ],
+      "semantic_lineage": [
+        "sha256:f651921014499e7d36ac9a682d4f41ac3c2a83e46c37ae3c385fe0264c65f5dc"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:546c19abdeeb08eb95594112563eb6a09b109203285ca66af621ec867cb2f705",
+      "case_id": "sleybench-v0-f6-008",
+      "visibility": "public",
+      "exact": [
+        "sha256:546c19abdeeb08eb95594112563eb6a09b109203285ca66af621ec867cb2f705"
+      ],
+      "canonical": [
+        "sha256:8f55ad0ae6c37063da8dbfd2cf36124060a6359822a92bda290fb04726e798aa"
+      ],
+      "structural": [
+        "sha256:5738245ab97f40df4ffe02336bed7196f413877147f45bc275b93d4efa278f66"
+      ],
+      "semantic_lineage": [
+        "sha256:f00a3ca50df570cf75fbe554a799037124bd0744435695e0cc58875b384ae158"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:57d0e22e57642f909d8bd156c613ee3333f913300470e963739bf9510df2debc",
+      "case_id": "sleybench-v0-f6-009",
+      "visibility": "public",
+      "exact": [
+        "sha256:57d0e22e57642f909d8bd156c613ee3333f913300470e963739bf9510df2debc"
+      ],
+      "canonical": [
+        "sha256:a45eb1af8d71636b2b4efea2b91ee14c8753a822dfc9fc01ac0d18538817164d"
+      ],
+      "structural": [
+        "sha256:0378f98fa3a0b0f72226ed76ef1a26d7e72670fe90ef275337d47a815640aa7d"
+      ],
+      "semantic_lineage": [
+        "sha256:b9f34ac6f2ccd23589685dbd325c59e31cfe264772f52677f29aa55bd2064fa1"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:dbc6afeb7cb103326d5d2ccf2f881469559b456ec3fa188dd9385e8ab941a51e",
+      "case_id": "sleybench-v0-f6-010",
+      "visibility": "public",
+      "exact": [
+        "sha256:dbc6afeb7cb103326d5d2ccf2f881469559b456ec3fa188dd9385e8ab941a51e"
+      ],
+      "canonical": [
+        "sha256:e7001df8b231011693222913b9ba5c49bbdefeadd7561fc015a0a5669c095029"
+      ],
+      "structural": [
+        "sha256:4d2c3ab221401b73119e7edcb88856e6abbac8217532f157fa616618e431623f"
+      ],
+      "semantic_lineage": [
+        "sha256:02a083d07b04d45e20d56923e915bb58622c83b1e45a6b2ec0ab7ce744bcdd5c"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:fee98d5c8c354bc580a8b5dcca86ec72b5d6c6377222db9ae660914c605e89ea",
+      "case_id": "sleybench-v0-f6-011",
+      "visibility": "public",
+      "exact": [
+        "sha256:fee98d5c8c354bc580a8b5dcca86ec72b5d6c6377222db9ae660914c605e89ea"
+      ],
+      "canonical": [
+        "sha256:9f546e7864ac60c83a8ec53109bc5a23fd7d31b4a597b5053e205d992a23e235"
+      ],
+      "structural": [
+        "sha256:8d2d60f5d0c0e8bed3f5633484bafca603039223caae603ddf0de50be9224c57"
+      ],
+      "semantic_lineage": [
+        "sha256:daf69970980b754589eb5368377fb7b8f4f091e6aed23fa48985b4ba9c2014c8"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:3d68493b094cd1b508c99024c9f54cfc8acc4110071f8ff0b2a4507c7206de74",
+      "case_id": "sleybench-v0-f6-012",
+      "visibility": "public",
+      "exact": [
+        "sha256:3d68493b094cd1b508c99024c9f54cfc8acc4110071f8ff0b2a4507c7206de74"
+      ],
+      "canonical": [
+        "sha256:e44d240f7ac86dc65167f9d309aec2a2e307a2d11f83e12b1cbac05e9608bc69"
+      ],
+      "structural": [
+        "sha256:f8de293334061b4b2e223ae3b6d2253b707aae793ee338cae54ad634bdbea234"
+      ],
+      "semantic_lineage": [
+        "sha256:85fa642b7ad06d9932a51aab6e9b3fb4eef8af4faf802aeeee1bfba051591eda"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:c15c0037c103745eb5086f97be87ce5a410d5f50cb5d2f30242ac653654c5852",
+      "case_id": "sleybench-v0-f6-013",
+      "visibility": "public",
+      "exact": [
+        "sha256:c15c0037c103745eb5086f97be87ce5a410d5f50cb5d2f30242ac653654c5852"
+      ],
+      "canonical": [
+        "sha256:9737bdcd5ca1e1aad4554b98db5c0183c612e3b73103d9ad5ce501d703d7d41f"
+      ],
+      "structural": [
+        "sha256:d157cfb0f5ab594d7de1b3985c21d17a2023b379ab047aba718f26472e083e79"
+      ],
+      "semantic_lineage": [
+        "sha256:f960c8d53fdb226387f128ad9228a13b124da301f461d6a8392def0f35f4cf01"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:58509da84d1eba99711524e1ce66af58948c09c37434e0412ff8ec31b5ed4a17",
+      "case_id": "sleybench-v0-f6-014",
+      "visibility": "public",
+      "exact": [
+        "sha256:58509da84d1eba99711524e1ce66af58948c09c37434e0412ff8ec31b5ed4a17"
+      ],
+      "canonical": [
+        "sha256:3a39c173fcfaf210f20dbdd6938b8c6d024d434b669b3af7dbb14f5e5e40d4f4"
+      ],
+      "structural": [
+        "sha256:39ce682afc9cc46dc7291058f85d69dab02973ee91c5595405997555f4ac9211"
+      ],
+      "semantic_lineage": [
+        "sha256:946b4863d5af794fbd9012e9136a268b78fb5e6d351337ff93c672404138a817"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:bdf9b3288f4c921c203c471cb2689f13947bb414208aa85eef2ad71213dc7611",
+      "case_id": "sleybench-v0-f6-015",
+      "visibility": "public",
+      "exact": [
+        "sha256:bdf9b3288f4c921c203c471cb2689f13947bb414208aa85eef2ad71213dc7611"
+      ],
+      "canonical": [
+        "sha256:27cee0e200900358b611ce546596db2b4879f24dbae28ea755bc0fcaf7f85db1"
+      ],
+      "structural": [
+        "sha256:013657c5081d7bac802f09f609afe6a086ee541415647eac6ed11488885dc8f8"
+      ],
+      "semantic_lineage": [
+        "sha256:5ce0a962a923380fc7f90b10064fc97b1d568ddddaef08aca2d297a4232cb438"
+      ]
+    },
+    {
+      "exclusion_id": "sha256:c0a010bf3e4d8d47e64f2c940a8029d634c06a453ab66c8cad3dcc5b62594a0d",
+      "case_id": "sleybench-v0-f6-016",
+      "visibility": "public",
+      "exact": [
+        "sha256:c0a010bf3e4d8d47e64f2c940a8029d634c06a453ab66c8cad3dcc5b62594a0d"
+      ],
+      "canonical": [
+        "sha256:941062f365c3df0c9f18ba2b4386f0779d182664a69ea4aef76e21017dbc0ba8"
+      ],
+      "structural": [
+        "sha256:7fca9d72d288623ace991c53ced86f1fde7adb823099dccf82d183bc4492f20a"
+      ],
+      "semantic_lineage": [
+        "sha256:ccbb5800504950a0998d444fa57c8fb1566ed2f949dc2e0062b81e5dba9ab7a9"
+      ]
+    }
+  ]
+}

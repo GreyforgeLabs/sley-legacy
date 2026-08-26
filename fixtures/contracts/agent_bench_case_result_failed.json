@@ -1,0 +1,119 @@
+{
+  "schema": "sley.agent_bench.case_result.v0",
+  "run_id": "sleybench-smoke-v0-deterministic",
+  "case_id": "sleybench-smoke-f1-001",
+  "family": "syntax_compilation",
+  "mode": "K4",
+  "adapter_id": "deterministic-fixture-v0",
+  "status": "failed",
+  "score_tags": [
+    "parse",
+    "compile",
+    "pass"
+  ],
+  "scores": {
+    "prompt_accepted": true,
+    "parse_passed": false,
+    "check_passed": false,
+    "oracle_tests_passed": false,
+    "semantic_output_matched": true,
+    "expected_diagnosis_identified": true,
+    "repair_minimal": true,
+    "scope_precise": true,
+    "required_evidence_produced": true
+  },
+  "measurements": {
+    "tool_calls": 2,
+    "compiler_cycles": 2,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "wall_ms": 224,
+    "estimated_cost_usd": 0,
+    "changed_files": 1,
+    "changed_lines": 3,
+    "syntax_hallucination": false,
+    "stdlib_hallucination": false,
+    "invalid_tool_call": false,
+    "model_measurement_applicable": false
+  },
+  "workspace": {
+    "retained": false,
+    "clean_before": true,
+    "path_exposed": false,
+    "trusted_fixture": true,
+    "os_isolation": false
+  },
+  "evidence": {
+    "training_exclusion_id": "sha256:20285866c88a1948967a32a13d586d41afb453264edb9d4cad80ba46df9eeb31",
+    "initial_tree_digest": "sha256:21da9b848adc9051ed293624e41a5a3ae82d2864a8c6a6a4232aefdc0b68f119",
+    "candidate_digest": "sha256:742f67f7a0c964ce9ff7999f8720ddc863e924f926cab8ec1c8f53f710601373",
+    "final_tree_digest": "sha256:742f67f7a0c964ce9ff7999f8720ddc863e924f926cab8ec1c8f53f710601373",
+    "prompt_digest": "sha256:725144ab4d80b55eecc7e299adcbeaadbb70088d66e040d0d2da1f9f360774b8",
+    "step_evidence_digest": "sha256:6aa507bed861b8488c1f53c16c4fe51c688f1d722c4d3e44824d414bc48ebcba"
+  },
+  "steps": [
+    {
+      "name": "check",
+      "phase": "oracle",
+      "argv": [
+        "sley",
+        "check",
+        "--json",
+        "main.sley"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 125,
+      "status": "failed",
+      "stdout_schema": null,
+      "assertion_count": 1,
+      "assertion_passed_count": 0,
+      "output_bytes": 67,
+      "stdout_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_digest": "sha256:8c53c281b9b1df5337eca960ee4c95a62efc5ef53b306c93d087ef2a4ab2821b",
+      "issues": [
+        {
+          "code": "SLEYBENCH_EXIT_MISMATCH",
+          "message": "expected exit 0, got 125"
+        },
+        {
+          "code": "SLEYBENCH_SCHEMA_MISMATCH",
+          "message": "expected schema sley.diagnostics.report.v0, got null"
+        },
+        {
+          "code": "SLEYBENCH_ASSERTION_FAILED",
+          "message": "one or more JSON-pointer assertions failed"
+        }
+      ]
+    },
+    {
+      "name": "ast",
+      "phase": "oracle",
+      "argv": [
+        "sley",
+        "ast",
+        "--json",
+        "main.sley"
+      ],
+      "expected_exit": 0,
+      "actual_exit": 125,
+      "status": "failed",
+      "stdout_schema": null,
+      "assertion_count": 0,
+      "assertion_passed_count": 0,
+      "output_bytes": 67,
+      "stdout_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_digest": "sha256:8c53c281b9b1df5337eca960ee4c95a62efc5ef53b306c93d087ef2a4ab2821b",
+      "issues": [
+        {
+          "code": "SLEYBENCH_EXIT_MISMATCH",
+          "message": "expected exit 0, got 125"
+        },
+        {
+          "code": "SLEYBENCH_SCHEMA_MISMATCH",
+          "message": "expected schema sley.ast.program.v0, got null"
+        }
+      ]
+    }
+  ],
+  "issues": []
+}

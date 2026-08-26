@@ -1,7 +1,7 @@
 # Sley Public Evidence
 
 Status: current public auditor packet
-Last updated: 2026-08-22
+Last updated: 2026-08-26
 
 ## Canonical Description
 
@@ -38,21 +38,22 @@ Sley's public category rests on five connected properties:
 | Planned changes support review before accepted mutation. | `fixtures/ci_smoke_probe/`, graft and fix tests | `bin/sley graft --json --dry-run fixtures/ci_smoke_probe/graft_target.sley fixtures/ci_smoke_probe/insert_statement.json` |
 | Authority-gated effects are explicit and deterministic. | `examples/*_gate.sley`, runtime tests | `bin/sley run --json --cap SecretRead --secret api_key redacted examples/secret_gate.sley` |
 | The complete local v1 proof surface is reproducible. | `Makefile`, schemas, fixtures, corpus, integration tests | `make v1` |
+| The supported release candidate is content-addressed and clean-install tested. | `scripts/sley-release.sh`, `docs/v1.2/RELEASE_ARTIFACTS.md`, release schemas | `make release-archive release-security-check` |
 
 ## Current Verified Counts
 
-The 2026-08-22 local checkpoint passed with:
+The 2026-08-26 release-candidate inventory contains:
 
-- 42 report schemas
-- 128 contract fixtures
-- 23 accepted corpus cases
-- 43 rejected corpus cases
-- 199 integration checks
-- 23 of 23 local v1 gate checks
+- 99 report schemas
+- 187 contract fixtures
+- 24 accepted corpus cases
+- 48 rejected corpus cases
+- 264 integration checks
+- 38 local v1 gate targets
 
 ## Self-Hosted Compiler
 
-The self-hosted source tree is organized into six semantic modules:
+The self-hosted source tree includes these release-critical semantic modules:
 
 - `loom.bootstrap`
 - `loom.parser`
@@ -60,6 +61,13 @@ The self-hosted source tree is organized into six semantic modules:
 - `loom.lint`
 - `loom.runtime`
 - `loom.reports`
+- `loom.transaction`
+- `loom.adapter`
+- `loom.worker`
+- `loom.testing`
+- `loom.validation`
+- `loom.operational`
+- `loom.release`
 
 The local proof gate exercises language-owned parsing, checking, linting,
 runtime evaluation, report construction, dispatch, diagnostics, structural
@@ -86,6 +94,8 @@ git status --short
 ./scripts/check-self-hosted-code.sh
 scripts/self-hosted-test.sh
 make v1
+make release-archive
+make release-security-check
 ```
 
 Each command is local and deterministic. The complete gate covers syntax,

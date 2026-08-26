@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.release.provenance.v1",
+  "title": "Sley Release Provenance v1",
+  "type": "object",
+  "required": ["schema", "status", "release", "artifact_id", "source", "artifact", "materials", "build", "assurance", "authority"],
+  "properties": {
+    "schema": {"const": "sley.release.provenance.v1"},
+    "status": {"enum": ["release_candidate", "test_only"]},
+    "release": {"const": "1.2.0"},
+    "artifact_id": {"const": "sley-1.2.0-linux-x86_64"},
+    "source": {
+      "type": "object",
+      "required": ["commit", "payload_tree_digest", "dirty"],
+      "properties": {
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "payload_tree_digest": {"$ref": "#/$defs/digest"},
+        "dirty": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["path", "digest", "size"],
+      "properties": {
+        "path": {"const": "sley-1.2.0-linux-x86_64.tar.gz"},
+        "digest": {"$ref": "#/$defs/digest"},
+        "size": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "materials": {
+      "type": "object",
+      "required": ["manifest_digest", "license_inventory_digest", "sbom_digest"],
+      "properties": {
+        "manifest_digest": {"$ref": "#/$defs/digest"},
+        "license_inventory_digest": {"$ref": "#/$defs/digest"},
+        "sbom_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "build": {
+      "type": "object",
+      "required": ["command", "builder_os", "builder_architecture", "source_date_epoch", "reproducible"],
+      "properties": {
+        "command": {"const": ["bin/sley", "release", "build", "--output-dir", "dist", "--json"]},
+        "builder_os": {"type": "string", "minLength": 1},
+        "builder_architecture": {"type": "string", "minLength": 1},
+        "source_date_epoch": {"type": "integer", "minimum": 1},
+        "reproducible": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "assurance": {
+      "type": "object",
+      "required": ["signed", "signature", "cryptographic_provider_attestation"],
+      "properties": {
+        "signed": {"const": false},
+        "signature": {"type": "null"},
+        "cryptographic_provider_attestation": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "publication_authorized", "tag_authorized", "upload_authorized"],
+      "properties": {
+        "mode": {"const": "local_release_candidate_only"},
+        "publication_authorized": {"const": false},
+        "tag_authorized": {"const": false},
+        "upload_authorized": {"const": false}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {"digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}
+}

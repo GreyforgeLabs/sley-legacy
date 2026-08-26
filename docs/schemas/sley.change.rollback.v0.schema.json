@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.change.rollback.v0",
+  "title": "Sley Change Rollback Report v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "transaction", "apply_ref", "authorization_ref",
+    "grant_ref", "atomicity", "recovery_ref", "verification", "mutations",
+    "internal_mutations", "next_actions", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.change.rollback.v0"},
+    "status": {"const": "rolled_back"},
+    "transaction": {"$ref": "sley.change.recovery.v0#/$defs/transaction"},
+    "apply_ref": {"$ref": "#/$defs/applyRef"},
+    "authorization_ref": {"$ref": "sley.change.revocation_record.v0#/$defs/authorizationRef"},
+    "grant_ref": {"$ref": "sley.change.apply_authorization.v0#/$defs/grantRef"},
+    "atomicity": {"$ref": "sley.change.apply_authorization.v0#/$defs/atomicity"},
+    "recovery_ref": {"$ref": "#/$defs/recoveryRef"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "mutations": {"$ref": "sley.change.recovery.v0#/$defs/mutations"},
+    "internal_mutations": {"$ref": "sley.change.recovery.v0#/$defs/internalMutations"},
+    "next_actions": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"$ref": "#/$defs/action"}},
+    "issues": {"type": "array", "maxItems": 0}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "applyRef": {
+      "type": "object",
+      "required": ["schema", "status", "transaction_id", "recovery_record_id"],
+      "properties": {
+        "schema": {"const": "sley.change.apply.v0"},
+        "status": {"const": "verified"},
+        "transaction_id": {"$ref": "#/$defs/digest"},
+        "recovery_record_id": {"type": "string", "pattern": "^recovery:[a-f0-9]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "recoveryRef": {
+      "type": "object",
+      "required": ["schema", "record_id", "record_digest", "phase", "path"],
+      "properties": {
+        "schema": {"const": "sley.change.recovery.v0"},
+        "record_id": {"type": "string", "pattern": "^recovery:[a-f0-9]{64}$"},
+        "record_digest": {"$ref": "#/$defs/digest"},
+        "phase": {"const": "rolled_back"},
+        "path": {"type": "string", "pattern": "^\\.sley/transactions/[a-f0-9]{64}/recovery/record\\.json$"}
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "object",
+      "required": ["status", "source_digest", "graph_digest"],
+      "properties": {
+        "status": {"const": "passed"},
+        "source_digest": {"$ref": "#/$defs/digest"},
+        "graph_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["kind", "reason"],
+      "properties": {
+        "kind": {"const": "review_rolled_back_transaction"},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

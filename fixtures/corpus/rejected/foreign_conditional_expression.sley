@@ -1,0 +1,5 @@
+module corpus.rejected
+
+task main -> Int {
+  return if false then 1 else 8
+}

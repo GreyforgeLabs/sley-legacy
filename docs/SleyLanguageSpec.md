@@ -93,6 +93,46 @@ task sum -> Int {
 
 `set` is only valid for mutable binding kinds. `bind` is immutable.
 
+### Executable syntax recovery and placement
+
+The parser may retain an unsupported expression as a loss-preserving `Raw`
+node. `Raw` is not an executable language form: `sley check` reports
+`UNSUPPORTED_RAW_EXPRESSION` unless the node is a closed parser-recovery shape
+inside an already supported expression. Runtime behavior remains fail-closed.
+
+Sley uses `&&`, `||`, and `!` for Boolean operations. A foreign conditional
+such as `if ready then 1 else 0` reports
+`CONTROL_FLOW_EXPRESSION_BOUNDARY`; the supported value form is:
+
+```sley
+return if ready { 1 } else { 0 }
+```
+
+Multiline branches use statement form with explicit returns. Sley 1.2 does not
+add a multiline conditional-expression grammar:
+
+```sley
+if ready {
+  return 1
+} else {
+  return 0
+}
+```
+
+Executable `if`, `for`, `while`, and `forge` forms belong inside task bodies;
+module-level placement reports `MODULE_CONTROL_FLOW_NOT_ALLOWED`. Task inputs
+are body-level `take` declarations. Writing `take` in the task header reports
+`INLINE_TASK_PARAMETER_PLACEMENT`.
+
+`sley explain <DIAGNOSTIC_ID>` renders the checked spelling, context, repair
+path, specification reference, and accepted/rejected example paths for these
+four diagnostics. `sley explain --json --diagnostic-id <DIAGNOSTIC_ID>` emits
+the same data as `sley.explain.report.v0`; unknown IDs fail closed with
+`UNKNOWN_DIAGNOSTIC_ID`. The report also identifies the current implementation,
+the Sley 1.2 target, and the retained Bootstrap 0.2 path and digest. This lookup
+does not make `Raw` executable or change the `sley.ast.program.v0` recovery
+shape.
+
 ## Result And Error Flow
 
 `Result<T, E>` is the standard fallible return shape. `Ok(value)` and
@@ -200,6 +240,86 @@ record fields, and called-task effects. This means `math.User` and
 declaration. Record type declarations keep their named record-literal
 constructor, while non-record type declarations are transparent aliases during
 type checking and default repair-template generation.
+
+## Canonical Machine Invocation
+
+`sley machine` is the structured boundary for downstream pure Sley packages. It
+checks the source once, reads UTF-8 JSONL requests from standard input, and
+writes one canonical JSON response line for each accepted request line.
+
+```bash
+sley machine \
+  --source fixtures/machine/package \
+  --package-id machine-fixture \
+  --package-version v1
+```
+
+Requests use protocol `sley.machine.invoke.v0`, operation `invoke`, an exact
+package ID and version, a qualified task name, a JSON object input, and optional
+runtime/source pins and limits. A task with one ordinary take named `input`
+receives the whole input object. Other tasks receive exact take-name fields.
+Unknown or missing fields fail closed. Effectful tasks are rejected because the
+machine boundary is for deterministic pure computation.
+
+Responses use `sley.machine.response.v0`. Object keys are sorted, strings remain
+UTF-8, arrays preserve semantic order, and every response ends with LF. Success
+contains structured input and result values, source/runtime/package identity,
+SHA-256 digests, and deterministic counters. Errors contain a stable code,
+class, phase, path, and optional limit name without a stack trace, clock value,
+process ID, or temporary path.
+
+The default maximums are 4,096 request-line bytes, 262,144 response bytes, 500
+requests per process, 250,000 evaluation steps, call depth 128, collection
+length 4,096, and 2,000 milliseconds per request. A request may lower but never
+raise these values. Exit 64 covers framing, 65 request schema, 70 source/check
+or execution failures, 71 resource limits, 72 pin mismatches, and 74 transport
+failure. An infrastructure failure ends the batch. Operating-system address
+space and process supervision remain caller responsibilities.
+
+This is a stage-1 checked evaluator. It does not change the strict self-hosting
+claim, and it does not grant network, filesystem, shell, secret, provider,
+database, deployment, or spend authority.
+
+The machine evaluator also exposes a deliberately small pure-intrinsic ABI for
+structured workloads. Checked Sley declarations name the intrinsic tasks under
+`sley.machine.text`, `sley.machine.int`, `sley.machine.map`,
+`sley.machine.json`, and `sley.machine.date`; the machine evaluator supplies
+their host implementation.
+The current set covers pinned Node/ICU NFKC trim and English ASCII folding,
+UTF-16 length, prohibited-control detection, text characters and slices,
+strict ASCII digit conversion, non-negative integer digit lists and modulo,
+sorted map-key enumeration, JSON value-kind inspection, and strict proleptic
+Gregorian `YYYY-MM-DD` validation for four-digit years. These intrinsics have
+no authority and are included in source, runtime, step, call, depth,
+collection, timeout, and output evidence. Node/ICU handles normalization
+because Python's Unicode database is not the frozen semantic authority for
+text casing.
+
+Run `make machine-test` for deterministic invocation, schema, batch, pin,
+effect, malformed-input, and limit coverage.
+
+## First-Class Tests
+
+`sley test <file-or-project>` discovers `sley.test.json` and
+`*.sley-test.json` manifests in deterministic byte order. The stable
+`sley.test.manifest.v1` input supports table cases, bounded cartesian property
+cases, seeded effect mocks, exact adapter replays, expected diagnostics, and
+canonical-JSON differential cases without adding test syntax to the language.
+
+`--changed-node <node-id>` focuses cases by exact declared nodes and the reverse
+checked caller graph. An uncovered requested node fails with typed report
+evidence. `--json` emits `sley.test.report.v1`, including digested case inputs
+and outcomes plus separate observed, declared, unsupported, unknown, credited,
+and uncovered coverage for tasks, branches, effects, and capabilities. Branch
+credit is a passing manifest witness, not an instrumentation claim.
+
+`sley test bind-review --review <review> --seal <seal> --report <report>` emits
+`sley.review.packet.v1` only when a passing test report, terminal review,
+transaction seal, and final source digest match exactly. Binding is read-only
+and does not mutate or reinterpret the frozen v0 transaction artifacts.
+
+Run `make user-tests` for deterministic discovery, all six case kinds, focused
+selection, coverage classification, report stability, and review binding.
 
 ## Runtime Gate Semantics
 
@@ -586,6 +706,7 @@ sley query --json --kind tasks --module app.main <target>
 sley query --json --kind types --module app.main <target>
 sley query --json --kind effects --module app.main <target>
 sley lint --json <target>
+sley explain --json --diagnostic-id <diagnostic-id>
 sley-shadow report --json [--module <module>] [--rule <rule>] <target>
 sley deploy --json --dry-run [--artifacts-dir <dir>] <target>
 sley trace --json <target>
@@ -598,7 +719,9 @@ the selected program, import, type, effect, task, take, block, statement, or
 expression node with its id, node kind, module, parent, and raw AST value.
 Diagnostic reports carry
 `schema: "sley.diagnostics.report.v0"` and expose the shared diagnostic record
-used by graft, doctor, plan, verify, and runtime diagnostic arrays. Full symbol
+used by graft, doctor, plan, verify, and runtime diagnostic arrays. Explain
+reports carry `schema: "sley.explain.report.v0"` for bounded W1 diagnostic
+lookup. Full symbol
 graphs carry
 `schema: "sley.symbol_graph.v0"`, graph slices carry
 `schema: "sley.symbol_graph.slice.v0"`, graft outcomes carry
@@ -819,6 +942,12 @@ range-scoped checked edit-plan code actions with surface-pinned non-mutating
 `sley.fix.preview` commands. The server reuses compiler modules directly; it
 is not a separate semantic implementation.
 
+For the W1 syntax-context diagnostics, `sley-lsp --preview-explain
+<DIAGNOSTIC_ID> [URI]` emits a non-mutating
+`sley.lsp.command_preview.v0` handoff whose argument vector invokes the same
+`sley explain --json --diagnostic-id` lookup. The editor layer does not carry a
+parallel diagnostic explanation table.
+
 The local inspection loop is backed by the in-tree `sley-workbench` bootstrap.
 It emits `schema: "sley.workbench.report.v0"` and can write an explicit static
 HTML report containing doctor, query, lint, edit-plan, graph, and graph-slice
@@ -853,12 +982,15 @@ file or a project root loaded through `sley.toml`; `--module
 non-authoritative; unknown module filters block with
 `SHADOW_MODULE_FILTER_NOT_FOUND`; Rust Loom remains the semantic oracle.
 
-The local agent-loop benchmark is backed by the in-tree `sley-agent-bench`
-bootstrap. `sley-agent-bench run --json` emits
-`schema: "sley.agent_bench.report.v0"` after running a deterministic repair
-case through check, query, lint, checked repair planning, write-mode fix,
-post-fix lint/verify, trace receipt counting, seal, and ZJX evidence. It shells
-to the selected `sley` binary and never calls external providers.
+The local agent-loop surfaces are backed by the in-tree `sley-agent-bench`
+command. `sley-agent-bench run --json` without manifests emits
+`schema: "sley.agent_bench.report.v0"` with the intended deterministic repair
+step and evidence shape. In Sley 1.1 the command constructs that report; it does
+not execute or score a model or independently run the listed steps. It is
+contract smoke evidence, not model-fluency evidence. With `--manifest` and
+`--run-manifest`, the command executes the bounded trusted-fixture evaluator
+defined in `docs/SleyBenchSpec.md`; that mode runs real compiler oracles but no
+model or provider.
 
 The local migration report loop is backed by the in-tree `sley-migrate`
 bootstrap. `sley-migrate report --json <target>` shells out to no providers

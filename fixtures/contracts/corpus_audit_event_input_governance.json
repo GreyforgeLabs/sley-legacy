@@ -1,0 +1,24 @@
+{
+  "schema": "sley.corpus.audit_event_input.v0",
+  "log_id": "sley-corpus-governance",
+  "event_id": "event-20260823-001",
+  "kind": "admission",
+  "occurred_at": "2026-08-23T00:00:00Z",
+  "actor": "sley-maintainers",
+  "approval_ref": "approval-fixture-only",
+  "subject": {
+    "kind": "record",
+    "id": "record-fixture-001",
+    "digests": [
+      "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    ]
+  },
+  "transition": {
+    "from": "candidate",
+    "to": "admitted"
+  },
+  "reason_code": "fixture-admission",
+  "evidence_digests": [
+    "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+  ]
+}

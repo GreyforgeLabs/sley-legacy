@@ -1,0 +1,5 @@
+module bench.public.f2_007
+
+task main -> Int {
+  return 1 + 2 + 3
+}

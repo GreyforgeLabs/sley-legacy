@@ -1,0 +1,78 @@
+{
+  "schema": "sley.change.approval_request.v0",
+  "status": "awaiting_approval",
+  "request_id": "approval-request:0000000000000000000000000000000000000000000000000000000000000010",
+  "request_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000010",
+  "transaction": {
+    "transaction_id": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+    "state": "awaiting_approval",
+    "history": ["opened", "inspected", "planned", "previewed", "awaiting_approval"],
+    "repository": {"root": ".", "identity_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000002"},
+    "base": {
+      "mode": "working_tree",
+      "commit": "0000000000000000000000000000000000000003",
+      "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+      "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+      "trace_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006"
+    },
+    "compiler": {
+      "version": "sley 1.1",
+      "contract_versions": {
+        "diagnostics": "sley.diagnostics.report.v1",
+        "graph_slice": "sley.symbol_graph.slice.v1",
+        "verify": "sley.verify.report.v1",
+        "inspection": "sley.transaction.inspect.v0",
+        "plan": "sley.change.plan.v0",
+        "preview": "sley.change.preview.v0",
+        "approval_request": "sley.change.approval_request.v0"
+      }
+    },
+    "actor": "operator:test",
+    "goal": "authorize one exact candidate",
+    "nonce": "fixture-grant-001",
+    "created_at": "2026-08-25T00:00:00Z",
+    "expires_at": "2099-01-01T00:00:00Z"
+  },
+  "preview_ref": {
+    "schema": "sley.change.preview.v0",
+    "preview_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000007",
+    "transaction_id": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+    "plan_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000008",
+    "operation_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000009",
+    "candidate_id": "candidate:000000000000000000000000000000000000000000000000000000000000000a",
+    "candidate_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000a",
+    "base": {
+      "mode": "working_tree",
+      "commit": "0000000000000000000000000000000000000003",
+      "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+      "graph_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000005",
+      "trace_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006"
+    }
+  },
+  "candidate_ref": {
+    "candidate_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000a",
+    "candidate_source_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000b",
+    "candidate_graph_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000c",
+    "source_projection_digest": "sha256:000000000000000000000000000000000000000000000000000000000000000d",
+    "owned_paths": ["examples/project/src/app/math.sley"],
+    "validation": {"profile": "compiler_preview_v0", "required_passed": true}
+  },
+  "derived_scope": {
+    "operation_classes": ["RenameDeclaration"],
+    "affected_nodes": ["task:app.math.double"],
+    "allowed_paths": ["examples/project/src/app/math.sley"],
+    "effect_changes": [],
+    "authority_changes": [],
+    "review_requirements": ["human_source_review"],
+    "resource_scopes": [{"kind": "repository_source", "paths": ["examples/project/src/app/math.sley"]}],
+    "max_source_bytes": 64,
+    "max_changed_files": 1
+  },
+  "required_operator_fields": [
+    "confirm_exact_local_grant", "issuer", "principal", "audience", "purpose", "nonce",
+    "created_at", "expires_at", "review_acknowledgements", "revocation_state", "max_wall_clock_seconds"
+  ],
+  "mutations": {"repository_source": false, "git_index": false, "trace_sidecars": false, "external_systems": false, "provider_state": false},
+  "next_actions": [{"kind": "approve_exact_candidate", "reason": "supply explicit operator assertions", "command": ["sley", "change", "approve"]}],
+  "issues": []
+}

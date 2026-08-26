@@ -1,0 +1,5 @@
+module bench.public.f2_013
+
+task main -> Bool {
+  return 9 >= 5 && 9 <= 12
+}

@@ -1,0 +1,6 @@
+module bench.public.f3_009
+
+task main -> Bool {
+  bind ready = true
+  return ready
+}

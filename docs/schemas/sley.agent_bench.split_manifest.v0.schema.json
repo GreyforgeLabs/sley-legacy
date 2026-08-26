@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.agent_bench.split_manifest.v0",
+  "title": "Sley Agent Bench Split Manifest v0",
+  "type": "object",
+  "required": [
+    "schema", "suite_id", "version", "state", "split_strategy",
+    "public", "private", "approval"
+  ],
+  "properties": {
+    "schema": { "const": "sley.agent_bench.split_manifest.v0" },
+    "suite_id": { "const": "sleybench-v0" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+    "state": { "enum": ["draft", "pinned"] },
+    "split_strategy": { "const": "semantic_lineage" },
+    "public": { "$ref": "#/$defs/publicPartition" },
+    "private": { "$ref": "#/$defs/privatePartition" },
+    "approval": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "enum": ["pending", "approved"] },
+        "reviewer": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" },
+        "reviewed_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "state": { "const": "pinned" } },
+        "required": ["state"]
+      },
+      "then": {
+        "properties": {
+          "approval": {
+            "required": ["status", "reviewer", "reviewed_at"],
+            "properties": { "status": { "const": "approved" } }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9._/-]+$"
+    },
+    "familyCounts16": {
+      "type": "object",
+      "required": [
+        "syntax_compilation", "semantic_implementation", "diagnosis_repair",
+        "translation_preservation", "structural_tool_use",
+        "repository_patch_integration"
+      ],
+      "properties": {
+        "syntax_compilation": { "const": 16 },
+        "semantic_implementation": { "const": 16 },
+        "diagnosis_repair": { "const": 16 },
+        "translation_preservation": { "const": 16 },
+        "structural_tool_use": { "const": 16 },
+        "repository_patch_integration": { "const": 16 }
+      },
+      "additionalProperties": false
+    },
+    "familyCounts4": {
+      "type": "object",
+      "required": [
+        "syntax_compilation", "semantic_implementation", "diagnosis_repair",
+        "translation_preservation", "structural_tool_use",
+        "repository_patch_integration"
+      ],
+      "properties": {
+        "syntax_compilation": { "const": 4 },
+        "semantic_implementation": { "const": 4 },
+        "diagnosis_repair": { "const": 4 },
+        "translation_preservation": { "const": 4 },
+        "structural_tool_use": { "const": 4 },
+        "repository_patch_integration": { "const": 4 }
+      },
+      "additionalProperties": false
+    },
+    "publicPartition": {
+      "type": "object",
+      "required": [
+        "suite_id", "case_manifest_path", "case_manifest_digest",
+        "exclusion_ledger_path", "exclusion_ledger_digest", "case_count",
+        "family_counts"
+      ],
+      "properties": {
+        "suite_id": { "const": "sleybench-v0-public" },
+        "case_manifest_path": { "$ref": "#/$defs/relativePath" },
+        "case_manifest_digest": { "$ref": "#/$defs/digest" },
+        "exclusion_ledger_path": { "$ref": "#/$defs/relativePath" },
+        "exclusion_ledger_digest": { "$ref": "#/$defs/digest" },
+        "case_count": { "const": 96 },
+        "family_counts": { "$ref": "#/$defs/familyCounts16" }
+      },
+      "additionalProperties": false
+    },
+    "privatePartition": {
+      "type": "object",
+      "required": [
+        "suite_id", "case_manifest_digest", "exclusion_ledger_digest",
+        "case_count", "family_counts", "material_in_public_git", "custody_ref"
+      ],
+      "properties": {
+        "suite_id": { "const": "sleybench-v0-private" },
+        "case_manifest_digest": { "$ref": "#/$defs/digest" },
+        "exclusion_ledger_digest": { "$ref": "#/$defs/digest" },
+        "case_count": { "const": 24 },
+        "family_counts": { "$ref": "#/$defs/familyCounts4" },
+        "material_in_public_git": { "const": false },
+        "custody_ref": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

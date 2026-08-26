@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.test.manifest.v1",
+  "title": "Sley Test Manifest v1",
+  "type": "object",
+  "required": [
+    "schema", "suite", "source", "authority", "bounds",
+    "coverage_scope", "cases"
+  ],
+  "properties": {
+    "schema": {"const": "sley.test.manifest.v1"},
+    "suite": {"$ref": "#/$defs/suite"},
+    "source": {"$ref": "#/$defs/source"},
+    "authority": {"$ref": "#/$defs/authority"},
+    "bounds": {"$ref": "#/$defs/bounds"},
+    "coverage_scope": {"$ref": "#/$defs/coverage"},
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "oneOf": [
+          {"$ref": "#/$defs/tableCase"},
+          {"$ref": "#/$defs/propertyCase"},
+          {"$ref": "#/$defs/effectMockCase"},
+          {"$ref": "#/$defs/adapterReplayCase"},
+          {"$ref": "#/$defs/diagnosticCase"},
+          {"$ref": "#/$defs/differentialCase"}
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "safePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "nodeId": {"type": "string", "minLength": 1, "maxLength": 512},
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "suite": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "version": {"type": "string", "minLength": 1, "maxLength": 128}
+      },
+      "additionalProperties": false
+    },
+    "package": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "maxLength": 128},
+        "version": {"type": "string", "minLength": 1, "maxLength": 128}
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["target", "package"],
+      "properties": {
+        "target": {"$ref": "#/$defs/safePath"},
+        "package": {"$ref": "#/$defs/package"}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "external_provider_calls", "mutation_authority"],
+      "properties": {
+        "mode": {"const": "local_test_only"},
+        "external_provider_calls": {"const": false},
+        "mutation_authority": {
+          "type": "object",
+          "required": ["repository", "index", "external", "provider", "deploy", "spend"],
+          "properties": {
+            "repository": {"const": false},
+            "index": {"const": false},
+            "external": {"const": false},
+            "provider": {"const": false},
+            "deploy": {"const": false},
+            "spend": {"const": false}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "bounds": {
+      "type": "object",
+      "required": ["max_cases", "max_generated_cases", "max_wall_ms", "max_output_bytes"],
+      "properties": {
+        "max_cases": {"type": "integer", "minimum": 1, "maximum": 2048},
+        "max_generated_cases": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "max_wall_ms": {"type": "integer", "minimum": 1, "maximum": 120000},
+        "max_output_bytes": {"type": "integer", "minimum": 1024, "maximum": 5242880}
+      },
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["tasks", "branches", "effects", "capabilities"],
+      "properties": {
+        "tasks": {"$ref": "#/$defs/nodes"},
+        "branches": {"$ref": "#/$defs/nodes"},
+        "effects": {"$ref": "#/$defs/nodes"},
+        "capabilities": {"$ref": "#/$defs/nodes"}
+      },
+      "additionalProperties": false
+    },
+    "nodes": {
+      "type": "array",
+      "maxItems": 1024,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/nodeId"}
+    },
+    "caseBase": {
+      "type": "object",
+      "required": ["id", "selection_nodes", "covers"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "selection_nodes": {"$ref": "#/$defs/nodes"},
+        "covers": {"$ref": "#/$defs/coverage"}
+      }
+    },
+    "row": {
+      "type": "object",
+      "required": ["id", "input", "expected_result", "branch_witnesses"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "input": {"type": "object"},
+        "expected_result": {},
+        "branch_witnesses": {"$ref": "#/$defs/nodes"}
+      },
+      "additionalProperties": false
+    },
+    "tableCase": {
+      "allOf": [
+        {"$ref": "#/$defs/caseBase"},
+        {
+          "type": "object",
+          "required": ["kind", "task", "rows"],
+          "properties": {
+            "kind": {"const": "table"},
+            "task": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"},
+            "rows": {"type": "array", "minItems": 1, "maxItems": 512, "items": {"$ref": "#/$defs/row"}}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "generatorField": {
+      "type": "object",
+      "required": ["name", "values"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"},
+        "values": {"type": "array", "minItems": 1, "maxItems": 64, "items": {}}
+      },
+      "additionalProperties": false
+    },
+    "propertyCase": {
+      "allOf": [
+        {"$ref": "#/$defs/caseBase"},
+        {
+          "type": "object",
+          "required": ["kind", "task", "generator", "expected_result"],
+          "properties": {
+            "kind": {"const": "property"},
+            "task": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"},
+            "generator": {
+              "type": "object",
+              "required": ["strategy", "max_cases", "fields"],
+              "properties": {
+                "strategy": {"const": "cartesian_v1"},
+                "max_cases": {"type": "integer", "minimum": 1, "maximum": 1024},
+                "fields": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/generatorField"}}
+              },
+              "additionalProperties": false
+            },
+            "expected_result": {"const": true}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "mockText": {
+      "type": "object",
+      "required": ["key", "text"],
+      "properties": {
+        "key": {"type": "string", "minLength": 1, "maxLength": 4096},
+        "text": {"type": "string", "maxLength": 65536}
+      },
+      "additionalProperties": false
+    },
+    "effectMocks": {
+      "type": "object",
+      "required": ["secrets", "http_text", "shell_outputs", "model_outputs", "deploy_results", "spend_results"],
+      "properties": {
+        "secrets": {"$ref": "#/$defs/mockList"},
+        "http_text": {"$ref": "#/$defs/mockList"},
+        "shell_outputs": {"$ref": "#/$defs/mockList"},
+        "model_outputs": {"$ref": "#/$defs/mockList"},
+        "deploy_results": {"$ref": "#/$defs/mockList"},
+        "spend_results": {"$ref": "#/$defs/mockList"}
+      },
+      "additionalProperties": false
+    },
+    "mockList": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/mockText"}},
+    "effectMockCase": {
+      "allOf": [
+        {"$ref": "#/$defs/caseBase"},
+        {
+          "type": "object",
+          "required": ["kind", "target", "capabilities", "mocks", "expected_result"],
+          "properties": {
+            "kind": {"const": "effect_mock"},
+            "target": {"$ref": "#/$defs/safePath"},
+            "capabilities": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "mocks": {"$ref": "#/$defs/effectMocks"},
+            "expected_result": {}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "adapterReplayCase": {
+      "allOf": [
+        {"$ref": "#/$defs/caseBase"},
+        {
+          "type": "object",
+          "required": ["kind", "manifest", "expected_record_digest"],
+          "properties": {
+            "kind": {"const": "adapter_replay"},
+            "manifest": {"$ref": "#/$defs/safePath"},
+            "expected_record_digest": {"$ref": "#/$defs/digest"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "diagnosticCase": {
+      "allOf": [
+        {"$ref": "#/$defs/caseBase"},
+        {
+          "type": "object",
+          "required": ["kind", "target", "expected_ids", "allow_additional"],
+          "properties": {
+            "kind": {"const": "diagnostic"},
+            "target": {"$ref": "#/$defs/safePath"},
+            "expected_ids": {"type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "allow_additional": {"type": "boolean"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "endpoint": {
+      "type": "object",
+      "required": ["target", "package", "task"],
+      "properties": {
+        "target": {"$ref": "#/$defs/safePath"},
+        "package": {"$ref": "#/$defs/package"},
+        "task": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.]*$"}
+      },
+      "additionalProperties": false
+    },
+    "differentialRow": {
+      "type": "object",
+      "required": ["id", "input", "branch_witnesses"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"},
+        "input": {"type": "object"},
+        "branch_witnesses": {"$ref": "#/$defs/nodes"}
+      },
+      "additionalProperties": false
+    },
+    "differentialCase": {
+      "allOf": [
+        {"$ref": "#/$defs/caseBase"},
+        {
+          "type": "object",
+          "required": ["kind", "left", "right", "rows", "comparison"],
+          "properties": {
+            "kind": {"const": "differential"},
+            "left": {"$ref": "#/$defs/endpoint"},
+            "right": {"$ref": "#/$defs/endpoint"},
+            "rows": {"type": "array", "minItems": 1, "maxItems": 512, "items": {"$ref": "#/$defs/differentialRow"}},
+            "comparison": {"const": "canonical_json_exact"}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  },
+  "additionalProperties": false
+}

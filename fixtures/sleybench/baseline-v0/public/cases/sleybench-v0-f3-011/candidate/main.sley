@@ -1,0 +1,5 @@
+module bench.public.f3_011
+
+task main -> Text {
+  return "ready"
+}

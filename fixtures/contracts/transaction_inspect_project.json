@@ -1,0 +1,76 @@
+{
+  "schema": "sley.transaction.inspect.v0",
+  "status": "inspected",
+  "transaction": {
+    "transaction_id": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "state": "inspected",
+    "history": ["opened", "inspected"],
+    "repository": {
+      "root": ".",
+      "identity_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "base": {
+      "mode": "working_tree",
+      "commit": "cccccccccccccccccccccccccccccccccccccccc",
+      "source_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "graph_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "trace_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+    },
+    "compiler": {
+      "version": "sley 1.1",
+      "contract_versions": {
+        "diagnostics": "sley.diagnostics.report.v1",
+        "graph_slice": "sley.symbol_graph.slice.v1",
+        "verify": "sley.verify.report.v1",
+        "inspection": "sley.transaction.inspect.v0"
+      }
+    },
+    "actor": "operator:fixture",
+    "goal": "inspect the project without mutation",
+    "nonce": "fixture-nonce-001",
+    "created_at": "2026-08-25T00:00:00Z",
+    "expires_at": "2026-08-26T00:00:00Z"
+  },
+  "inspection": {
+    "target": "examples/project",
+    "entry_module": "app.main",
+    "summary": {
+      "module_count": 2,
+      "task_count": 2,
+      "call_count": 1,
+      "diagnostic_count": 0,
+      "lint_finding_count": 0
+    },
+    "target_nodes": ["task:app.main.main"],
+    "authority_requirements": [],
+    "graft_affordances": ["AddTake"],
+    "documentation_refs": ["SLEY_AI.md", "docs/SleyLanguageSpec.md"],
+    "validation": {
+      "check_schema": "sley.diagnostics.report.v0",
+      "check_status": "ok",
+      "lint_schema": "sley.lint.report.v0",
+      "lint_status": "ok"
+    },
+    "context_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "bounds": {
+      "max_target_nodes": 64,
+      "source_bytes": 512,
+      "context_bytes": 2048
+    }
+  },
+  "mutations": {
+    "repository_source": false,
+    "git_index": false,
+    "trace_sidecars": false,
+    "external_systems": false,
+    "provider_state": false
+  },
+  "next_actions": [
+    {
+      "kind": "inspect_graph_slice",
+      "reason": "inspect bounded graph context",
+      "command": ["sley", "graph", "--json", "--slice", "task:app.main.main", "examples/project"]
+    }
+  ],
+  "issues": []
+}

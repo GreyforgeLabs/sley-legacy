@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.operational.agent_workflow_plan.v1",
+  "title": "Sley Operational Agent Workflow Plan v1",
+  "type": "object",
+  "required": [
+    "schema", "status", "workflow_id", "identity", "task", "arms",
+    "equal_controls", "controlled_difference", "authority", "disclosure", "issues"
+  ],
+  "properties": {
+    "schema": {"const": "sley.operational.agent_workflow_plan.v1"},
+    "status": {"const": "ready_for_approval"},
+    "workflow_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+    "identity": {
+      "type": "object",
+      "required": [
+        "sley_commit", "case_manifest_digest", "workspace_digest",
+        "candidate_digest", "prompt_digest", "bootstrap_digest", "controller_digest"
+      ],
+      "properties": {
+        "sley_commit": {"$ref": "#/$defs/commit"},
+        "case_manifest_digest": {"$ref": "#/$defs/digest"},
+        "workspace_digest": {"$ref": "#/$defs/digest"},
+        "candidate_digest": {"$ref": "#/$defs/digest"},
+        "prompt_digest": {"$ref": "#/$defs/digest"},
+        "bootstrap_digest": {"$ref": "#/$defs/digest"},
+        "controller_digest": {"$ref": "#/$defs/digest"}
+      },
+      "additionalProperties": false
+    },
+    "task": {
+      "type": "object",
+      "required": ["case_id", "suite_id", "owned_paths", "oracle_commands"],
+      "properties": {
+        "case_id": {"type": "string", "minLength": 1},
+        "suite_id": {"type": "string", "minLength": 1},
+        "owned_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "oracle_commands": {"type": "array", "minItems": 1, "items": {"type": "array", "minItems": 2, "items": {"type": "string", "minLength": 1}}}
+      },
+      "additionalProperties": false
+    },
+    "arms": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "mode", "interface", "run_id", "run_manifest_digest",
+          "model", "thinking", "tool_allowlist", "spend_ceiling_usd",
+          "max_inference_turns", "read_only_tool_turns"
+        ],
+        "properties": {
+          "id": {"enum": ["raw_source", "sley_structural"]},
+          "mode": {"enum": ["K1", "K3"]},
+          "interface": {"enum": ["raw_workspace", "raw_workspace_plus_read_only_structure"]},
+          "run_id": {"type": "string", "minLength": 1},
+          "run_manifest_digest": {"$ref": "#/$defs/digest"},
+          "model": {"type": "string", "minLength": 1},
+          "thinking": {"type": "string", "minLength": 1},
+          "tool_allowlist": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "spend_ceiling_usd": {"type": "number", "exclusiveMinimum": 0},
+          "max_inference_turns": {"type": "integer", "minimum": 1, "maximum": 2},
+          "read_only_tool_turns": {"type": "integer", "minimum": 0, "maximum": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "equal_controls": {
+      "type": "object",
+      "required": ["verified", "fields"],
+      "properties": {
+        "verified": {"const": true},
+        "fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "controlled_difference": {
+      "type": "object",
+      "required": ["raw_source_tool_turns", "structural_tool_turns", "raw_source_inference_turns", "structural_inference_turns", "same_model_context_window", "same_total_spend_ceiling", "observed_context_consumption_measured", "manifest_limits_fully_enforced"],
+      "properties": {
+        "raw_source_tool_turns": {"const": 0},
+        "structural_tool_turns": {"const": 1},
+        "raw_source_inference_turns": {"const": 1},
+        "structural_inference_turns": {"const": 2},
+        "same_model_context_window": {"const": true},
+        "same_total_spend_ceiling": {"const": true},
+        "observed_context_consumption_measured": {"const": true},
+        "manifest_limits_fully_enforced": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "provider_execution_authorized", "repository_mutation", "product_runtime_mutation", "deploy", "publication", "approval_required"],
+      "properties": {
+        "mode": {"const": "local_isolated_evaluation_only"},
+        "provider_execution_authorized": {"const": false},
+        "repository_mutation": {"const": false},
+        "product_runtime_mutation": {"const": false},
+        "deploy": {"const": false},
+        "publication": {"const": false},
+        "approval_required": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "disclosure": {
+      "type": "object",
+      "required": ["public_fixture", "contains_real_user_data", "contains_credentials", "training_eligible"],
+      "properties": {
+        "public_fixture": {"const": true},
+        "contains_real_user_data": {"const": false},
+        "contains_credentials": {"const": false},
+        "training_eligible": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "issues": {"type": "array", "items": {"$ref": "#/$defs/issue"}}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "issue": {
+      "type": "object", "required": ["code", "message"],
+      "properties": {"code": {"type": "string", "minLength": 1}, "message": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

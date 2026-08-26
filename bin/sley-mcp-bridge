@@ -6,7 +6,7 @@ BRIDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SLEY_REPO="$(cd "$BRIDGE_DIR/.." && pwd)"
 SLEY_BIN="$BRIDGE_DIR/sley"
 MCP_PROTOCOL_VERSION="2025-06-18"
-MCP_SERVER_VERSION="0.1.0"
+MCP_SERVER_VERSION="0.2.0"
 MAX_REQUEST_BYTES="${SLEY_MCP_MAX_REQUEST_BYTES:-1048576}"
 MAX_RESPONSE_BYTES="${SLEY_MCP_MAX_RESPONSE_BYTES:-2097152}"
 TOOL_TIMEOUT_SECONDS="${SLEY_MCP_TOOL_TIMEOUT_SECONDS:-120}"
@@ -21,7 +21,7 @@ log() {
 
 usage() {
   cat <<'EOF'
-Run the read-only Sley MCP stdio bridge.
+Run the bounded Sley MCP stdio bridge.
 
 Usage: sley-mcp-bridge --root <absolute-git-repository-root>
 
@@ -72,15 +72,58 @@ resolve_confined_path() {
   printf '%s\n' "$resolved"
 }
 
+resolve_confined_regular_file() {
+  local requested="$1" candidate resolved
+  [[ -n "$requested" && "$requested" != *$'\n'* && "$requested" != *$'\r'* ]] || return 1
+  if [[ "$requested" == /* ]]; then
+    candidate="$requested"
+  else
+    candidate="$REPOSITORY_ROOT/$requested"
+  fi
+  [[ -f "$candidate" && ! -L "$candidate" ]] || return 1
+  resolved="$(realpath -e -- "$candidate" 2>/dev/null)" || return 1
+  [[ "$resolved" == "$REPOSITORY_ROOT/"* ]] || return 1
+  printf '%s\n' "$resolved"
+}
+
+resolve_confined_transaction_target() {
+  local requested="$1" candidate
+  if [[ "$requested" == /* ]]; then
+    candidate="$requested"
+  else
+    candidate="$REPOSITORY_ROOT/$requested"
+  fi
+  [[ ! -L "$candidate" ]] || return 1
+  resolve_confined_path "$requested"
+}
+
 tool_catalog_json() {
   jq -n \
     --slurpfile query_schema "$SLEY_REPO/docs/schemas/sley.query.report.v0.schema.json" \
     --slurpfile lint_schema "$SLEY_REPO/docs/schemas/sley.lint.report.v0.schema.json" \
     --slurpfile plan_schema "$SLEY_REPO/docs/schemas/sley.edit_plan.report.v0.schema.json" \
     --slurpfile graft_schema "$SLEY_REPO/docs/schemas/sley.graft.outcome.v0.schema.json" \
-    --slurpfile verify_schema "$SLEY_REPO/docs/schemas/sley.verify.report.v0.schema.json" '
+    --slurpfile verify_schema "$SLEY_REPO/docs/schemas/sley.verify.report.v0.schema.json" \
+    --slurpfile diagnostic_schema "$SLEY_REPO/docs/schemas/sley.diagnostics.report.v0.schema.json" \
+    --slurpfile inspect_schema "$SLEY_REPO/docs/schemas/sley.transaction.inspect.v0.schema.json" \
+    --slurpfile change_plan_schema "$SLEY_REPO/docs/schemas/sley.change.plan.v0.schema.json" \
+    --slurpfile preview_schema "$SLEY_REPO/docs/schemas/sley.change.preview.v0.schema.json" \
+    --slurpfile request_schema "$SLEY_REPO/docs/schemas/sley.change.approval_request.v0.schema.json" \
+    --slurpfile authorization_schema "$SLEY_REPO/docs/schemas/sley.change.apply_authorization.v0.schema.json" \
+    --slurpfile apply_schema "$SLEY_REPO/docs/schemas/sley.change.apply.v0.schema.json" \
+    --slurpfile recovery_schema "$SLEY_REPO/docs/schemas/sley.change.recovery.v0.schema.json" \
+    --slurpfile rollback_schema "$SLEY_REPO/docs/schemas/sley.change.rollback.v0.schema.json" \
+    --slurpfile review_schema "$SLEY_REPO/docs/schemas/sley.change.review.v0.schema.json" '
     def path_property: {type:"string",minLength:1,description:"Path relative to the configured repository root, or a confined absolute path."};
+    def artifact_property: path_property + {description:"Path to a regular artifact file inside the configured repository root."};
+    def text_property: {type:"string",minLength:1,maxLength:4096};
+    def identifier_property: {type:"string",minLength:1,maxLength:256};
+    def confirmation_property: {type:"boolean",description:"Must be true to pass the matching Sley CLI confirmation gate."};
     def read_only_annotations: {readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false};
+    def destructive_annotations: {readOnlyHint:false,destructiveHint:true,idempotentHint:false,openWorldHint:false};
+    def internal_write_annotations: {readOnlyHint:false,destructiveHint:false,idempotentHint:false,openWorldHint:false};
+    def transaction_output($schema): {"$schema":"https://json-schema.org/draft/2020-12/schema",oneOf:[$schema,$diagnostic_schema[0]]};
+    def recovery_output: {"$schema":"https://json-schema.org/draft/2020-12/schema",oneOf:[$recovery_schema[0],$apply_schema[0],$diagnostic_schema[0]]};
     [
       {
         name:"sley_query",
@@ -121,6 +164,78 @@ tool_catalog_json() {
         inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{path:path_property,deny_warnings:{type:"boolean"}},required:["path"]},
         outputSchema:$verify_schema[0],
         annotations:read_only_annotations
+      },
+      {
+        name:"sley_change_inspect",
+        title:"Inspect Governed Sley Change",
+        description:"Delegate exact read-only transaction inspection to sley change inspect.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{path:path_property,goal:text_property,actor:identifier_property,nonce:{type:"string",pattern:"^[A-Za-z0-9._:-]{8,128}$"},created_at:{type:"string",format:"date-time"},expires_at:{type:"string",format:"date-time"},trace:path_property},required:["path","goal","actor","nonce","created_at","expires_at"]},
+        outputSchema:transaction_output($inspect_schema[0]),
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_change_plan",
+        title:"Plan Governed Sley Change",
+        description:"Delegate exact transaction planning to sley change plan using confined artifact files.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{inspection:artifact_property,operation:artifact_property,requested_outcome:text_property,assumptions:{type:"array",minItems:1,maxItems:32,items:text_property},non_goals:{type:"array",minItems:1,maxItems:32,items:text_property},validation_profile:{type:"string",minLength:1,maxLength:128}},required:["inspection","operation","requested_outcome","assumptions","non_goals"]},
+        outputSchema:transaction_output($change_plan_schema[0]),
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_change_preview",
+        title:"Preview Governed Sley Change",
+        description:"Delegate exact immutable candidate preview to sley change preview.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{plan:artifact_property},required:["plan"]},
+        outputSchema:transaction_output($preview_schema[0]),
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_change_approval_request",
+        title:"Request Governed Sley Approval",
+        description:"Regenerate the exact local approval request without issuing authority.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{preview:artifact_property},required:["preview"]},
+        outputSchema:transaction_output($request_schema[0]),
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_change_apply_authorization",
+        title:"Derive Governed Apply Authorization",
+        description:"Validate an operator-issued grant and derive its exact bounded apply authorization.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{grant:artifact_property,request:artifact_property,preview:artifact_property,principal:identifier_property,audience:identifier_property},required:["grant","request","preview","principal","audience"]},
+        outputSchema:transaction_output($authorization_schema[0]),
+        annotations:read_only_annotations
+      },
+      {
+        name:"sley_change_apply",
+        title:"Apply Governed Sley Change",
+        description:"Perform the exact confirmed atomic apply authorized by operator-issued artifacts.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{authorization:artifact_property,grant:artifact_property,request:artifact_property,preview:artifact_property,principal:identifier_property,audience:identifier_property,confirm_atomic_apply:confirmation_property},required:["authorization","grant","request","preview","principal","audience","confirm_atomic_apply"]},
+        outputSchema:transaction_output($apply_schema[0]),
+        annotations:destructive_annotations
+      },
+      {
+        name:"sley_change_recover",
+        title:"Recover Governed Sley Change",
+        description:"Perform exact confirmed crash recovery through the CLI transaction core.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{authorization:artifact_property,grant:artifact_property,request:artifact_property,preview:artifact_property,principal:identifier_property,audience:identifier_property,confirm_recovery:confirmation_property},required:["authorization","grant","request","preview","principal","audience","confirm_recovery"]},
+        outputSchema:recovery_output,
+        annotations:destructive_annotations
+      },
+      {
+        name:"sley_change_rollback",
+        title:"Rollback Governed Sley Change",
+        description:"Perform exact confirmed manual rollback through the CLI transaction core.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{apply:artifact_property,confirm_rollback:confirmation_property},required:["apply","confirm_rollback"]},
+        outputSchema:transaction_output($rollback_schema[0]),
+        annotations:destructive_annotations
+      },
+      {
+        name:"sley_change_review",
+        title:"Publish Governed Sley Review",
+        description:"Validate terminal transaction evidence and publish the exact review packet and seal.",
+        inputSchema:{"$schema":"https://json-schema.org/draft/2020-12/schema",type:"object",additionalProperties:false,properties:{authorization:artifact_property,grant:artifact_property,request:artifact_property,preview:artifact_property,apply:artifact_property,rollback:artifact_property,principal:identifier_property,audience:identifier_property,trace:path_property,confirm_review_packet:confirmation_property},required:["authorization","grant","request","preview","apply","principal","audience","confirm_review_packet"]},
+        outputSchema:transaction_output($review_schema[0]),
+        annotations:internal_write_annotations
       }
     ]'
 }
@@ -143,6 +258,33 @@ validate_tool_arguments() {
     sley_verify)
       jq -e 'type == "object" and (.path | type == "string" and length > 0) and ((keys - ["path","deny_warnings"]) | length == 0) and ((has("deny_warnings") | not) or (.deny_warnings | type == "boolean"))' <<< "$args_json" >/dev/null
       ;;
+    sley_change_inspect)
+      jq -e 'type == "object" and ((keys - ["path","goal","actor","nonce","created_at","expires_at","trace"]) | length == 0) and all([.path,.goal,.actor,.nonce,.created_at,.expires_at][]; type == "string" and length > 0) and ((has("trace") | not) or (.trace | type == "string" and length > 0))' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_plan)
+      jq -e 'type == "object" and ((keys - ["inspection","operation","requested_outcome","assumptions","non_goals","validation_profile"]) | length == 0) and all([.inspection,.operation,.requested_outcome][]; type == "string" and length > 0) and (.assumptions | type == "array" and length > 0 and length <= 32 and all(.[]; type == "string" and length > 0)) and (.non_goals | type == "array" and length > 0 and length <= 32 and all(.[]; type == "string" and length > 0)) and ((has("validation_profile") | not) or (.validation_profile | type == "string" and length > 0))' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_preview)
+      jq -e 'type == "object" and (keys == ["plan"]) and (.plan | type == "string" and length > 0)' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_approval_request)
+      jq -e 'type == "object" and (keys == ["preview"]) and (.preview | type == "string" and length > 0)' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_apply_authorization)
+      jq -e 'type == "object" and ((keys - ["grant","request","preview","principal","audience"]) | length == 0) and all([.grant,.request,.preview,.principal,.audience][]; type == "string" and length > 0)' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_apply)
+      jq -e 'type == "object" and ((keys - ["authorization","grant","request","preview","principal","audience","confirm_atomic_apply"]) | length == 0) and all([.authorization,.grant,.request,.preview,.principal,.audience][]; type == "string" and length > 0) and (.confirm_atomic_apply | type == "boolean")' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_recover)
+      jq -e 'type == "object" and ((keys - ["authorization","grant","request","preview","principal","audience","confirm_recovery"]) | length == 0) and all([.authorization,.grant,.request,.preview,.principal,.audience][]; type == "string" and length > 0) and (.confirm_recovery | type == "boolean")' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_rollback)
+      jq -e 'type == "object" and ((keys - ["apply","confirm_rollback"]) | length == 0) and (.apply | type == "string" and length > 0) and (.confirm_rollback | type == "boolean")' <<< "$args_json" >/dev/null
+      ;;
+    sley_change_review)
+      jq -e 'type == "object" and ((keys - ["authorization","grant","request","preview","apply","rollback","principal","audience","trace","confirm_review_packet"]) | length == 0) and all([.authorization,.grant,.request,.preview,.apply,.principal,.audience][]; type == "string" and length > 0) and ((has("rollback") | not) or (.rollback | type == "string" and length > 0)) and ((has("trace") | not) or (.trace | type == "string" and length > 0)) and (.confirm_review_packet | type == "boolean")' <<< "$args_json" >/dev/null
+      ;;
     *) return 2 ;;
   esac
 }
@@ -154,8 +296,30 @@ tool_expected_schema() {
     sley_plan) printf 'sley.edit_plan.report.v0\n' ;;
     sley_propose_graft) printf 'sley.graft.outcome.v0\n' ;;
     sley_verify) printf 'sley.verify.report.v0\n' ;;
+    sley_change_inspect) printf 'sley.transaction.inspect.v0\n' ;;
+    sley_change_plan) printf 'sley.change.plan.v0\n' ;;
+    sley_change_preview) printf 'sley.change.preview.v0\n' ;;
+    sley_change_approval_request) printf 'sley.change.approval_request.v0\n' ;;
+    sley_change_apply_authorization) printf 'sley.change.apply_authorization.v0\n' ;;
+    sley_change_apply) printf 'sley.change.apply.v0\n' ;;
+    sley_change_recover) printf 'sley.change.recovery.v0\n' ;;
+    sley_change_rollback) printf 'sley.change.rollback.v0\n' ;;
+    sley_change_review) printf 'sley.change.review.v0\n' ;;
     *) return 1 ;;
   esac
+}
+
+tool_allows_structured_diagnostic() {
+  [[ "$1" == sley_change_* ]]
+}
+
+tool_accepts_output_schema() {
+  local tool="$1" schema="$2"
+  if [[ "$tool" == sley_change_recover ]]; then
+    [[ "$schema" == "sley.change.recovery.v0" || "$schema" == "sley.change.apply.v0" ]]
+    return
+  fi
+  [[ "$schema" == "$(tool_expected_schema "$tool")" ]]
 }
 
 tool_result_error_json() {
@@ -165,14 +329,30 @@ tool_result_error_json() {
 
 run_tool_json() {
   local tool="$1" args_json="$2" workspace="$3"
-  local requested_path confined_path operation_file="" stdout_file="$workspace/stdout" stderr_file="$workspace/stderr"
-  local rc=0 response_bytes stderr_bytes file_limit_blocks compact_report expected_schema actual_schema is_error=false
+  local requested_path="" confined_path="" inspection_path="" operation_path="" plan_path="" preview_path=""
+  local request_path="" grant_path="" authorization_path="" apply_path="" rollback_path="" trace_path=""
+  local stdout_file="$workspace/stdout" stderr_file="$workspace/stderr"
+  local rc=0 response_bytes stderr_bytes file_limit_blocks compact_report actual_schema is_error=false
+  local structured_schema_allowed=false
+  local item
   local -a cmd=()
-  requested_path="$(jq -r '.path' <<< "$args_json")"
-  confined_path="$(resolve_confined_path "$requested_path")" || {
-    tool_result_error_json "SLEY_MCP_PATH_DENIED" "path is missing or outside the configured repository root"
-    return
-  }
+
+  case "$tool" in
+    sley_query|sley_lint|sley_plan|sley_propose_graft|sley_verify)
+      requested_path="$(jq -r '.path' <<< "$args_json")"
+      confined_path="$(resolve_confined_path "$requested_path")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "path is missing or outside the configured repository root"
+        return
+      }
+      ;;
+    sley_change_inspect)
+      requested_path="$(jq -r '.path' <<< "$args_json")"
+      confined_path="$(resolve_confined_transaction_target "$requested_path")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "transaction target is missing, a symlink, or outside the configured repository root"
+        return
+      }
+      ;;
+  esac
 
   case "$tool" in
     sley_query)
@@ -202,6 +382,125 @@ run_tool_json() {
       cmd=("$SLEY_BIN" verify --json)
       if [[ "$(jq -r '.deny_warnings // false' <<< "$args_json")" == true ]]; then cmd+=(--deny-warnings); fi
       cmd+=("$confined_path")
+      ;;
+    sley_change_inspect)
+      cmd=("$SLEY_BIN" change inspect --json \
+        --goal "$(jq -r '.goal' <<< "$args_json")" \
+        --actor "$(jq -r '.actor' <<< "$args_json")" \
+        --nonce "$(jq -r '.nonce' <<< "$args_json")" \
+        --created-at "$(jq -r '.created_at' <<< "$args_json")" \
+        --expires-at "$(jq -r '.expires_at' <<< "$args_json")")
+      if [[ "$(jq -r 'has("trace")' <<< "$args_json")" == true ]]; then
+        trace_path="$(resolve_confined_regular_file "$(jq -r '.trace' <<< "$args_json")")" || {
+          tool_result_error_json "SLEY_MCP_PATH_DENIED" "transaction trace must be a confined regular non-symlink file"
+          return
+        }
+        cmd+=(--trace "$trace_path")
+      fi
+      cmd+=("$confined_path")
+      ;;
+    sley_change_plan)
+      inspection_path="$(resolve_confined_regular_file "$(jq -r '.inspection' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "inspection must be a confined regular non-symlink artifact"
+        return
+      }
+      operation_path="$(resolve_confined_regular_file "$(jq -r '.operation' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "operation must be a confined regular non-symlink artifact"
+        return
+      }
+      cmd=("$SLEY_BIN" change plan --json --repository "$REPOSITORY_ROOT" \
+        --inspection "$inspection_path" --operation "$operation_path" \
+        --requested-outcome "$(jq -r '.requested_outcome' <<< "$args_json")")
+      while IFS= read -r item; do cmd+=(--assumption "$(jq -r . <<< "$item")"); done < <(jq -c '.assumptions[]' <<< "$args_json")
+      while IFS= read -r item; do cmd+=(--non-goal "$(jq -r . <<< "$item")"); done < <(jq -c '.non_goals[]' <<< "$args_json")
+      if [[ "$(jq -r 'has("validation_profile")' <<< "$args_json")" == true ]]; then
+        cmd+=(--validation-profile "$(jq -r '.validation_profile' <<< "$args_json")")
+      fi
+      ;;
+    sley_change_preview)
+      plan_path="$(resolve_confined_regular_file "$(jq -r '.plan' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "plan must be a confined regular non-symlink artifact"
+        return
+      }
+      cmd=("$SLEY_BIN" change preview --json --repository "$REPOSITORY_ROOT" --plan "$plan_path")
+      ;;
+    sley_change_approval_request)
+      preview_path="$(resolve_confined_regular_file "$(jq -r '.preview' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "preview must be a confined regular non-symlink artifact"
+        return
+      }
+      cmd=("$SLEY_BIN" change approval-request --json --repository "$REPOSITORY_ROOT" --preview "$preview_path")
+      ;;
+    sley_change_apply_authorization|sley_change_apply|sley_change_recover|sley_change_review)
+      grant_path="$(resolve_confined_regular_file "$(jq -r '.grant' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "grant must be a confined regular non-symlink artifact"
+        return
+      }
+      request_path="$(resolve_confined_regular_file "$(jq -r '.request' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "request must be a confined regular non-symlink artifact"
+        return
+      }
+      preview_path="$(resolve_confined_regular_file "$(jq -r '.preview' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "preview must be a confined regular non-symlink artifact"
+        return
+      }
+      if [[ "$tool" != sley_change_apply_authorization ]]; then
+        authorization_path="$(resolve_confined_regular_file "$(jq -r '.authorization' <<< "$args_json")")" || {
+          tool_result_error_json "SLEY_MCP_PATH_DENIED" "authorization must be a confined regular non-symlink artifact"
+          return
+        }
+      fi
+      case "$tool" in
+        sley_change_apply_authorization)
+          cmd=("$SLEY_BIN" change apply-authorization --json --repository "$REPOSITORY_ROOT" \
+            --grant "$grant_path" --request "$request_path" --preview "$preview_path" \
+            --principal "$(jq -r '.principal' <<< "$args_json")" --audience "$(jq -r '.audience' <<< "$args_json")")
+          ;;
+        sley_change_apply)
+          cmd=("$SLEY_BIN" change apply --json --repository "$REPOSITORY_ROOT" \
+            --authorization "$authorization_path" --grant "$grant_path" --request "$request_path" --preview "$preview_path" \
+            --principal "$(jq -r '.principal' <<< "$args_json")" --audience "$(jq -r '.audience' <<< "$args_json")")
+          if [[ "$(jq -r '.confirm_atomic_apply' <<< "$args_json")" == true ]]; then cmd+=(--confirm-atomic-apply); fi
+          ;;
+        sley_change_recover)
+          cmd=("$SLEY_BIN" change recover --json --repository "$REPOSITORY_ROOT" \
+            --authorization "$authorization_path" --grant "$grant_path" --request "$request_path" --preview "$preview_path" \
+            --principal "$(jq -r '.principal' <<< "$args_json")" --audience "$(jq -r '.audience' <<< "$args_json")")
+          if [[ "$(jq -r '.confirm_recovery' <<< "$args_json")" == true ]]; then cmd+=(--confirm-recovery); fi
+          ;;
+        sley_change_review)
+          apply_path="$(resolve_confined_regular_file "$(jq -r '.apply' <<< "$args_json")")" || {
+            tool_result_error_json "SLEY_MCP_PATH_DENIED" "apply report must be a confined regular non-symlink artifact"
+            return
+          }
+          cmd=("$SLEY_BIN" change review --json --repository "$REPOSITORY_ROOT" \
+            --authorization "$authorization_path" --grant "$grant_path" --request "$request_path" --preview "$preview_path" --apply "$apply_path" \
+            --principal "$(jq -r '.principal' <<< "$args_json")" --audience "$(jq -r '.audience' <<< "$args_json")")
+          if [[ "$(jq -r 'has("rollback")' <<< "$args_json")" == true ]]; then
+            rollback_path="$(resolve_confined_regular_file "$(jq -r '.rollback' <<< "$args_json")")" || {
+              tool_result_error_json "SLEY_MCP_PATH_DENIED" "rollback report must be a confined regular non-symlink artifact"
+              return
+            }
+            cmd+=(--rollback "$rollback_path")
+          fi
+          if [[ "$(jq -r 'has("trace")' <<< "$args_json")" == true ]]; then
+            trace_path="$(resolve_confined_regular_file "$(jq -r '.trace' <<< "$args_json")")" || {
+              tool_result_error_json "SLEY_MCP_PATH_DENIED" "review trace must be a confined regular non-symlink file"
+              return
+            }
+            cmd+=(--trace "$trace_path")
+          fi
+          if [[ "$(jq -r '.confirm_review_packet' <<< "$args_json")" == true ]]; then cmd+=(--confirm-review-packet); fi
+          ;;
+      esac
+      ;;
+    sley_change_rollback)
+      apply_path="$(resolve_confined_regular_file "$(jq -r '.apply' <<< "$args_json")")" || {
+        tool_result_error_json "SLEY_MCP_PATH_DENIED" "apply report must be a confined regular non-symlink artifact"
+        return
+      }
+      cmd=("$SLEY_BIN" change rollback --json --repository "$REPOSITORY_ROOT" --apply "$apply_path")
+      if [[ "$(jq -r '.confirm_rollback' <<< "$args_json")" == true ]]; then cmd+=(--confirm-rollback); fi
       ;;
     *)
       tool_result_error_json "SLEY_MCP_UNKNOWN_TOOL" "unknown tool"
@@ -245,10 +544,15 @@ run_tool_json() {
     tool_result_error_json "SLEY_MCP_COMPILER_OUTPUT_INVALID" "compiler did not return one valid JSON report"
     return
   fi
-  expected_schema="$(tool_expected_schema "$tool")"
   actual_schema="$(jq -r '.schema? // ""' <<< "$compact_report")"
   if [[ "$rc" -ne 0 ]]; then is_error=true; fi
-  if [[ "$actual_schema" == "$expected_schema" ]]; then
+  if tool_accepts_output_schema "$tool" "$actual_schema"; then
+    structured_schema_allowed=true
+  elif [[ "$actual_schema" == "sley.diagnostics.report.v0" && "$is_error" == true ]] \
+    && tool_allows_structured_diagnostic "$tool"; then
+    structured_schema_allowed=true
+  fi
+  if [[ "$structured_schema_allowed" == true ]]; then
     jq -cn --arg text "$compact_report" --argjson report "$compact_report" --argjson is_error "$is_error" '{content:[{type:"text",text:$text}],structuredContent:$report,isError:$is_error}'
   else
     jq -cn --arg text "$compact_report" '{content:[{type:"text",text:$text}],isError:true}'
@@ -256,7 +560,7 @@ run_tool_json() {
 }
 
 handle_request() {
-  local message="$1" id_json method params_json result_json tools_json tool args_json workspace
+  local message="$1" id_json method params_json result_json tool args_json workspace
   id_json="$(jq -c '.id // null' <<< "$message")"
   method="$(jq -r '.method // ""' <<< "$message")"
   params_json="$(jq -c '.params // {}' <<< "$message")"
@@ -276,7 +580,7 @@ handle_request() {
         jsonrpc_error "$id_json" -32602 "invalid initialize parameters"
         return
       fi
-      result_json="$(jq -cn --arg version "$MCP_PROTOCOL_VERSION" --arg server_version "$MCP_SERVER_VERSION" '{protocolVersion:$version,capabilities:{tools:{listChanged:false}},serverInfo:{name:"sley-mcp-bridge",title:"Sley MCP Bridge",version:$server_version},instructions:"Read-only Sley compiler access confined to the configured repository root."}')"
+      result_json="$(jq -cn --arg version "$MCP_PROTOCOL_VERSION" --arg server_version "$MCP_SERVER_VERSION" '{protocolVersion:$version,capabilities:{tools:{listChanged:false}},serverInfo:{name:"sley-mcp-bridge",title:"Sley MCP Bridge",version:$server_version},instructions:"Bounded Sley compiler and governed local-change access confined to the configured repository root. Operator grant issuance and revocation-record creation remain CLI-only."}')"
       STATE="initialized_pending"
       jsonrpc_result "$id_json" "$result_json"
       ;;
@@ -288,9 +592,7 @@ handle_request() {
         jsonrpc_error "$id_json" -32002 "server is not initialized"
         return
       fi
-      tools_json="$(tool_catalog_json)"
-      result_json="$(jq -cn --argjson tools "$tools_json" '{tools:$tools}')"
-      jsonrpc_result "$id_json" "$result_json"
+      tool_catalog_json | jq -c --argjson id "$id_json" '{jsonrpc:"2.0",id:$id,result:{tools:.}}'
       ;;
     tools/call)
       if [[ "$STATE" != "ready" ]]; then
@@ -365,7 +667,7 @@ main() {
   git_root="$(realpath -e -- "$git_root")"
   [[ "$root_real" == "$git_root" ]] || { log "--root must be the Git repository top level"; return 2; }
   REPOSITORY_ROOT="$root_real"
-  log "serving read-only MCP for $REPOSITORY_ROOT"
+  log "serving bounded MCP for $REPOSITORY_ROOT"
 
   read_limit=$((MAX_REQUEST_BYTES + 1))
   while :; do

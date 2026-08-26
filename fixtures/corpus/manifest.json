@@ -218,6 +218,17 @@
         "authority:effect-alias",
         "formatter:round-trip"
       ]
+    },
+    {
+      "path": "accepted/w2_discoverability_forms.sley",
+      "covers": [
+        "accepted:w2-discoverability",
+        "language:boolean-operators",
+        "language:conditional-expression",
+        "language:conditional-statement",
+        "language:task-parameter-placement",
+        "formatter:round-trip"
+      ]
     }
   ],
   "rejected": [
@@ -585,6 +596,47 @@
         "language:unknown-task",
         "diagnostic:UNKNOWN_TASK",
         "repair:declare-or-import-task"
+      ]
+    },
+    {
+      "path": "rejected/unsupported_raw_expression.sley",
+      "covers": [
+        "language:raw-recovery",
+        "rejected:unsupported-executable-expression",
+        "diagnostic:UNSUPPORTED_RAW_EXPRESSION"
+      ]
+    },
+    {
+      "path": "rejected/unsupported_raw_host_argument.sley",
+      "covers": [
+        "language:raw-recovery",
+        "language:call-argument",
+        "rejected:unsupported-executable-expression",
+        "diagnostic:UNSUPPORTED_RAW_EXPRESSION"
+      ]
+    },
+    {
+      "path": "rejected/foreign_conditional_expression.sley",
+      "covers": [
+        "language:conditional-expression",
+        "rejected:foreign-conditional-spelling",
+        "diagnostic:CONTROL_FLOW_EXPRESSION_BOUNDARY"
+      ]
+    },
+    {
+      "path": "rejected/module_control_flow.sley",
+      "covers": [
+        "language:module-context",
+        "rejected:module-control-flow",
+        "diagnostic:MODULE_CONTROL_FLOW_NOT_ALLOWED"
+      ]
+    },
+    {
+      "path": "rejected/inline_task_parameter.sley",
+      "covers": [
+        "language:task-parameter-placement",
+        "rejected:inline-task-parameter",
+        "diagnostic:INLINE_TASK_PARAMETER_PLACEMENT"
       ]
     }
   ]

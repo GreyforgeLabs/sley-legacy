@@ -1,0 +1,39 @@
+{
+  "schema": "sley.release.provenance.v1",
+  "status": "release_candidate",
+  "release": "1.2.0",
+  "artifact_id": "sley-1.2.0-linux-x86_64",
+  "source": {
+    "commit": "1111111111111111111111111111111111111111",
+    "payload_tree_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "dirty": false
+  },
+  "artifact": {
+    "path": "sley-1.2.0-linux-x86_64.tar.gz",
+    "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "size": 1024
+  },
+  "materials": {
+    "manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "license_inventory_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+    "sbom_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+  },
+  "build": {
+    "command": ["bin/sley", "release", "build", "--output-dir", "dist", "--json"],
+    "builder_os": "Linux",
+    "builder_architecture": "x86_64",
+    "source_date_epoch": 1700000000,
+    "reproducible": true
+  },
+  "assurance": {
+    "signed": false,
+    "signature": null,
+    "cryptographic_provider_attestation": false
+  },
+  "authority": {
+    "mode": "local_release_candidate_only",
+    "publication_authorized": false,
+    "tag_authorized": false,
+    "upload_authorized": false
+  }
+}

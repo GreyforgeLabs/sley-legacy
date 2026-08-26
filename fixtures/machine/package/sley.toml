@@ -1,0 +1,4 @@
+[project]
+name = "machine-fixture"
+root = "src"
+entry = "machine.fixture"

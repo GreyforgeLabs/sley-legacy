@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.adapter.report.v0",
+  "title": "Sley Adapter Replay Report v0",
+  "type": "object",
+  "required": [
+    "schema", "status", "manifest", "adapter", "runtime", "authority",
+    "replay", "record", "summary", "isolation", "issues"
+  ],
+  "properties": {
+    "schema": { "const": "sley.adapter.report.v0" },
+    "status": { "enum": ["passed", "failed", "blocked", "cancelled"] },
+    "manifest": { "$ref": "#/$defs/manifestRef" },
+    "adapter": { "$ref": "#/$defs/adapterRef" },
+    "runtime": { "$ref": "#/$defs/runtimeRef" },
+    "authority": { "$ref": "#/$defs/authority" },
+    "replay": { "$ref": "#/$defs/replay" },
+    "record": { "oneOf": [{ "$ref": "sley.adapter.replay.v0" }, { "type": "null" }] },
+    "summary": { "$ref": "#/$defs/summary" },
+    "isolation": { "$ref": "#/$defs/isolation" },
+    "issues": { "type": "array", "items": { "$ref": "#/$defs/issue" } }
+  },
+  "$defs": {
+    "digestOrNull": {
+      "oneOf": [
+        { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "textOrNull": { "type": ["string", "null"] },
+    "manifestRef": {
+      "type": "object",
+      "required": ["path", "schema", "id", "digest"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "schema": { "$ref": "#/$defs/textOrNull" },
+        "id": { "$ref": "#/$defs/textOrNull" },
+        "digest": { "$ref": "#/$defs/digestOrNull" }
+      },
+      "additionalProperties": false
+    },
+    "adapterRef": {
+      "type": "object",
+      "required": ["id", "version", "digest", "kind", "live_execution"],
+      "properties": {
+        "id": { "$ref": "#/$defs/textOrNull" },
+        "version": { "$ref": "#/$defs/textOrNull" },
+        "digest": { "$ref": "#/$defs/digestOrNull" },
+        "kind": { "$ref": "#/$defs/textOrNull" },
+        "live_execution": { "type": ["boolean", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "runtimeRef": {
+      "type": "object",
+      "required": ["id", "version", "digest"],
+      "properties": {
+        "id": { "$ref": "#/$defs/textOrNull" },
+        "version": { "$ref": "#/$defs/textOrNull" },
+        "digest": { "$ref": "#/$defs/digestOrNull" },
+        "status": { "type": "string", "minLength": 1 },
+        "elapsed_ms": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "bound", "capability_count", "mutation_authority"],
+      "properties": {
+        "mode": { "$ref": "#/$defs/textOrNull" },
+        "bound": { "type": "boolean" },
+        "capability_count": { "type": "integer", "minimum": 0 },
+        "mutation_authority": { "type": ["object", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "replay": {
+      "type": "object",
+      "required": ["policy", "key", "expected_record_digest", "actual_record_digest", "matched"],
+      "properties": {
+        "policy": { "$ref": "#/$defs/textOrNull" },
+        "key": { "$ref": "#/$defs/textOrNull" },
+        "expected_record_digest": { "$ref": "#/$defs/digestOrNull" },
+        "actual_record_digest": { "$ref": "#/$defs/digestOrNull" },
+        "matched": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": ["lifecycle", "event_count", "seed_count", "observed_call_count", "diagnostic_count"],
+      "properties": {
+        "lifecycle": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": ["opened", "manifest_validated", "authority_bound", "replaying", "completed", "failed", "blocked", "cancelled"]
+          }
+        },
+        "event_count": { "type": "integer", "minimum": 0 },
+        "seed_count": { "type": "integer", "minimum": 0 },
+        "observed_call_count": { "type": "integer", "minimum": 0 },
+        "diagnostic_count": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "isolation": {
+      "type": "object",
+      "required": ["class", "os_isolation_enforced", "persistent_worker", "owner"],
+      "properties": {
+        "class": { "const": "deterministic_seed_replay" },
+        "os_isolation_enforced": { "const": false },
+        "persistent_worker": { "const": false },
+        "owner": { "const": "S12-502" }
+      },
+      "additionalProperties": false
+    },
+    "issue": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "ADAPTER_MANIFEST_INVALID", "ADAPTER_AUTHORITY_DENIED",
+            "ADAPTER_SCOPE_DENIED", "ADAPTER_SEED_NOT_FOUND",
+            "ADAPTER_REPLAY_MISMATCH", "ADAPTER_BUDGET_EXCEEDED",
+            "ADAPTER_CANCELLED", "ADAPTER_LIVE_PROVIDER_DENIED"
+          ]
+        },
+        "message": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

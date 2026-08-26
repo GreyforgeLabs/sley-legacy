@@ -1,0 +1,238 @@
+{
+  "schema": "sley.agent_bench.aggregate.v0",
+  "status": "failed",
+  "run_id": "sleybench-smoke-v0-deterministic",
+  "suite_id": "sleybench-smoke-v0",
+  "tier": "smoke",
+  "mode": "K4",
+  "adapter": {
+    "kind": "deterministic_fixture",
+    "id": "deterministic-fixture-v0",
+    "model_measurement_applicable": false
+  },
+  "sley_version": "1.2",
+  "counts": {
+    "case_count": 1,
+    "passed_count": 0,
+    "failed_count": 1,
+    "family_counts": {
+      "syntax_compilation": 1,
+      "semantic_implementation": 0,
+      "diagnosis_repair": 0,
+      "translation_preservation": 0,
+      "structural_tool_use": 0,
+      "repository_patch_integration": 0
+    }
+  },
+  "rates": {
+    "parse_at_1": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0,
+      "wilson_95_low": 0,
+      "wilson_95_high": 0.7934506856227626,
+      "applicable": true
+    },
+    "compile_at_1": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0,
+      "wilson_95_low": 0,
+      "wilson_95_high": 0.7934506856227626,
+      "applicable": true
+    },
+    "pass_at_1": {
+      "numerator": 0,
+      "denominator": 1,
+      "rate": 0,
+      "wilson_95_low": 0,
+      "wilson_95_high": 0.7934506856227626,
+      "applicable": true
+    },
+    "repair_at_1": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "wilson_95_low": null,
+      "wilson_95_high": null,
+      "applicable": false
+    },
+    "repository_patch_acceptance": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "wilson_95_low": null,
+      "wilson_95_high": null,
+      "applicable": false
+    },
+    "regression_free_success": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1,
+      "wilson_95_low": 0.20654931437723745,
+      "wilson_95_high": 1,
+      "applicable": true
+    },
+    "syntax_hallucination": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "wilson_95_low": null,
+      "wilson_95_high": null,
+      "applicable": false
+    },
+    "stdlib_hallucination": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "wilson_95_low": null,
+      "wilson_95_high": null,
+      "applicable": false
+    },
+    "invalid_tool_call": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null,
+      "wilson_95_low": null,
+      "wilson_95_high": null,
+      "applicable": false
+    }
+  },
+  "resources": {
+    "tool_calls_total": 2,
+    "compiler_cycles_total": 2,
+    "wall_ms_total": 224,
+    "input_tokens_total": 0,
+    "output_tokens_total": 0,
+    "estimated_cost_usd_total": 0
+  },
+  "cases": [
+    {
+      "schema": "sley.agent_bench.case_result.v0",
+      "run_id": "sleybench-smoke-v0-deterministic",
+      "case_id": "sleybench-smoke-f1-001",
+      "family": "syntax_compilation",
+      "mode": "K4",
+      "adapter_id": "deterministic-fixture-v0",
+      "status": "failed",
+      "score_tags": [
+        "parse",
+        "compile",
+        "pass"
+      ],
+      "scores": {
+        "prompt_accepted": true,
+        "parse_passed": false,
+        "check_passed": false,
+        "oracle_tests_passed": false,
+        "semantic_output_matched": true,
+        "expected_diagnosis_identified": true,
+        "repair_minimal": true,
+        "scope_precise": true,
+        "required_evidence_produced": true
+      },
+      "measurements": {
+        "tool_calls": 2,
+        "compiler_cycles": 2,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "wall_ms": 224,
+        "estimated_cost_usd": 0,
+        "changed_files": 1,
+        "changed_lines": 3,
+        "syntax_hallucination": false,
+        "stdlib_hallucination": false,
+        "invalid_tool_call": false,
+        "model_measurement_applicable": false
+      },
+      "workspace": {
+        "retained": false,
+        "clean_before": true,
+        "path_exposed": false,
+        "trusted_fixture": true,
+        "os_isolation": false
+      },
+      "evidence": {
+        "training_exclusion_id": "sha256:20285866c88a1948967a32a13d586d41afb453264edb9d4cad80ba46df9eeb31",
+        "initial_tree_digest": "sha256:21da9b848adc9051ed293624e41a5a3ae82d2864a8c6a6a4232aefdc0b68f119",
+        "candidate_digest": "sha256:742f67f7a0c964ce9ff7999f8720ddc863e924f926cab8ec1c8f53f710601373",
+        "final_tree_digest": "sha256:742f67f7a0c964ce9ff7999f8720ddc863e924f926cab8ec1c8f53f710601373",
+        "prompt_digest": "sha256:725144ab4d80b55eecc7e299adcbeaadbb70088d66e040d0d2da1f9f360774b8",
+        "step_evidence_digest": "sha256:6aa507bed861b8488c1f53c16c4fe51c688f1d722c4d3e44824d414bc48ebcba"
+      },
+      "steps": [
+        {
+          "name": "check",
+          "phase": "oracle",
+          "argv": [
+            "sley",
+            "check",
+            "--json",
+            "main.sley"
+          ],
+          "expected_exit": 0,
+          "actual_exit": 125,
+          "status": "failed",
+          "stdout_schema": null,
+          "assertion_count": 1,
+          "assertion_passed_count": 0,
+          "output_bytes": 67,
+          "stdout_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_digest": "sha256:8c53c281b9b1df5337eca960ee4c95a62efc5ef53b306c93d087ef2a4ab2821b",
+          "issues": [
+            {
+              "code": "SLEYBENCH_EXIT_MISMATCH",
+              "message": "expected exit 0, got 125"
+            },
+            {
+              "code": "SLEYBENCH_SCHEMA_MISMATCH",
+              "message": "expected schema sley.diagnostics.report.v0, got null"
+            },
+            {
+              "code": "SLEYBENCH_ASSERTION_FAILED",
+              "message": "one or more JSON-pointer assertions failed"
+            }
+          ]
+        },
+        {
+          "name": "ast",
+          "phase": "oracle",
+          "argv": [
+            "sley",
+            "ast",
+            "--json",
+            "main.sley"
+          ],
+          "expected_exit": 0,
+          "actual_exit": 125,
+          "status": "failed",
+          "stdout_schema": null,
+          "assertion_count": 0,
+          "assertion_passed_count": 0,
+          "output_bytes": 67,
+          "stdout_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "stderr_digest": "sha256:8c53c281b9b1df5337eca960ee4c95a62efc5ef53b306c93d087ef2a4ab2821b",
+          "issues": [
+            {
+              "code": "SLEYBENCH_EXIT_MISMATCH",
+              "message": "expected exit 0, got 125"
+            },
+            {
+              "code": "SLEYBENCH_SCHEMA_MISMATCH",
+              "message": "expected schema sley.ast.program.v0, got null"
+            }
+          ]
+        }
+      ],
+      "issues": []
+    }
+  ],
+  "evidence": {
+    "case_manifest_digest": "sha256:64fe58e450656edcc465f912e6f837fb146efbea9b1698039b21b8eec1b37eaa",
+    "run_manifest_digest": "sha256:3771a27753d7ca0034fac17a3b41a161103601e61543800d3ce35b453e5a55ad",
+    "bootstrap_digest": "sha256:8f8a5a5b1c783ff94ee88315b741529815754e09dffd9af4b5815922d56f9f85",
+    "event_stream_digest": "sha256:5b842eb39343d36270f393076184a7c938fd789b0ec736c72978bc1d2e73c433",
+    "case_results_digest": "sha256:0f8b7c7119c83a4e0187782c08dbb2bdd785faa3ec820995af98c5614253714b"
+  },
+  "issues": []
+}

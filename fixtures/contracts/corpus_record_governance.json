@@ -1,0 +1,130 @@
+{
+  "schema": "sley.corpus.record.v0",
+  "record_id": "sley-corpus-fixture-001",
+  "task_id": "corpus-governance-ready",
+  "semantic_lineage_id": "corpus-governance-lineage-001",
+  "partition": "train",
+  "visibility": "public",
+  "lifecycle_state": "admitted",
+  "admitted_at": "2026-08-23T00:00:00Z",
+  "versions": {
+    "sley": "1.1",
+    "compiler": "sley-1.1",
+    "formatter": "sley-1.1",
+    "record_schema": "sley.corpus.record.v0",
+    "evaluator": "sley-corpus-0.1"
+  },
+  "origin": {
+    "kind": "human_authored",
+    "collection_method": "checked repository fixture"
+  },
+  "provenance": {
+    "source_uri": "repo:sley/fixtures/corpus_governance/source.sley",
+    "source_path": "source.sley",
+    "source_revision": "fixture-v0",
+    "author": "Sley maintainers",
+    "owner": "Sley maintainers",
+    "authority": "repository-owned deterministic fixture",
+    "chain": [
+      "human-authored fixture",
+      "compiler and oracle verification",
+      "corpus admission review"
+    ]
+  },
+  "license": {
+    "identifier": "repository-license",
+    "evidence_path": "LICENSE-EVIDENCE.md",
+    "allowed_uses": [
+      "internal_research",
+      "retrieval",
+      "training",
+      "redistribution"
+    ],
+    "decision": "permitted",
+    "reviewer": "Sley maintainers"
+  },
+  "privacy": {
+    "class": "public",
+    "sanitization": "synthetic repository fixture with no user data",
+    "secret_scan": {
+      "tool": "fixture-secret-scan",
+      "version": "1.0",
+      "status": "passed"
+    },
+    "redactions": []
+  },
+  "artifacts": {
+    "primary_role": "source",
+    "source_path": "source.sley",
+    "oracle_result": "passed"
+  },
+  "digests": {
+    "exact": "sha256:301fbb78692b7206b3431207714120dccb335d8ed4691d64e692f6e51d2d6399",
+    "canonical": "sha256:7be36dd1b0a2b954e1509a33809a5410a5b1eb3b760aecd7d3c5bb9b4300ea31",
+    "structural": "sha256:5e8efa29cbacc5c188c5862883c9893dfcfd68810cfa227c583e32748c3ade25",
+    "semantic_lineage": "sha256:89079d49d755140fabf0b9fa54d90f73693cde655a3ba5c68fa823e217057f48"
+  },
+  "exclusions": {
+    "ledger_digest": "sha256:7bb1b54187c89febecec16af64f5df9d2700c369441e7393ecf1054050c2ec98",
+    "checked_ids": [
+      "sha256:05f88023345172380983b7ee8529a46efa331dfe0a82d69c21164db3a2936e93"
+    ],
+    "decision": "clear"
+  },
+  "quality": {
+    "labels": [
+      "syntax_valid",
+      "check_valid",
+      "oracle_valid",
+      "human_reviewed",
+      "independently_replayed"
+    ],
+    "limitations": [
+      "tooling fixture only; not an actual reusable model-training release"
+    ],
+    "verification": {
+      "compiler": "passed",
+      "oracle": "passed",
+      "reviewer": "passed"
+    }
+  },
+  "retention": {
+    "class": "immutable_release",
+    "duration_days": 3650,
+    "location": "records/sley-corpus-fixture-001",
+    "access_boundary": "public repository fixture",
+    "backup": "governed_archive",
+    "deletion_owner": "Sley maintainers",
+    "retrieval_entry_ids": [
+      "retrieval:sley-corpus-fixture-001"
+    ],
+    "export_ids": [
+      "export:sley-corpus-fixture-001"
+    ]
+  },
+  "admission_gates": {
+    "authority": "passed",
+    "license": "passed",
+    "privacy": "passed",
+    "schema_and_digests": "passed",
+    "verification": "passed",
+    "deduplication": "passed",
+    "benchmark_exclusion": "passed",
+    "retention": "passed",
+    "review": "passed"
+  },
+  "sidecars": [
+    {
+      "path": "LICENSE-EVIDENCE.md",
+      "digest": "sha256:47115b96e94d25e61433875c0de78dcd646dea29941cc90a293e77cd691316ea",
+      "media_type": "text/markdown",
+      "role": "other"
+    },
+    {
+      "path": "oracle.json",
+      "digest": "sha256:f2fa4473f8ad958eda40e1248be01fd685ba108e3a350c86a4ac3e1232042519",
+      "media_type": "application/json",
+      "role": "oracle"
+    }
+  ]
+}

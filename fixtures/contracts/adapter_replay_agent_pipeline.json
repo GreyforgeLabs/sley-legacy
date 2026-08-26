@@ -1,0 +1,82 @@
+{
+  "schema": "sley.adapter.replay.v0",
+  "record_digest": "sha256:457aa02889dbe54f90d8901b5637fde5ac145ae17779903fb644edc1e0d3f62b",
+  "status": "passed",
+  "manifest_id": "adapter-manifest:agent-pipeline-v0",
+  "adapter": {
+    "id": "local.seeded-host",
+    "version": "0.1.0",
+    "digest": "sha256:09ecbc3463a3b841bd42b863ced297ad171e7d082e166a477950eeca4683136d"
+  },
+  "runtime": {
+    "id": "sley.loom.seeded_runtime",
+    "version": "0.1.0",
+    "digest": "sha256:5b36de7470d015d2090552587d4f163dadbd062d87b7508320b1f1b638ad2361"
+  },
+  "replay_key": "replay:agent-pipeline-v0",
+  "authority": {
+    "mode": "local_replay_only",
+    "capabilities_digest": "sha256:5a1bd1f0196b9386be6f388398fa2e7e309867df8d2839de2fba9f4356ced419",
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "trace": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false,
+      "ephemeral_runtime_state": true
+    }
+  },
+  "redaction": {
+    "policy": "digest_only",
+    "seed_families": [
+      {"family": "files", "count": 0, "values_included": false},
+      {"family": "db_tables", "count": 0, "values_included": false},
+      {"family": "secrets", "count": 1, "values_included": false},
+      {"family": "http_text", "count": 1, "values_included": false},
+      {"family": "shell_outputs", "count": 0, "values_included": false},
+      {"family": "model_outputs", "count": 1, "values_included": false},
+      {"family": "deploy_results", "count": 1, "values_included": false},
+      {"family": "spend_results", "count": 0, "values_included": false}
+    ],
+    "public_projection": "digests_and_counts_only",
+    "private_projection": "manifest_owned_seed_values"
+  },
+  "request": {
+    "target_digest": "sha256:700e977628ff00114fc8507aca2eabc672ab8d8eeb8668951c3ce0e0ea20604e",
+    "capabilities_digest": "sha256:5a1bd1f0196b9386be6f388398fa2e7e309867df8d2839de2fba9f4356ced419",
+    "seeds_digest": "sha256:4f527e31d3f1d2de611ab9ebe3c967b777f89d812c922f1f32864ea00bbfbee8"
+  },
+  "result": {
+    "status": "passed",
+    "output_digest": "sha256:24865f0d0b025aa8c726f1a760447e2778776f3f012d47239ef0148144184b2f",
+    "diagnostic_codes": []
+  },
+  "measurements": {
+    "limits": {
+      "max_steps": 1000,
+      "max_calls": 100,
+      "max_call_depth": 16,
+      "max_input_bytes": 1048576,
+      "max_output_bytes": 1048576,
+      "max_wall_ms": 120000
+    },
+    "observed_call_count": 50,
+    "observed_step_count": 11,
+    "observed_call_depth": 1,
+    "output_bytes": 3717
+  },
+  "events": [
+    {"sequence": 0, "phase": "opened", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_REPLAY_OPENED"},
+    {"sequence": 1, "phase": "manifest_validated", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_MANIFEST_VALIDATED"},
+    {"sequence": 2, "phase": "authority_bound", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_AUTHORITY_BOUND"},
+    {"sequence": 3, "phase": "seed_bound", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_SEED_BOUND", "input_digest": "sha256:4f527e31d3f1d2de611ab9ebe3c967b777f89d812c922f1f32864ea00bbfbee8"},
+    {"sequence": 4, "phase": "runtime_started", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_RUNTIME_STARTED", "input_digest": "sha256:e06df1aa3549bff8dde11e6d058aa6dff2d07a79ab2c4175f227fe11c9450364"},
+    {"sequence": 5, "phase": "adapter_called", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_CALLED", "input_digest": "sha256:e06df1aa3549bff8dde11e6d058aa6dff2d07a79ab2c4175f227fe11c9450364"},
+    {"sequence": 6, "phase": "adapter_returned", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_RETURNED", "output_digest": "sha256:24865f0d0b025aa8c726f1a760447e2778776f3f012d47239ef0148144184b2f"},
+    {"sequence": 7, "phase": "runtime_finished", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_RUNTIME_FINISHED", "output_digest": "sha256:24865f0d0b025aa8c726f1a760447e2778776f3f012d47239ef0148144184b2f"},
+    {"sequence": 8, "phase": "replay_verified", "adapter_id": "local.seeded-host", "effect": "SecretRead,Network,ModelCall,Deploy", "code": "ADAPTER_REPLAY_VERIFIED"}
+  ],
+  "terminal_code": "ADAPTER_REPLAY_VERIFIED"
+}

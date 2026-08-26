@@ -3,9 +3,84 @@
 All notable Sley changes for the current release-candidate line are tracked
 here. Dates use UTC-independent calendar dates from the local repo history.
 
-## Unreleased
+## v1.2.0 - 2026-08-26
 
-No changes yet.
+- Added one deterministic supported Linux x86_64 release archive with a strict
+  version manifest, SHA-256 checksum, unsigned provenance, SPDX 2.3 SBOM,
+  Apache-2.0 license inventory, safe extraction and payload scrub, clean
+  install verification, and `sley doctor --toolchain`.
+- Added repository-local `sley validate` profiles for quick, changed, core,
+  and authoritative release validation, with a stable report that records
+  detected changes, selected and skipped work, cache truth, wall time,
+  outcome, and bounded digested executor evidence.
+- Added stable worker, user-test, validation, operational replay, release, and
+  toolchain contracts; Python and Node worker clients; bounded local adapter
+  replay; and the full governed transaction lifecycle with CLI/MCP parity.
+- Closed the bounded W6 operational evidence wave with exact independent-oracle
+  replay, one controlled provider-backed workflow trial, retained limitations,
+  independent review, and explicit production-promotion deferral.
+- Added the 1.1-to-1.2 migration guide, proportionate release threat model,
+  canonical release procedure, and post-GA Sley First plan.
+
+- Added first-class manifest-backed `sley test` with deterministic discovery,
+  six bounded case kinds, graph-derived changed-node focus, truthful four-state
+  coverage, stable machine reports, and read-only transaction review binding.
+
+- Implemented S12-406 CLI/MCP transaction parity through nine confined adapters
+  over the existing `sley change` commands, with exact success/diagnostic
+  forwarding, explicit mutation confirmations, truthful destructive
+  annotations, operator-only grant and revocation issuance, and an end-to-end
+  inspect-through-sealed-review parity gate.
+- Implemented S12-405 terminal review and sealing with exact historical chain
+  validation, verified apply and rollback placement checks, bounded Markdown
+  and machine packets, pinned trace receipts, ZJX preview evidence, atomic
+  no-replace directory publication, and a content-addressed transaction seal.
+- Implemented S12-404 bounded atomic apply with strict apply authorization, durable
+  one-way revocation records, single-use replay, Linux same-filesystem
+  `renameat2` exchange, required compiler verification, automatic verified
+  rollback, verified manual rollback, pre-commit cancellation, and
+  digest-classified crash-state recovery across commit and rollback boundaries.
+
+### Added
+
+- Strict `sley.change.review.v0` and
+  `sley.change.transaction_seal.v0` contracts plus focused no-mutation,
+  tamper, non-terminal, replay, post-seal rollback, and digest-chain tests.
+- Strict local `sley change approval-request` and `sley change approve`
+  surfaces with compiler-regenerated exact scope, explicit operator and review
+  assertions, honest unverified proof labels, deferred replay enforcement, and
+  no repository or external mutation authority.
+- Strict `sley change plan` and `sley change preview` surfaces with
+  digest-bound rationale and compiler facts, ordered Sley-owned edit
+  operations, disposable candidate materialization, complete source and
+  semantic evidence, focused validation, deterministic replay, and no
+  repository-write authority.
+- The first W4 transaction slice: a Loom-owned lifecycle model, strict
+  `sley.transaction.inspect.v0` evidence, and read-only `sley change inspect`
+  with explicit Git/base/compiler/actor/nonce/time binding and typed boundary
+  failures.
+- A `transaction-contracts` gate proving inspection leaves repository source
+  and the Git index unchanged while rejecting malformed bindings, symlinks,
+  non-Git and unborn repositories, missing/invalid/out-of-repository traces,
+  and unsupported apply.
+- A W3 contract floor with stable v1 compatibility targets for diagnostics,
+  bounded graph slices, verification, and machine responses; a machine-checked
+  stability registry; and strict v0/v1 positive and negative fixtures.
+- Registered SleyBench protocol-replay and combined mode-summary schemas with
+  synthetic public fixtures and deterministic owned-path, one-action, budget,
+  sequencing, strict-response, and cancellation-observation replays.
+- `sley explain`, a bounded human/JSON lookup for the four Sley 1.2
+  syntax-context diagnostics, backed by a Sley-owned catalog and the new
+  `sley.explain.report.v0` contract.
+- LSP command-preview handoff to the same diagnostic explanation path, plus
+  accepted/rejected example, formatter round-trip, contract, and fail-closed
+  unknown-ID coverage.
+- A version-coupled `SLEY_AI.md` bootstrap, AI interface specification,
+  current-state legibility audit, initial SleyBench evaluation contract, and
+  deterministic drift gate.
+- A schema-backed SleyBench smoke evaluator with 24 public cases, fresh Git
+  workspaces, bounded compiler oracles, scope/minimality checks, evidence
+  hashes, Wilson intervals, and no provider or model dependency.
 
 ## v1.1 - 2026-08-22
 

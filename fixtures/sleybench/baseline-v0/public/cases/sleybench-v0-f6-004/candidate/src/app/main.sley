@@ -1,0 +1,6 @@
+module app.main
+
+task main -> Int {
+  bind value = 14
+  return value
+}

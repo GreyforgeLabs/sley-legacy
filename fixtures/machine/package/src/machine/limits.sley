@@ -1,0 +1,13 @@
+module machine.limits
+
+export task spin -> Int {
+  while true {
+  }
+  return 0
+}
+
+export task effectful -> Text uses FileRead {
+  take gate fs: Gate<FileRead>
+
+  return fs.read_text("/tmp/machine-fixture")
+}

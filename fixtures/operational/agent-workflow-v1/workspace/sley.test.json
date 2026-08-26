@@ -1,0 +1,119 @@
+{
+  "schema": "sley.test.manifest.v1",
+  "suite": {
+    "id": "sley-operational-agent-workflow-v1",
+    "version": "1.0.0"
+  },
+  "source": {
+    "target": ".",
+    "package": {
+      "id": "sley-operational-agent-workflow",
+      "version": "1.0.0"
+    }
+  },
+  "authority": {
+    "mode": "local_test_only",
+    "external_provider_calls": false,
+    "mutation_authority": {
+      "repository": false,
+      "index": false,
+      "external": false,
+      "provider": false,
+      "deploy": false,
+      "spend": false
+    }
+  },
+  "bounds": {
+    "max_cases": 1,
+    "max_generated_cases": 1,
+    "max_wall_ms": 120000,
+    "max_output_bytes": 1048576
+  },
+  "coverage_scope": {
+    "tasks": [
+      "task:agent.main.main",
+      "task:agent.pipeline.collect_profile",
+      "task:agent.pipeline.stage_release",
+      "task:agent.pipeline.compose_plan"
+    ],
+    "branches": [
+      "block:task:agent.pipeline.collect_profile:stmt:2:else",
+      "block:task:agent.pipeline.collect_profile:stmt:2:then"
+    ],
+    "effects": [
+      "effect:Deploy",
+      "effect:ModelCall",
+      "effect:Network",
+      "effect:SecretRead"
+    ],
+    "capabilities": [
+      "capability:Deploy=staging",
+      "capability:ModelCall=deploy-plan",
+      "capability:Network=https://example.test/profile",
+      "capability:SecretRead=api_key"
+    ]
+  },
+  "cases": [
+    {
+      "id": "renamed-pipeline-behavior",
+      "kind": "effect_mock",
+      "selection_nodes": [
+        "task:agent.main.main",
+        "task:agent.pipeline.compose_plan",
+        "effect:Deploy",
+        "effect:ModelCall",
+        "effect:Network",
+        "effect:SecretRead"
+      ],
+      "covers": {
+        "tasks": [
+          "task:agent.main.main",
+          "task:agent.pipeline.compose_plan"
+        ],
+        "branches": [],
+        "effects": [
+          "effect:Deploy",
+          "effect:ModelCall",
+          "effect:Network",
+          "effect:SecretRead"
+        ],
+        "capabilities": [
+          "capability:Deploy=staging",
+          "capability:ModelCall=deploy-plan",
+          "capability:Network=https://example.test/profile",
+          "capability:SecretRead=api_key"
+        ]
+      },
+      "target": ".",
+      "capabilities": [
+        "SecretRead=api_key",
+        "Network=https://example.test/profile",
+        "ModelCall=deploy-plan",
+        "Deploy=staging"
+      ],
+      "mocks": {
+        "secrets": [
+          {"key": "api_key", "text": "redacted"}
+        ],
+        "http_text": [
+          {"key": "https://example.test/profile", "text": "owned profile"}
+        ],
+        "shell_outputs": [],
+        "model_outputs": [
+          {"key": "deploy-plan", "text": "owned plan"}
+        ],
+        "deploy_results": [
+          {"key": "staging", "text": "owned stage"}
+        ],
+        "spend_results": []
+      },
+      "expected_result": {
+        "kind": "Ok",
+        "value": {
+          "kind": "Text",
+          "value": "owned profile | owned plan | owned stage"
+        }
+      }
+    }
+  ]
+}

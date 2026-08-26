@@ -1,0 +1,5 @@
+module app.main
+
+task main -> Int {
+  return 21
+}

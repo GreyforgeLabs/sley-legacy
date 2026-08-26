@@ -1,0 +1,5 @@
+module bench.public.f1_005
+
+task main -> Int {
+  return if true { 31 } else { 0 }
+}

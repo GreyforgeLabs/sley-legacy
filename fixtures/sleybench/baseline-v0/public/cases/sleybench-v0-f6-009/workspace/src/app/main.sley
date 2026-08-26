@@ -1,0 +1,5 @@
+module app.main
+
+task main -> Bool {
+  return false
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.worker.session.v1",
+  "title": "Sley Persistent Worker Session v1",
+  "type": "object",
+  "required": [
+    "schema", "protocol", "worker_id", "worker_digest", "runtime_digest",
+    "state", "generation", "request_count", "active_request_id",
+    "max_requests", "cache", "isolation"
+  ],
+  "properties": {
+    "schema": { "const": "sley.worker.session.v1" },
+    "protocol": { "const": "sley.worker.v1" },
+    "worker_id": { "type": "string", "pattern": "^worker:[A-Za-z0-9._-]+$" },
+    "worker_digest": { "$ref": "#/$defs/digest" },
+    "runtime_digest": { "$ref": "#/$defs/digest" },
+    "state": {
+      "enum": [
+        "starting", "ready", "busy", "draining", "unhealthy",
+        "shutting_down", "stopped"
+      ]
+    },
+    "generation": { "type": "integer", "minimum": 1 },
+    "request_count": { "type": "integer", "minimum": 0 },
+    "active_request_id": {
+      "oneOf": [
+        { "type": "string", "pattern": "^request:[A-Za-z0-9._-]+$" },
+        { "type": "null" }
+      ]
+    },
+    "max_requests": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "cache": {
+      "type": "object",
+      "required": ["policy", "shared_mutable_state", "hit_count"],
+      "properties": {
+        "policy": { "const": "disabled" },
+        "shared_mutable_state": { "const": false },
+        "hit_count": { "const": 0 }
+      },
+      "additionalProperties": false
+    },
+    "isolation": { "$ref": "#/$defs/isolation" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "isolation": {
+      "type": "object",
+      "required": [
+        "class", "fresh_process_per_invoke", "request_local_tempdir",
+        "clean_environment", "closed_inherited_fds", "resource_limits",
+        "process_group_cancellation", "namespace_isolation_enforced"
+      ],
+      "properties": {
+        "class": { "const": "fresh_subprocess_per_invoke" },
+        "fresh_process_per_invoke": { "const": true },
+        "request_local_tempdir": { "const": true },
+        "clean_environment": { "const": true },
+        "closed_inherited_fds": { "const": true },
+        "resource_limits": { "const": true },
+        "process_group_cancellation": { "const": true },
+        "namespace_isolation_enforced": { "const": false }
+      },
+      "additionalProperties": false
+    }
+  }
+}

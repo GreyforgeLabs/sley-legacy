@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sley.release.manifest.v1",
+  "title": "Sley Release Manifest v1",
+  "type": "object",
+  "required": ["schema", "status", "release", "artifact_id", "platform", "source", "payload", "toolchain", "entrypoints", "metadata", "authority"],
+  "properties": {
+    "schema": {"const": "sley.release.manifest.v1"},
+    "status": {"enum": ["release_candidate", "test_only"]},
+    "release": {"const": "1.2.0"},
+    "artifact_id": {"const": "sley-1.2.0-linux-x86_64"},
+    "platform": {
+      "type": "object",
+      "required": ["os", "architecture", "archive_format", "support_status"],
+      "properties": {
+        "os": {"const": "linux"},
+        "architecture": {"const": "x86_64"},
+        "archive_format": {"const": "tar.gz"},
+        "support_status": {"const": "supported"}
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["commit", "payload_tree_digest", "dirty"],
+      "properties": {
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "payload_tree_digest": {"$ref": "#/$defs/digest"},
+        "dirty": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "payload": {
+      "type": "object",
+      "required": ["inventory_scope", "file_count", "total_bytes", "files"],
+      "properties": {
+        "inventory_scope": {"const": "tracked_release_payload_excluding_release_metadata"},
+        "file_count": {"type": "integer", "minimum": 1},
+        "total_bytes": {"type": "integer", "minimum": 1},
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["path", "digest", "size", "mode"],
+            "properties": {
+              "path": {"$ref": "#/$defs/relativePath"},
+              "digest": {"$ref": "#/$defs/digest"},
+              "size": {"type": "integer", "minimum": 0},
+              "mode": {"enum": ["0644", "0755"]}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "toolchain": {
+      "type": "object",
+      "required": ["sley_version", "ai_bootstrap_version", "worker_protocol", "required_tools"],
+      "properties": {
+        "sley_version": {"const": "sley 1.2.0"},
+        "ai_bootstrap_version": {"const": "Bootstrap 0.2"},
+        "worker_protocol": {"type": "string", "minLength": 1},
+        "required_tools": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._+-]*\\|[^|]+$"}}
+      },
+      "additionalProperties": false
+    },
+    "entrypoints": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/relativePath"}},
+    "metadata": {
+      "type": "object",
+      "required": ["manifest", "license_inventory", "sbom"],
+      "properties": {
+        "manifest": {"const": "release/manifest.json"},
+        "license_inventory": {"const": "release/licenses.json"},
+        "sbom": {"const": "release/sbom.spdx.json"}
+      },
+      "additionalProperties": false
+    },
+    "authority": {
+      "type": "object",
+      "required": ["mode", "publication_authorized", "tag_authorized", "upload_authorized", "signing_status"],
+      "properties": {
+        "mode": {"const": "local_release_candidate_only"},
+        "publication_authorized": {"const": false},
+        "tag_authorized": {"const": false},
+        "upload_authorized": {"const": false},
+        "signing_status": {"const": "unsigned"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "relativePath": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._+/-]+$"}
+  }
+}

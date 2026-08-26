@@ -2,12 +2,96 @@
   "schema": "sley.contract.inventory.v0",
   "status": "passed",
   "schema_dir": "docs/schemas",
-  "schema_count": 41,
+  "schema_count": 88,
   "schemas": [
+    {
+      "id": "greyforge.sleybench.mode_summary.v0",
+      "path": "docs/schemas/greyforge.sleybench.mode_summary.v0.schema.json",
+      "title": "Greyforge SleyBench Mode Summary v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.adapter.manifest.v0",
+      "path": "docs/schemas/sley.adapter.manifest.v0.schema.json",
+      "title": "Sley Local Adapter Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.adapter.replay.v0",
+      "path": "docs/schemas/sley.adapter.replay.v0.schema.json",
+      "title": "Sley Deterministic Adapter Replay v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.adapter.report.v0",
+      "path": "docs/schemas/sley.adapter.report.v0.schema.json",
+      "title": "Sley Adapter Replay Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.aggregate.v0",
+      "path": "docs/schemas/sley.agent_bench.aggregate.v0.schema.json",
+      "title": "Sley Agent Bench Aggregate v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.case_manifest.v0",
+      "path": "docs/schemas/sley.agent_bench.case_manifest.v0.schema.json",
+      "title": "Sley Agent Bench Case Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.case_result.v0",
+      "path": "docs/schemas/sley.agent_bench.case_result.v0.schema.json",
+      "title": "Sley Agent Bench Case Result v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.event.v0",
+      "path": "docs/schemas/sley.agent_bench.event.v0.schema.json",
+      "title": "Sley Agent Bench Event v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.protocol_replay.v0",
+      "path": "docs/schemas/sley.agent_bench.protocol_replay.v0.schema.json",
+      "title": "SleyBench Agent Protocol Replay v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
     {
       "id": "sley.agent_bench.report.v0",
       "path": "docs/schemas/sley.agent_bench.report.v0.schema.json",
       "title": "Sley Agent Bench Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.run_manifest.v0",
+      "path": "docs/schemas/sley.agent_bench.run_manifest.v0.schema.json",
+      "title": "Sley Agent Bench Run Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.split_manifest.v0",
+      "path": "docs/schemas/sley.agent_bench.split_manifest.v0.schema.json",
+      "title": "Sley Agent Bench Split Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.agent_bench.split_report.v0",
+      "path": "docs/schemas/sley.agent_bench.split_report.v0.schema.json",
+      "title": "Sley Agent Bench Split Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -22,6 +106,83 @@
       "id": "sley.ast.program.v0",
       "path": "docs/schemas/sley.ast.program.v0.schema.json",
       "title": "Sley AST Program v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.apply.v0",
+      "path": "docs/schemas/sley.change.apply.v0.schema.json",
+      "title": "Sley Change Apply Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.apply_authorization.v0",
+      "path": "docs/schemas/sley.change.apply_authorization.v0.schema.json",
+      "title": "Sley Change Apply Authorization v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.approval_request.v0",
+      "path": "docs/schemas/sley.change.approval_request.v0.schema.json",
+      "title": "Sley Change Approval Request v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.grant.v0",
+      "path": "docs/schemas/sley.change.grant.v0.schema.json",
+      "title": "Sley Change Grant v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.plan.v0",
+      "path": "docs/schemas/sley.change.plan.v0.schema.json",
+      "title": "Sley Change Plan v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.preview.v0",
+      "path": "docs/schemas/sley.change.preview.v0.schema.json",
+      "title": "Sley Change Preview v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.recovery.v0",
+      "path": "docs/schemas/sley.change.recovery.v0.schema.json",
+      "title": "Sley Change Recovery Record v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.review.v0",
+      "path": "docs/schemas/sley.change.review.v0.schema.json",
+      "title": "Sley Change Review Packet v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.revocation_record.v0",
+      "path": "docs/schemas/sley.change.revocation_record.v0.schema.json",
+      "title": "Sley Change Revocation Record v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.rollback.v0",
+      "path": "docs/schemas/sley.change.rollback.v0.schema.json",
+      "title": "Sley Change Rollback Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.change.transaction_seal.v0",
+      "path": "docs/schemas/sley.change.transaction_seal.v0.schema.json",
+      "title": "Sley Change Transaction Seal v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -89,9 +250,72 @@
       "root_type": "object"
     },
     {
+      "id": "sley.contract.stability_registry.v1",
+      "path": "docs/schemas/sley.contract.stability_registry.v1.schema.json",
+      "title": "Sley Contract Stability Registry v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.contract.validate.v0",
       "path": "docs/schemas/sley.contract.validate.v0.schema.json",
       "title": "Sley Contract Validate Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.audit_event.v0",
+      "path": "docs/schemas/sley.corpus.audit_event.v0.schema.json",
+      "title": "Sley Corpus Audit Event v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.audit_event_input.v0",
+      "path": "docs/schemas/sley.corpus.audit_event_input.v0.schema.json",
+      "title": "Sley Corpus Audit Event Input v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.audit_report.v0",
+      "path": "docs/schemas/sley.corpus.audit_report.v0.schema.json",
+      "title": "Sley Corpus Audit Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.deletion_plan.v0",
+      "path": "docs/schemas/sley.corpus.deletion_plan.v0.schema.json",
+      "title": "Sley Corpus Deletion Plan v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.exclusion_ledger.v0",
+      "path": "docs/schemas/sley.corpus.exclusion_ledger.v0.schema.json",
+      "title": "Sley Corpus Exclusion Ledger v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.manifest.v0",
+      "path": "docs/schemas/sley.corpus.manifest.v0.schema.json",
+      "title": "Sley Corpus Manifest v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.mutation_audit_report.v0",
+      "path": "docs/schemas/sley.corpus.mutation_audit_report.v0.schema.json",
+      "title": "Sley Corpus Mutation Audit Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.corpus.record.v0",
+      "path": "docs/schemas/sley.corpus.record.v0.schema.json",
+      "title": "Sley Corpus Record v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -124,6 +348,13 @@
       "root_type": "object"
     },
     {
+      "id": "sley.diagnostics.report.v1",
+      "path": "docs/schemas/sley.diagnostics.report.v1.schema.json",
+      "title": "Sley Diagnostic Report v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.docgen.report.v0",
       "path": "docs/schemas/sley.docgen.report.v0.schema.json",
       "title": "Sley Docgen Report v0",
@@ -145,9 +376,23 @@
       "root_type": "object"
     },
     {
+      "id": "sley.explain.report.v0",
+      "path": "docs/schemas/sley.explain.report.v0.schema.json",
+      "title": "Sley Explain Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.graft.outcome.v0",
       "path": "docs/schemas/sley.graft.outcome.v0.schema.json",
       "title": "Sley Graft Outcome v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.graph_diff.report.v0",
+      "path": "docs/schemas/sley.graph_diff.report.v0.schema.json",
+      "title": "Sley Three-way Graph Diff Report v0",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -173,6 +418,20 @@
       "root_type": "object"
     },
     {
+      "id": "sley.machine.response.v0",
+      "path": "docs/schemas/sley.machine.response.v0.schema.json",
+      "title": "Sley machine response v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.machine.response.v1",
+      "path": "docs/schemas/sley.machine.response.v1.schema.json",
+      "title": "Sley Machine Response v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.migrate.report.v0",
       "path": "docs/schemas/sley.migrate.report.v0.schema.json",
       "title": "Sley Migrate Report v0",
@@ -190,6 +449,13 @@
       "id": "sley.query.report.v0",
       "path": "docs/schemas/sley.query.report.v0.schema.json",
       "title": "Sley Query Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.review.packet.v1",
+      "path": "docs/schemas/sley.review.packet.v1.schema.json",
+      "title": "Sley Transaction Review Packet v1",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -236,9 +502,30 @@
       "root_type": "object"
     },
     {
+      "id": "sley.symbol_graph.slice.v1",
+      "path": "docs/schemas/sley.symbol_graph.slice.v1.schema.json",
+      "title": "Sley Symbol Graph Slice v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.symbol_graph.v0",
       "path": "docs/schemas/sley.symbol_graph.v0.schema.json",
       "title": "Sley Symbol Graph v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.test.manifest.v1",
+      "path": "docs/schemas/sley.test.manifest.v1.schema.json",
+      "title": "Sley Test Manifest v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.test.report.v1",
+      "path": "docs/schemas/sley.test.report.v1.schema.json",
+      "title": "Sley Test Report v1",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },
@@ -264,6 +551,13 @@
       "root_type": "object"
     },
     {
+      "id": "sley.transaction.inspect.v0",
+      "path": "docs/schemas/sley.transaction.inspect.v0.schema.json",
+      "title": "Sley Transaction Inspection v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.verify.report.v0",
       "path": "docs/schemas/sley.verify.report.v0.schema.json",
       "title": "Sley Verify Report v0",
@@ -271,9 +565,44 @@
       "root_type": "object"
     },
     {
+      "id": "sley.verify.report.v1",
+      "path": "docs/schemas/sley.verify.report.v1.schema.json",
+      "title": "Sley Verify Report v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
       "id": "sley.workbench.report.v0",
       "path": "docs/schemas/sley.workbench.report.v0.schema.json",
       "title": "Sley Workbench Report v0",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.worker.event.v1",
+      "path": "docs/schemas/sley.worker.event.v1.schema.json",
+      "title": "Sley Persistent Worker Event v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.worker.request.v1",
+      "path": "docs/schemas/sley.worker.request.v1.schema.json",
+      "title": "Sley Persistent Worker Request v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.worker.response.v1",
+      "path": "docs/schemas/sley.worker.response.v1.schema.json",
+      "title": "Sley Persistent Worker Response v1",
+      "draft": "https://json-schema.org/draft/2020-12/schema",
+      "root_type": "object"
+    },
+    {
+      "id": "sley.worker.session.v1",
+      "path": "docs/schemas/sley.worker.session.v1.schema.json",
+      "title": "Sley Persistent Worker Session v1",
       "draft": "https://json-schema.org/draft/2020-12/schema",
       "root_type": "object"
     },

@@ -1,0 +1,130 @@
+{
+  "schema": "sley.change.apply.v0",
+  "status": "verified",
+  "transaction": {
+    "transaction_id": "sha256:f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e",
+    "state": "verifying",
+    "history": [
+      "opened",
+      "inspected",
+      "planned",
+      "previewed",
+      "awaiting_approval",
+      "approved",
+      "applying",
+      "applied",
+      "verifying"
+    ]
+  },
+  "authorization_ref": {
+    "schema": "sley.change.apply_authorization.v0",
+    "authorization_id": "apply-authorization:40697cfd7dec6094f75e21444455662b69508c5e1c69459ee2280ee4be789585",
+    "authorization_digest": "sha256:40697cfd7dec6094f75e21444455662b69508c5e1c69459ee2280ee4be789585"
+  },
+  "grant_ref": {
+    "grant_digest": "sha256:4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e",
+    "grant_id": "grant:4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e",
+    "preview_digest": "sha256:b87875e9e5d9e317e59afad9d12fde8d425014809aba71de7a23c9c707a62eab",
+    "replay_key": "sha256:0dd163e37b0abee62e38d9fc7b7cdddb56e67231a540e6bc77aabc461d6cbe79",
+    "request_id": "approval-request:fe9ab9c8a3b1b3c88275fa2c4624fba13e9d3c2cb0d38f2fd0838a6e39938033",
+    "schema": "sley.change.grant.v0",
+    "transaction_id": "sha256:f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e"
+  },
+  "candidate": {
+    "candidate_digest": "sha256:5deec67f147e4b8e73543c2e20644380451e1998a5115e9ee7bae85d10dc088c",
+    "candidate_graph_digest": "sha256:7d87e40feacf4c8d75e3471f0e6b2047578264752e3296916300c1480d3137c3",
+    "candidate_id": "candidate:5deec67f147e4b8e73543c2e20644380451e1998a5115e9ee7bae85d10dc088c",
+    "candidate_source_digest": "sha256:a8d4cdfe30055a37cf7f2074db48510747e6cbfd19277ff767d1a5f1c8eb088e",
+    "source_projection_digest": "sha256:19f41dd65e7cb79b2ae1894f4c1481f892868167488a6b7a8dc8a91b786a2a41",
+    "validation_profile": "compiler_preview_v0"
+  },
+  "atomicity": {
+    "cancellation_point": "before_commit_point",
+    "limitations": [
+      "non_repo_root",
+      "single_common_root",
+      "no_symlinks",
+      "no_special_files",
+      "no_submodules",
+      "same_filesystem"
+    ],
+    "platform": "linux",
+    "rollback_strategy": "verified_exchange",
+    "strategy": "renameat2_exchange",
+    "topology": "same_filesystem_common_root"
+  },
+  "recovery_ref": {
+    "schema": "sley.change.recovery.v0",
+    "record_id": "recovery:f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e",
+    "record_digest": "sha256:fd58af75d545de706898c95e16bbccb43620e9b748136d7e93ed014965e87369",
+    "phase": "verified",
+    "path": ".sley/transactions/f46608ae362ba0a8f8472650754bddcd792dc665a2700bb534ce51951a8dd56e/recovery/record.json"
+  },
+  "replay": {
+    "enforcement": "enforced_by_s12_404",
+    "policy": "single_use_at_apply",
+    "replay_key": "sha256:0dd163e37b0abee62e38d9fc7b7cdddb56e67231a540e6bc77aabc461d6cbe79",
+    "state": "consumed"
+  },
+  "revocation": {
+    "record_id": "revocation-record:51b0bf155b14e8199d2081fae65c6f4888ae4f0b9d924ebdaac7441a9a4af890",
+    "record_digest": "sha256:51b0bf155b14e8199d2081fae65c6f4888ae4f0b9d924ebdaac7441a9a4af890",
+    "state": "not_revoked",
+    "ledger_path": ".sley/revocations/4d97130bdf4aab1004b684689bc5581bc4fe8aa33cdff7ed0199b26f0f15573e.json"
+  },
+  "verification": {
+    "profile": "compiler_apply_v0",
+    "status": "passed",
+    "checks": [
+      {
+        "kind": "candidate_source_digest",
+        "status": "passed",
+        "expected": "sha256:a8d4cdfe30055a37cf7f2074db48510747e6cbfd19277ff767d1a5f1c8eb088e",
+        "actual": "sha256:a8d4cdfe30055a37cf7f2074db48510747e6cbfd19277ff767d1a5f1c8eb088e"
+      },
+      {
+        "kind": "candidate_graph_digest",
+        "status": "passed",
+        "expected": "sha256:7d87e40feacf4c8d75e3471f0e6b2047578264752e3296916300c1480d3137c3",
+        "actual": "sha256:7d87e40feacf4c8d75e3471f0e6b2047578264752e3296916300c1480d3137c3"
+      },
+      {
+        "kind": "compiler_check",
+        "status": "passed",
+        "expected": "ok",
+        "actual": "ok"
+      },
+      {
+        "kind": "compiler_lint",
+        "status": "passed",
+        "expected": "clean",
+        "actual": "ok"
+      }
+    ]
+  },
+  "rollback": {
+    "strategy": "verified_exchange",
+    "status": "not_required",
+    "expected_source_digest": "sha256:6bcb8ec9b22f0bbbb1accd8ae9db83f1bd157447d3ca2500c4aaa91a14c52769",
+    "actual_source_digest": null,
+    "expected_graph_digest": "sha256:08d6b9145dccae451c7deaaac65976f7b54f25022aa1f3be5b80ef92171899cf",
+    "actual_graph_digest": null
+  },
+  "mutations": {
+    "repository_source": true,
+    "git_index": false,
+    "trace_sidecars": false,
+    "external_systems": false,
+    "provider_state": false
+  },
+  "internal_mutations": {
+    "internal_transaction_state": true
+  },
+  "next_actions": [
+    {
+      "kind": "seal_verified_transaction",
+      "reason": "verification passed; S12-405 review and seal may inspect the durable evidence"
+    }
+  ],
+  "issues": []
+}

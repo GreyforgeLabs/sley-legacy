@@ -1,0 +1,5 @@
+module bench.public.f2_003
+
+task main -> Int {
+  return if 13 > 29 { 13 } else { 29 }
+}

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sley-worker-client"
+version = "1.2.0"
+description = "Reference Python stdio client for sley.worker.v1"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Greyforge Labs" }]
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sley_worker_client*"]

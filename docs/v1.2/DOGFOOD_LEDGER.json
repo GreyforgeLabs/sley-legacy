@@ -1,0 +1,148 @@
+{
+  "schema": "greyforge.sley12.dogfood_ledger.plan.v0",
+  "status": "active_evidence",
+  "release": "1.2.0",
+  "updated": "2026-08-26",
+  "schema_registration": "internal_unregistered_planning_contract",
+  "candidates": [
+    {
+      "id": "siglum-numerology-reference-v1",
+      "workload_class": "deterministic_rule_engine",
+      "incumbent": "typescript",
+      "candidate": "sley",
+      "authority": "non_authoritative_test_and_report_only",
+      "corpus_cases": 10000,
+      "parity_runs": 2,
+      "mismatches": 0,
+      "deterministic": true,
+      "evidence": [
+        "AstroForge/docs/architecture/sley-ai-integration-audit.md",
+        "AstroForge/reports/sley-numerology-parity-0.json",
+        "docs/v1.2/ADR-013-operational-reference-replay.md",
+        "reports/operational/siglum-numerology-reference-v1.json"
+      ],
+      "identity": {
+        "sley_commit": "73bc5b0e36ef0534bb11139b27bd81bca4547769",
+        "siglum_commit": "2721acb64c6c2961c9942cd6755f96f21d480e2a"
+      },
+      "passed_gates": [
+        "neutral_contract",
+        "bounded_machine_protocol",
+        "offline_differential_parity",
+        "two_run_determinism",
+        "fresh_bounded_reference_replay",
+        "cold_warm_observation",
+        "runtime_limit_observation",
+        "negative_evidence_retained"
+      ],
+      "latest_measurement": {
+        "repeat_count": 2,
+        "exact_matches_per_run": 10000,
+        "mismatches_per_run": 0,
+        "cold_first_response_ms": 5084,
+        "warm_response_ms": [80, 81],
+        "full_run_elapsed_ms": [229800, 230345],
+        "full_run_cases_per_second": [43.516126993177984, 43.413048402287075],
+        "probe_peak_process_tree_rss_bytes": 122748928,
+        "full_replay_peak_process_tree_rss_bytes": 1691553792,
+        "per_process_virtual_address_ceiling_bytes": 34359738368
+      },
+      "negative_evidence": [
+        "multiline_record_literal_raw_regression_fixed",
+        "node_v8_virtual_address_reservation_limit_fixed",
+        "production_promotion_evidence_missing"
+      ],
+      "missing_gates": [
+        "production_latency",
+        "production_capacity",
+        "production_shadow",
+        "privacy_safe_sampling",
+        "tested_fallback",
+        "tested_one_switch_disable",
+        "promotion_authority"
+      ],
+      "decision": "retain_reference_no_production_promotion"
+    },
+    {
+      "id": "sley-agent-project-cross-module-rename-v1",
+      "workload_class": "controlled_repository_maintenance",
+      "incumbent": "raw_workspace_k1",
+      "candidate": "raw_workspace_plus_read_only_sley_structure_k3",
+      "authority": "local_isolated_evaluation_only",
+      "trial_count": 1,
+      "evidence": [
+        "docs/v1.2/ADR-014-controlled-agent-workflow.md",
+        "fixtures/operational/agent-workflow-v1/case-manifest.json",
+        "fixtures/operational/agent-workflow-v1/run-k1.json",
+        "fixtures/operational/agent-workflow-v1/run-k3.json",
+        "reports/operational/agent-workflow-comparison-v1.json"
+      ],
+      "passed_gates": [
+        "public_bounded_fixture",
+        "equal_control_plan",
+        "independent_structural_oracle",
+        "independent_behavior_oracle",
+        "scrubbed_comparison_contract",
+        "failure_denominator_regression",
+        "exact_operator_provider_approval",
+        "k1_execution",
+        "k3_structural_execution",
+        "scrubbed_real_comparison",
+        "independent_evidence_review"
+      ],
+      "latest_measurement": {
+        "raw_strict_success": true,
+        "structural_strict_success": true,
+        "raw_total_tokens": 3404,
+        "structural_total_tokens": 7815,
+        "raw_wall_ms": 13223,
+        "structural_wall_ms": 36810,
+        "raw_tool_calls": 0,
+        "structural_tool_calls": 1,
+        "structural_context_effect": "expansion"
+      },
+      "negative_evidence": [
+        "raw_workspace_remains_in_both_arms",
+        "structural_context_expanded_total_context_in_retained_trial",
+        "post_submit_repair_loop_unavailable",
+        "single_trial_cannot_support_general_claim"
+      ],
+      "missing_gates": [],
+      "decision": "retain_for_bounded_followup_no_promotion"
+    }
+  ],
+  "decision_infrastructure": {
+    "id": "sley-operational-evidence-registry-v1",
+    "schema": "sley.operational.evidence_registry.v1",
+    "command": "bin/sley operational-evidence assemble",
+    "status": "decision_recorded",
+    "required_entries": [
+      "siglum-numerology-reference-v1",
+      "sley-agent-project-cross-module-rename-v1"
+    ],
+    "passed_gates": [
+      "exact_reference_schema_and_parity",
+      "exact_agent_schema_and_fixture_pins",
+      "git_ancestry",
+      "synthetic_evidence_rejection",
+      "reviewed_execution_provenance_assertion",
+      "non_cryptographic_provenance_limitation",
+      "controlling_source_digest_binding",
+      "negative_evidence_retention",
+      "scrubbed_disclosure",
+      "unconditional_production_deferral",
+      "tier_2_core_validation",
+      "independent_infrastructure_review",
+      "real_s12_602_comparison",
+      "final_registry_generation",
+      "independent_final_evidence_review"
+    ],
+    "missing_gates": [],
+    "w6_complete": true,
+    "w7_unblocked": true
+  },
+  "training_eligible": false,
+  "retrieval_eligible": false,
+  "public_release_authorized": false,
+  "production_mutation_authorized": false
+}

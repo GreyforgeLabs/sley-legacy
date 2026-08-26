@@ -1,0 +1,41 @@
+{
+  "schema": "sley.worker.request.v1",
+  "protocol": "sley.worker.v1",
+  "request_id": "request:fixture-invoke",
+  "operation": "invoke",
+  "nonce": "nonce:fixture-invoke",
+  "bindings": {
+    "worker_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runtime_digest": "sha256:5b36de7470d015d2090552587d4f163dadbd062d87b7508320b1f1b638ad2361",
+    "package_digest": "sha256:e7d45d2ae64a7855818d8f322d36e20d00180c7ac09b05cad5b87085fe6997e2",
+    "source_digest": "sha256:700e977628ff00114fc8507aca2eabc672ab8d8eeb8668951c3ce0e0ea20604e",
+    "contract_versions": [
+      "sley.adapter.manifest.v0",
+      "sley.adapter.replay.v0",
+      "sley.adapter.report.v0",
+      "sley.worker.request.v1",
+      "sley.worker.response.v1",
+      "sley.worker.event.v1",
+      "sley.worker.session.v1"
+    ],
+    "entry_point": "adapter.replay",
+    "authority": {
+      "mode": "local_replay_only",
+      "grant_digest": null,
+      "idempotency_key": "idempotency:fixture-invoke"
+    }
+  },
+  "budgets": {
+    "wall_clock_ms": 120000,
+    "max_steps": 1000,
+    "max_call_depth": 16,
+    "max_collection_items": 10000,
+    "max_output_bytes": 1048576,
+    "max_memory_bytes": 536870912
+  },
+  "payload": {
+    "manifest": "fixtures/contracts/adapter_manifest_local_replay.json",
+    "record": "fixtures/contracts/adapter_replay_agent_pipeline.json",
+    "target_request_id": null
+  }
+}

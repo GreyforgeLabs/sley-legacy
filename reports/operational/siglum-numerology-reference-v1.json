@@ -1,0 +1,208 @@
+{
+  "schema": "sley.operational.reference_replay.v1",
+  "status": "passed",
+  "workload": {
+    "id": "siglum.numerology",
+    "version": "siglum.numerology.reference-v1",
+    "scope": "complete_frozen_reference_corpus",
+    "case_count": 10000
+  },
+  "authority": {
+    "mode": "local_replay_only",
+    "incumbent_authoritative": true,
+    "candidate_authoritative": false,
+    "repository_mutation": false,
+    "product_runtime_mutation": false,
+    "network_authority": false,
+    "provider_calls": false,
+    "deploy": false,
+    "spend": false
+  },
+  "identity": {
+    "sley_commit": "73bc5b0e36ef0534bb11139b27bd81bca4547769",
+    "siglum_commit": "2721acb64c6c2961c9942cd6755f96f21d480e2a",
+    "candidate_source_digest": "sha256:b98f1d73acf4a8bb64b53424398084fecddd9f95bdd0a9c138121bb8f7f867f4",
+    "runtime_digest": "sha256:a6db72b9885e3ab5dac96bd65fc0b70dc0e7a47fc2a3ef60a26dbac399a92886",
+    "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
+    "frozen_corpus_digest": "sha256:e3f4ecf5abbf9d4af10594f6ed9111edb1596dc077023b0d87a8f5b5bb19662d",
+    "corpus_manifest_digest": "sha256:963f6b06d2fc994070eec0b88ca47bb92dee7fe4190236f3d095f4b7889931ee",
+    "prior_parity_report_digest": "sha256:17bec37cdfd36ecffa42bb47f202703c48802f74db5db7c00288ee29efca42fe",
+    "pins_digest": "sha256:85d165f0877af5f8527db7782061751d8725889b152fe6c19dc4a45a1771cfec"
+  },
+  "oracle": {
+    "implementation": "ReferenceTypeScriptSignatureEngine.compute",
+    "boundary": "src/lib/signature/reference-adapter.ts",
+    "contract": "siglum.numerology.input.v1 -> siglum.numerology.result.v1",
+    "independent": true,
+    "frozen_outputs": true
+  },
+  "host_boundary": {
+    "kind": "bounded_persistent_machine_host",
+    "protocol": "sley.machine.invoke.v0",
+    "persistent_probe": true,
+    "fresh_process_per_full_shard": true,
+    "immutable_input_pins": true,
+    "process_limits_enforced": true,
+    "os_network_isolation_enforced": false,
+    "credential_environment_scrubbed": true,
+    "limits": {
+      "overall_wall_ms": 1800000,
+      "shard_wall_ms": 120000,
+      "evaluation_steps": 250000,
+      "call_depth": 128,
+      "collection_length": 4096,
+      "response_bytes": 262144,
+      "shard_output_bytes": 33554432,
+      "per_process_address_space_bytes": 34359738368,
+      "open_files": 128
+    }
+  },
+  "correctness": {
+    "repeat_count": 2,
+    "deterministic": true,
+    "exact_match_count": 10000,
+    "mismatch_count": 0,
+    "runs": [
+      {
+        "run_index": 1,
+        "case_count": 10000,
+        "exact_match_count": 10000,
+        "mismatch_count": 0,
+        "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
+        "mismatch_report_digest": "sha256:5b3585f67cf32dc146d95018c51f2a5db3db88ff30e824220ac079626cda458b",
+        "shard_digests": [
+          "sha256:9e89cb3fffe3cdd1b0e405456645104f956be5f5ca4af8d2a59acf81a8e71efe",
+          "sha256:e7340ef373ae7d539a0691189f7126a02d7da716e7c3818decc487316c5c665d",
+          "sha256:5d634944cbd6d61ab74b74517c46cab7827fc963084caf563192bb350219ecf4",
+          "sha256:d6135ba9643315df262f7f4aded8283acea326abef4e162f0f70419835a77106",
+          "sha256:cdd6dcc77c6ca4ae7a5e0e6b40655fa99b260aff6f117ee355815af69b1b6607",
+          "sha256:d43e4d08c33fd29754b5f813d4ec0695fe58cf3f82b5ea368e2c642faab3dca9",
+          "sha256:497382e0382e98e370c48ba7f3e8e01282752b03f2d1e3914f0ff24151bbbbf4",
+          "sha256:3cc9b5f07128e96fa95837a49ba4ce0a15a289dcd1941947c348b76e3ee64670",
+          "sha256:7c5316a84a14006bd330088ce06192722c16fa4fac5e795626ebd7f895715d55",
+          "sha256:d4504f3a286a4909552a9c1b0e0c014a5c0f5d32ebfef968e8d6874a330f0b8c",
+          "sha256:c49082ba7ea11ec508c7a0f310ac0f9e9aa15bbbdc152af33f5fcf1fe5ec3825",
+          "sha256:c091977f205d4ebd63a66dda8a2c634d0b2ea1386f33ac92b7285fbb78122439",
+          "sha256:e9be3f67a7e0a3c995aaef39c983bca080fe10689d9dc0d0a4d3f275be405c1b",
+          "sha256:1733e9097af3b3b8316f5ae2c9d3c58e973c8c3acfd6b5ddcedd899a7cc69127",
+          "sha256:f9e9039c2c2f965154b4893fbcef41c8f9257afc0499dc151be44a696da6e35e",
+          "sha256:ebe0d57c04d81cdf46195a1d33726baf34c3ba1154d27e1138bbeffcd5088e7e",
+          "sha256:152f80a8fa889dd908320cfc02e6053b66e45a9b3e8dc0b71cd5d49b9e9ed470",
+          "sha256:57d9ff90c1cccea2b43590949401ef90ea0427955edbd96a6e0301fe7fcbdf9d",
+          "sha256:7734e9edf4fc4b27a037646e1e33e42477e6e20b78cf3b61bfd64acf31faa04e",
+          "sha256:9027fcffb7333f9d06b2cbe33d2540e88b39142ecb3bff98c506283dc7e00591"
+        ]
+      },
+      {
+        "run_index": 2,
+        "case_count": 10000,
+        "exact_match_count": 10000,
+        "mismatch_count": 0,
+        "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
+        "mismatch_report_digest": "sha256:5b3585f67cf32dc146d95018c51f2a5db3db88ff30e824220ac079626cda458b",
+        "shard_digests": [
+          "sha256:9e89cb3fffe3cdd1b0e405456645104f956be5f5ca4af8d2a59acf81a8e71efe",
+          "sha256:e7340ef373ae7d539a0691189f7126a02d7da716e7c3818decc487316c5c665d",
+          "sha256:5d634944cbd6d61ab74b74517c46cab7827fc963084caf563192bb350219ecf4",
+          "sha256:d6135ba9643315df262f7f4aded8283acea326abef4e162f0f70419835a77106",
+          "sha256:cdd6dcc77c6ca4ae7a5e0e6b40655fa99b260aff6f117ee355815af69b1b6607",
+          "sha256:d43e4d08c33fd29754b5f813d4ec0695fe58cf3f82b5ea368e2c642faab3dca9",
+          "sha256:497382e0382e98e370c48ba7f3e8e01282752b03f2d1e3914f0ff24151bbbbf4",
+          "sha256:3cc9b5f07128e96fa95837a49ba4ce0a15a289dcd1941947c348b76e3ee64670",
+          "sha256:7c5316a84a14006bd330088ce06192722c16fa4fac5e795626ebd7f895715d55",
+          "sha256:d4504f3a286a4909552a9c1b0e0c014a5c0f5d32ebfef968e8d6874a330f0b8c",
+          "sha256:c49082ba7ea11ec508c7a0f310ac0f9e9aa15bbbdc152af33f5fcf1fe5ec3825",
+          "sha256:c091977f205d4ebd63a66dda8a2c634d0b2ea1386f33ac92b7285fbb78122439",
+          "sha256:e9be3f67a7e0a3c995aaef39c983bca080fe10689d9dc0d0a4d3f275be405c1b",
+          "sha256:1733e9097af3b3b8316f5ae2c9d3c58e973c8c3acfd6b5ddcedd899a7cc69127",
+          "sha256:f9e9039c2c2f965154b4893fbcef41c8f9257afc0499dc151be44a696da6e35e",
+          "sha256:ebe0d57c04d81cdf46195a1d33726baf34c3ba1154d27e1138bbeffcd5088e7e",
+          "sha256:152f80a8fa889dd908320cfc02e6053b66e45a9b3e8dc0b71cd5d49b9e9ed470",
+          "sha256:57d9ff90c1cccea2b43590949401ef90ea0427955edbd96a6e0301fe7fcbdf9d",
+          "sha256:7734e9edf4fc4b27a037646e1e33e42477e6e20b78cf3b61bfd64acf31faa04e",
+          "sha256:9027fcffb7333f9d06b2cbe33d2540e88b39142ecb3bff98c506283dc7e00591"
+        ]
+      }
+    ]
+  },
+  "performance": {
+    "measurement_class": "local_observation_not_benchmark",
+    "probe": {
+      "request_count": 3,
+      "cold_first_response_ms": 5084,
+      "warm_response_ms": [
+        80,
+        81
+      ],
+      "peak_process_tree_rss_bytes": 122748928,
+      "result_digests": [
+        "sha256:d26727a953a605640065f4109f0fb4ad47e8c45fa53a682f52d8337dff818344",
+        "sha256:d26727a953a605640065f4109f0fb4ad47e8c45fa53a682f52d8337dff818344",
+        "sha256:d26727a953a605640065f4109f0fb4ad47e8c45fa53a682f52d8337dff818344"
+      ],
+      "deterministic": true
+    },
+    "full_runs": [
+      {
+        "run_index": 1,
+        "elapsed_ms": 229800,
+        "cases_per_second": 43.516126993177984,
+        "maximum_steps": 8116,
+        "maximum_calls": 250,
+        "maximum_call_depth": 4,
+        "maximum_response_bytes": 5127
+      },
+      {
+        "run_index": 2,
+        "elapsed_ms": 230345,
+        "cases_per_second": 43.413048402287075,
+        "maximum_steps": 8116,
+        "maximum_calls": 250,
+        "maximum_call_depth": 4,
+        "maximum_response_bytes": 5127
+      }
+    ],
+    "full_replay_controller": {
+      "wall_ms": 462744,
+      "peak_process_tree_rss_bytes": 1691553792
+    }
+  },
+  "negative_evidence": [
+    {
+      "code": "MULTILINE_RECORD_LITERAL_RAW_REGRESSION",
+      "status": "observed",
+      "disposition": "fixed",
+      "summary": "The first W6 replay failed closed because multiline typed record constructors were Raw; b97fba8 made them structural RecordLiteral nodes before parity was rerun."
+    },
+    {
+      "code": "PRODUCTION_PROMOTION_EVIDENCE_MISSING",
+      "status": "retained",
+      "disposition": "deferred",
+      "summary": "Offline parity does not provide production shadow, latency, fallback, rollback, or promotion authority evidence."
+    },
+    {
+      "code": "PARITY_CONTROLLER_ADDRESS_SPACE_LIMIT",
+      "status": "observed",
+      "disposition": "fixed",
+      "summary": "Full replay attempts at 4 GiB and 8 GiB failed before corpus execution during Node/V8 WebAssembly reservation. Bounded startup probes below 32 GiB also failed during WebAssembly reservation or V8 heap commit; 32 GiB is retained as a virtual-address ceiling, while sampled RSS records actual memory use."
+    }
+  ],
+  "promotion": {
+    "decision": "deferred",
+    "production_claim": false,
+    "missing_evidence": [
+      "production_shadow",
+      "production_latency",
+      "fallback",
+      "promotion_authority",
+      "rollback"
+    ]
+  },
+  "disclosure": {
+    "contains_real_user_data": false,
+    "contains_credentials": false,
+    "publication_authorized": false,
+    "raw_corpus_embedded": false
+  },
+  "issues": []
+}

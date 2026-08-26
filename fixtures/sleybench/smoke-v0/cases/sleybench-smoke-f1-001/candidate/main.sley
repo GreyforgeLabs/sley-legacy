@@ -1,0 +1,5 @@
+module bench.f1_001
+
+task main -> Int {
+  return 7
+}
