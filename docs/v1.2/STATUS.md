@@ -144,7 +144,7 @@ Updated: 2026-08-26
 
 | Candidate | Class | Authority | Parity | Runtime | Decision |
 |---|---|---|---|---|---|
-| Siglum numerology reference v1 | deterministic rules | non-authoritative | fresh two-run 10,000-case zero-mismatch replay at `73bc5b0` | cold 5,084 ms; warm 80/81 ms; full 43.52/43.41 cases/s; peak tree RSS 1,691,553,792 bytes | retain as 1.2 reference workload; no production promotion |
+| Siglum numerology reference v1 | deterministic rules | non-authoritative | fresh two-run 10,000-case zero-mismatch public-history replay at `bfeba32` | cold 5,325 ms; warm 76/76 ms; full 42.57/41.75 cases/s; peak tree RSS 1,684,430,848 bytes | retain as 1.2 reference workload; no production promotion |
 | Cross-module rename K1/K3 | controlled agent maintenance | local isolated evaluation only | both arms strict-success in one retained trial | K1 3,404 tokens / 13,223 ms; K3 7,815 tokens / 36,810 ms | retain for bounded follow-up; structural context expanded; no promotion |
 
 ## Blocked work
@@ -333,11 +333,17 @@ None. W5 satisfies the bounded runtime, test, and validation dependency for W6.
   validation, conformance, corpus, MCP, machine, agent-bench, and governance
   targets; 91 schemas, 179/179 fixtures, 256/256 declared integration checks,
   corpus 96/96, and all 35 v1 targets were present
-- W6 S12-601 reference evidence: Sley `73bc5b0`, Siglum `2721acb`, two fresh
-  10,000-case runs, 20,000 total exact comparisons, zero mismatches, identical
+- Historical W6 S12-601 reference evidence: Sley `73bc5b0`, Siglum `2721acb`,
+  two fresh 10,000-case runs, 20,000 total exact comparisons, zero mismatches, identical
   run identities, cold 5,084 ms, warm 80/81 ms, 43.52/43.41 cases/s, probe
   peak RSS 122,748,928 bytes, and full-controller-tree peak RSS 1,691,553,792
   bytes. Promotion remains deferred and non-authoritative
+- W7 public-history replay refresh: sanitized Sley parent `bfeba32`, Siglum
+  `2721acb`, two fresh 10,000-case runs, 20,000 total exact comparisons, zero
+  mismatches, identical stable run identities, cold 5,325 ms, warm 76/76 ms,
+  42.57/41.75 cases/s, probe peak RSS 127,926,272 bytes, and
+  full-controller-tree peak RSS 1,684,430,848 bytes. Promotion remains
+  deferred and non-authoritative
 - W6 S12-601 independent QA: Vulcan's initial Medium wrapper finding was fixed
   with an explicit required Siglum root, Sley-owned pin enforcement, and
   direct CLI regressions; bounded recheck passed with no remaining High or

@@ -460,13 +460,15 @@ guidance. Current probes demonstrate:
   address space. A bounded import-path sweep failed below 32 GiB and passed at
   32 GiB. Commits `28a6dfb` and `73bc5b0` preserve that evidence and distinguish
   virtual-address ceiling from sampled resident memory.
-- The authoritative replay at Sley `73bc5b0` and Siglum `2721acb` passed. Each
-  fresh run matched all 10,000 frozen cases with zero mismatches, and all stable
-  source, runtime, corpus, mismatch-report, and 20 shard digests agreed across
-  both runs.
-- Observed local performance was 5,084 ms cold, 80/81 ms warm, 229,800 and
-  230,345 ms per full run, 43.52 and 43.41 cases per second, 122,748,928 bytes
-  peak probe-tree RSS, and 1,691,553,792 bytes peak full-controller-tree RSS.
+- The original replay at Sley `73bc5b0` and Siglum `2721acb` passed. The
+  public-history refresh at sanitized release parent `bfeba32` also passed.
+  Each fresh run matched all 10,000 frozen cases with zero mismatches, and all
+  stable source, runtime, corpus, mismatch-report, and 20 shard digests agreed
+  across both runs.
+- The current public-history replay observed 5,325 ms cold, 76/76 ms warm,
+  234,887 and 239,517 ms per full run, 42.57 and 41.75 cases per second,
+  127,926,272 bytes peak probe-tree RSS, and 1,684,430,848 bytes peak
+  full-controller-tree RSS.
 - The evidence packet is
   `reports/operational/siglum-numerology-reference-v1.json`. It contains no raw
   corpus, credentials, or real user data and has no publication authority.
