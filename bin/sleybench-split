@@ -30,6 +30,7 @@ FAMILIES = (
     "repository_patch_integration",
 )
 DIGEST_KINDS = ("exact", "canonical", "structural", "semantic_lineage")
+EMPTY_TREE_DIGEST = "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 
 def issue(code: str, message: str) -> dict[str, str]:
@@ -184,12 +185,24 @@ def partition_checks(
         prompt = safe_relative(manifest_root, case["prompt_path"])
         workspace = safe_relative(manifest_root, case["workspace_path"])
         candidate = safe_relative(manifest_root, case["candidate_path"])
+        empty_noop_candidate = (
+            candidate is not None
+            and not candidate.exists()
+            and case["candidate_digest"] == EMPTY_TREE_DIGEST
+            and case["minimality"]["max_changed_files"] == 0
+            and case["minimality"]["max_changed_lines"] == 0
+        )
         paths_ok = (
             prompt is not None and prompt.is_file()
             and workspace is not None and workspace.is_dir()
-            and candidate is not None and candidate.is_dir()
+            and candidate is not None and (candidate.is_dir() or empty_noop_candidate)
         )
-        if not paths_ok or prompt.is_symlink() or has_symlink(workspace) or has_symlink(candidate):
+        if (
+            not paths_ok
+            or prompt.is_symlink()
+            or has_symlink(workspace)
+            or (candidate.is_dir() and has_symlink(candidate))
+        ):
             content_ok = False
             continue
         computed = training_digest(prompt, workspace)
@@ -197,7 +210,7 @@ def partition_checks(
         if computed != case["training_exclusion_id"] or tree_digest(candidate) != case["candidate_digest"]:
             content_ok = False
     content_ok = content_ok and len(digest_ids) == expected_count and len(set(digest_ids)) == expected_count
-    add_check(checks, prefix + "content_identity", content_ok, "all prompt, workspace, and candidate paths are bounded and exact case digests are unique and reproducible")
+    add_check(checks, prefix + "content_identity", content_ok, "all prompt, workspace, and candidate paths or explicit empty no-op candidates are bounded and exact case digests are unique and reproducible")
     if not content_ok:
         problems.append(issue("case_content_identity_failed", f"{prefix.rstrip('.')} case content is incomplete, unsafe, duplicate, or digest-mismatched"))
 
