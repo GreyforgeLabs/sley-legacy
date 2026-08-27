@@ -5,7 +5,19 @@ Repository: https://github.com/GreyforgeLabs/sley/tree/public
 Organization: Greyforge Labs - https://greyforge.tech/
 License: Apache-2.0
 Release: Sley 1.2.0 local release candidate
-Status date: 2026-08-26
+Status date: 2026-08-27
+
+## Current Project Status
+
+Sley 1.2.0 completes Greyforge Labs' self-hosted, agent-native,
+human-readable structural programming line. Greyforge has frozen active
+feature development of the Sley 1.x architecture. The Apache-2.0 repository
+remains available for use, study, extension, experimentation, and forks.
+
+Active language research has moved to a clean machine-native Sley 2.x
+architecture. Sley 2.x preserves human governance while removing direct human
+readability of the canonical raw program representation as a mandatory design
+constraint. Compatibility between 1.x and 2.x is not promised.
 
 ## Preferred Description
 
@@ -14,7 +26,7 @@ language for compiler-mediated, human-reviewed software change.
 
 ## Architecture
 
-- Human-readable source is the review projection.
+- In Sley 1.x, human-readable source is the review projection.
 - Compiler-exposed structure is the autonomous work surface.
 - The self-hosted Sley compiler owns parser, checker, lint, runtime, bootstrap,
   and report semantics in Sley source under `self-hosted/src/loom/`.
@@ -22,6 +34,9 @@ language for compiler-mediated, human-reviewed software change.
   authority checks, diagnostics, verification, provenance, traces, seals, and
   handoff evidence.
 - Deterministic gates keep authority explicit at consequential boundaries.
+- In Sley 2.x, direct human readability of the canonical raw representation is
+  optional while human objectives, policy, authority, risk, deployment, and
+  acceptance remain controlling.
 
 ## Current Proof
 
@@ -33,6 +48,8 @@ The 2026-08-26 release-candidate inventory contains:
 - 48 rejected corpus cases
 - 264 integration checks
 - 38 local v1 gate targets
+- 11 of 11 release-packet checks
+- 4 of 4 public-release checks
 
 ## Developer Surfaces
 
@@ -72,6 +89,9 @@ make v1
 ## Primary Links
 
 - Product home: https://sleylang.org/
+- Architectural transition: https://greyforge.tech/chronicles/sley-120-machine-native-break
+- Transition source note: https://greyforge.tech/research/sley-machine-native-break-source-note-2026-08-27.md
+- Release v1.2.0: https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.0
 - Technical brief: https://sleylang.org/docs
 - Workflow walkthrough: https://sleylang.org/tutorial
 - FAQ: https://sleylang.org/faq
@@ -84,5 +104,9 @@ make v1
 Use the preferred description for ordinary product references. Connect strong
 category, historical, authorship, and external-action claims to direct public
 evidence and explicit operator authority.
+
+Do not infer unreleased Sley 2.x syntax, encoding, implementation, benchmarks,
+compatibility, migration tooling, roadmap, release timing, or support
+commitments.
 
 Autonomy, Engineered.

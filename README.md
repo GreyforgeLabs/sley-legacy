@@ -21,11 +21,11 @@
 </p>
 
 <!-- SEO / discovery metadata -->
-<meta name="description" content="Sley is Greyforge Labs' self-hosted, agent-native structural programming language for compiler-mediated, human-reviewed software change." />
-<meta name="keywords" content="Sley, self-hosted programming language, agent-native structural programming, compiler-mediated software change, structural inspection, planned edits, verification artifacts, Greyforge Labs" />
+<meta name="description" content="Sley 1.2.0 completes Greyforge Labs' open human-readable structural language while active research moves to the clean machine-native Sley 2.x architecture." />
+<meta name="keywords" content="Sley 1.2.0, Sley 2.0, self-hosted programming language, agent-native structural programming, machine-native programming, compiler-mediated software change, Greyforge Labs" />
 <link rel="canonical" href="https://sleylang.org/" />
 <meta property="og:title" content="Sley | Software Change, Made Structural" />
-<meta property="og:description" content="A self-hosted, agent-native structural programming language for compiler-mediated, human-reviewed software change." />
+<meta property="og:description" content="The completed human-readable Sley 1.x line and the architectural transition to machine-native Sley 2.x." />
 <meta property="og:url" content="https://sleylang.org/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Sley" />
@@ -44,6 +44,16 @@ It gives autonomous coding workflows a structured path from intent to
 inspection, planned change, authority, verification, and evidence-ready
 handoff. Human-readable source stays central while the compiler exposes the
 program structure tools need to work precisely.
+
+> [!IMPORTANT]
+> **Sley 1.2.0 completes the human-readable 1.x architecture.** Greyforge has
+> frozen active feature development of this line and moved language research
+> to a clean machine-native Sley 2.x architecture. The Apache-2.0 1.x
+> repository remains available for use, study, extension, experimentation, and
+> forks. Human governance remains required in 2.x, but direct readability of
+> the canonical raw program representation is no longer a mandatory design
+> constraint. Compatibility is not promised. Read the
+> [architectural-transition Chronicle](https://greyforge.tech/chronicles/sley-120-machine-native-break).
 
 ## Why Sley
 
@@ -77,6 +87,10 @@ The self-hosted Sley compiler owns its parser, checker, lint, runtime,
 bootstrap, and report semantics in Sley source. The public command layer turns
 that language-owned implementation into a practical local workflow and
 verification surface.
+
+Canonical release: [`v1.2.0`](https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.0),
+commit `d281cd1`, published August 27, 2026. The release also records 11 of 11
+release-packet checks and 4 of 4 public-release checks.
 
 ## Start Locally
 
@@ -165,6 +179,8 @@ package is published by this repository workflow.
 
 ## Public Evidence
 
+- [Architectural transition Chronicle](https://greyforge.tech/chronicles/sley-120-machine-native-break)
+- [Machine-native transition source note](https://greyforge.tech/research/sley-machine-native-break-source-note-2026-08-27.md)
 - [Sley technical brief](https://sleylang.org/docs)
 - [Workflow walkthrough](https://sleylang.org/tutorial)
 - [Claim evidence](docs/SleyClaimEvidence.md)
