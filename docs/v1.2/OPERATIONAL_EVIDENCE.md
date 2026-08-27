@@ -67,8 +67,9 @@ training, publication, or product cutover.
 ## S12-601 bounded reference replay
 
 The machine-readable packet is
-`reports/operational/siglum-numerology-reference-v1.json`. It binds Sley commit
-`73bc5b0`, Siglum commit `2721acb`, the candidate source, runtime, frozen input
+`reports/operational/siglum-numerology-reference-v1.json`. The public-release
+refresh binds Sley commit `bfeba32`, Siglum commit `2721acb`, the candidate
+source, runtime, frozen input
 corpus, candidate output corpus, 20 shard digests, pin set, and retained prior
 parity report.
 
@@ -78,11 +79,11 @@ The fresh replay established:
   mismatches;
 - identical result, mismatch-report, corpus, source, runtime, and shard
   digests across both runs;
-- 5,084 ms cold persistent-host response and 80/81 ms warm responses;
-- 229,800 ms and 230,345 ms full-run duration, or 43.52 and 43.41 cases per
+- 5,325 ms cold persistent-host response and 76/76 ms warm responses;
+- 234,887 ms and 239,517 ms full-run duration, or 42.57 and 41.75 cases per
   second on this reference host;
-- 1,691,553,792 bytes sampled peak process-tree RSS for the full controller and
-  122,748,928 bytes for the persistent probe;
+- 1,684,430,848 bytes sampled peak process-tree RSS for the full controller and
+  127,926,272 bytes for the persistent probe;
 - a 32 GiB per-process virtual-address ceiling, distinct from measured RSS,
   plus 120-second shard, step, call-depth, collection, response, output, and
   file-descriptor limits;

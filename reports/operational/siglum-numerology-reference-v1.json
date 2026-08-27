@@ -19,10 +19,10 @@
     "spend": false
   },
   "identity": {
-    "sley_commit": "73bc5b0e36ef0534bb11139b27bd81bca4547769",
+    "sley_commit": "bfeba32a59f811795c937f0c78aa8c8477246fbd",
     "siglum_commit": "2721acb64c6c2961c9942cd6755f96f21d480e2a",
     "candidate_source_digest": "sha256:b98f1d73acf4a8bb64b53424398084fecddd9f95bdd0a9c138121bb8f7f867f4",
-    "runtime_digest": "sha256:a6db72b9885e3ab5dac96bd65fc0b70dc0e7a47fc2a3ef60a26dbac399a92886",
+    "runtime_digest": "sha256:c9d56feeb575653aff7c9cabf629902a307b18af1542248292cf0ce278843d6c",
     "candidate_corpus_digest": "sha256:624ba495f68505c0bf8e5bc39200e5250dca95f25216d7c888c81b1d52e6ecb1",
     "frozen_corpus_digest": "sha256:e3f4ecf5abbf9d4af10594f6ed9111edb1596dc077023b0d87a8f5b5bb19662d",
     "corpus_manifest_digest": "sha256:963f6b06d2fc994070eec0b88ca47bb92dee7fe4190236f3d095f4b7889931ee",
@@ -129,12 +129,12 @@
     "measurement_class": "local_observation_not_benchmark",
     "probe": {
       "request_count": 3,
-      "cold_first_response_ms": 5084,
+      "cold_first_response_ms": 5325,
       "warm_response_ms": [
-        80,
-        81
+        76,
+        76
       ],
-      "peak_process_tree_rss_bytes": 122748928,
+      "peak_process_tree_rss_bytes": 127926272,
       "result_digests": [
         "sha256:d26727a953a605640065f4109f0fb4ad47e8c45fa53a682f52d8337dff818344",
         "sha256:d26727a953a605640065f4109f0fb4ad47e8c45fa53a682f52d8337dff818344",
@@ -145,26 +145,26 @@
     "full_runs": [
       {
         "run_index": 1,
-        "elapsed_ms": 229800,
-        "cases_per_second": 43.516126993177984,
+        "elapsed_ms": 234887,
+        "cases_per_second": 42.57360166477111,
         "maximum_steps": 8116,
         "maximum_calls": 250,
         "maximum_call_depth": 4,
-        "maximum_response_bytes": 5127
+        "maximum_response_bytes": 5129
       },
       {
         "run_index": 2,
-        "elapsed_ms": 230345,
-        "cases_per_second": 43.413048402287075,
+        "elapsed_ms": 239517,
+        "cases_per_second": 41.750754607851405,
         "maximum_steps": 8116,
         "maximum_calls": 250,
         "maximum_call_depth": 4,
-        "maximum_response_bytes": 5127
+        "maximum_response_bytes": 5129
       }
     ],
     "full_replay_controller": {
-      "wall_ms": 462744,
-      "peak_process_tree_rss_bytes": 1691553792
+      "wall_ms": 477025,
+      "peak_process_tree_rss_bytes": 1684430848
     }
   },
   "negative_evidence": [

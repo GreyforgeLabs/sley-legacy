@@ -22,7 +22,7 @@
         "reports/operational/siglum-numerology-reference-v1.json"
       ],
       "identity": {
-        "sley_commit": "73bc5b0e36ef0534bb11139b27bd81bca4547769",
+        "sley_commit": "bfeba32a59f811795c937f0c78aa8c8477246fbd",
         "siglum_commit": "2721acb64c6c2961c9942cd6755f96f21d480e2a"
       },
       "passed_gates": [
@@ -39,12 +39,12 @@
         "repeat_count": 2,
         "exact_matches_per_run": 10000,
         "mismatches_per_run": 0,
-        "cold_first_response_ms": 5084,
-        "warm_response_ms": [80, 81],
-        "full_run_elapsed_ms": [229800, 230345],
-        "full_run_cases_per_second": [43.516126993177984, 43.413048402287075],
-        "probe_peak_process_tree_rss_bytes": 122748928,
-        "full_replay_peak_process_tree_rss_bytes": 1691553792,
+        "cold_first_response_ms": 5325,
+        "warm_response_ms": [76, 76],
+        "full_run_elapsed_ms": [234887, 239517],
+        "full_run_cases_per_second": [42.57360166477111, 41.750754607851405],
+        "probe_peak_process_tree_rss_bytes": 127926272,
+        "full_replay_peak_process_tree_rss_bytes": 1684430848,
         "per_process_virtual_address_ceiling_bytes": 34359738368
       },
       "negative_evidence": [
