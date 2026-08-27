@@ -1,7 +1,17 @@
 # Sley Public Evidence
 
 Status: current public auditor packet
-Last updated: 2026-08-26
+Last updated: 2026-08-27
+
+## Version Boundary
+
+Sley 1.2.0 completes the original agent-native, human-readable 1.x
+architecture. Greyforge has frozen active feature development of this line and
+moved language research to a clean machine-native Sley 2.x architecture. The
+public 1.x repository remains available under Apache-2.0. Compatibility is not
+promised. The canonical public transition record is:
+
+https://greyforge.tech/chronicles/sley-120-machine-native-break
 
 ## Canonical Description
 
