@@ -209,6 +209,13 @@ exclusion digest covers the prompt and initial workspace. The separate
 candidate digest commits the trusted solution without making that solution a
 training exclusion identity.
 
+A case that intentionally requires no edit MAY represent its candidate as a
+Git-absent empty directory only when both minimality limits are zero. A
+baseline case MUST additionally pin the SHA-256 empty-tree candidate digest.
+Verifiers and evaluators MUST reject any other missing candidate path. This
+preserves no-op benchmark semantics across clean Git checkouts, which cannot
+retain empty directories.
+
 ### 6.1 Split contract
 
 `sley.agent_bench.split_manifest.v0` commits the 96-case public manifest and

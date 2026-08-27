@@ -8,6 +8,7 @@ run_schema="$schema_root/sley.agent_bench.run_manifest.v0.schema.json"
 event_schema="$schema_root/sley.agent_bench.event.v0.schema.json"
 result_schema="$schema_root/sley.agent_bench.case_result.v0.schema.json"
 aggregate_schema="$schema_root/sley.agent_bench.aggregate.v0.schema.json"
+empty_tree_digest="sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 case_manifest=""
 run_manifest=""
@@ -443,8 +444,16 @@ for case_index in "${case_indices[@]}"; do
   prompt_source="$(resolve_inside "$case_manifest_dir" "$prompt_rel")" || die "$case_id prompt escapes the suite"
   workspace_source="$(resolve_inside "$case_manifest_dir" "$workspace_rel")" || die "$case_id workspace escapes the suite"
   candidate_source="$(resolve_inside "$case_manifest_dir" "$candidate_rel")" || die "$case_id candidate escapes the suite"
+  declared_candidate_digest="$(jq -r '.candidate_digest // empty' <<< "$case_json")"
+  if [[ ! -e "$candidate_source" \
+    && "$(jq -r '.minimality.max_changed_files' <<< "$case_json")" == "0" \
+    && "$(jq -r '.minimality.max_changed_lines' <<< "$case_json")" == "0" \
+    && ( "$tier" != "baseline" || "$declared_candidate_digest" == "$empty_tree_digest" ) ]]; then
+    candidate_source="$run_root/empty-candidates/$case_id"
+    mkdir -p "$candidate_source"
+  fi
   [[ -f "$prompt_source" && -d "$workspace_source" && -d "$candidate_source" ]] \
-    || die "$case_id fixture paths are incomplete"
+    || die "$case_id fixture paths are incomplete or do not declare an empty no-op candidate"
   if find "$workspace_source" "$candidate_source" -type l -print -quit | grep -q .; then
     die "$case_id fixture contains a symlink"
   fi
@@ -460,7 +469,6 @@ for case_index in "${case_indices[@]}"; do
   initial_tree_digest="$(tree_digest "$case_workspace")"
   candidate_digest="$(tree_digest "$candidate_source")"
   if [[ "$tier" == "baseline" ]]; then
-    declared_candidate_digest="$(jq -r '.candidate_digest' <<< "$case_json")"
     [[ "$candidate_digest" == "$declared_candidate_digest" ]] \
       || die "$case_id candidate digest does not match its pinned baseline solution"
   fi

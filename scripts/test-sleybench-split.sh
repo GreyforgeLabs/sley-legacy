@@ -55,6 +55,7 @@ create_partition() {
     >"$root/exclusions.json"
 
   local family_index family ordinal sequence id case_root digest candidate_digest lineage_id lineage_digest tmp
+  local max_changed_files max_changed_lines
   for family_index in "${!families[@]}"; do
     family="${families[$family_index]}"
     for ((ordinal = 1; ordinal <= per_family; ordinal++)); do
@@ -66,8 +67,20 @@ create_partition() {
       printf 'module bench.%s\n' "${id//-/_}" >"$case_root/workspace/main.sley"
       printf 'module bench.%s\n\ntask main -> Int {\n  return %d\n}\n' \
         "${id//-/_}" "$sequence" >"$case_root/candidate/main.sley"
+      max_changed_files=1
+      max_changed_lines=8
+      if [[ "$family" == "structural_tool_use" && "$ordinal" == "1" ]]; then
+        rm "$case_root/candidate/main.sley"
+        rmdir "$case_root/candidate"
+        max_changed_files=0
+        max_changed_lines=0
+      fi
       digest="$(training_digest "$case_root/prompt.md" "$case_root/workspace")"
-      candidate_digest="$(tree_digest "$case_root/candidate")"
+      if [[ -d "$case_root/candidate" ]]; then
+        candidate_digest="$(tree_digest "$case_root/candidate")"
+      else
+        candidate_digest="sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      fi
       lineage_id="lineage-${id#sleybench-}"
       lineage_digest="sha256:$(printf '%s' "$lineage_id" | sha256sum | awk '{print $1}')"
 
@@ -75,7 +88,9 @@ create_partition() {
       jq \
         --arg id "$id" --arg family "$family" --arg visibility "$visibility" \
         --arg digest "$digest" --arg candidate_digest "$candidate_digest" \
-        --arg lineage_id "$lineage_id" --arg lineage_digest "$lineage_digest" '
+        --arg lineage_id "$lineage_id" --arg lineage_digest "$lineage_digest" \
+        --argjson max_changed_files "$max_changed_files" \
+        --argjson max_changed_lines "$max_changed_lines" '
         .cases += [{
           id:$id,
           family:$family,
@@ -92,7 +107,7 @@ create_partition() {
           preflight:[],
           oracle:{commands:[{name:"check",argv:["sley","check","--json","main.sley"],expected_exit:0,expected_schema:"sley.diagnostics.report.v0",assertions:[{pointer:"/status",value:true}]}]},
           score_tags:["compile"],
-          minimality:{max_changed_files:1,max_changed_lines:8},
+          minimality:{max_changed_files:$max_changed_files,max_changed_lines:$max_changed_lines},
           training_exclusion_id:$digest,
           candidate_digest:$candidate_digest,
           semantic_lineage_id:$lineage_id,

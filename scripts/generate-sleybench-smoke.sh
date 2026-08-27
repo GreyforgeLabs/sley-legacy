@@ -230,6 +230,10 @@ project_case sleybench-smoke-f6-004 'Repair the project entry task without chang
   $'module app.main\n\ntask main -> Int {\n  return 1\n}' \
   $'module app.main\n\ntask main -> Int {\n  return 4 + 6\n}' 10 1 2
 
+# Git cannot retain empty candidate directories. No-op cases are represented by
+# zero minimality limits and an absent candidate path in a clean checkout.
+find "$suite_root/cases" -depth -type d -empty -delete
+
 mkdir -p "$suite_root/malformed"
 jq '.cases = [.cases[0]] | .unexpected = true' "$suite_root/case-manifest.json" \
   > "$suite_root/malformed/case-manifest-unknown-field.json"
