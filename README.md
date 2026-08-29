@@ -35,6 +35,16 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 - `sley doctor --json <target>`
 - `sley graph --json --slice <node-id> <target>`
 
+    The server binds to `127.0.0.1` and starts in read-only mode. Browser
+    command execution uses JSON `POST`, an exact Origin check, and a
+    per-process CSRF token. Request targets must be relative paths that remain
+    inside the configured workspace after symlink resolution.
+
+    Use `--allow-mutation` only when the local `format` command should be
+    enabled. A non-loopback `--host` additionally requires both
+    `--allow-remote` and an explicit `--origin`; those flags do not weaken the
+    Origin, CSRF, target-containment, timeout, or output limits.
+
     ## Consumed Sley Contracts
 
     This tool treats Loom, the Sley compiler, as the oracle. It consumes these
@@ -77,17 +87,17 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 
     ## SEO Surface
 
-    SEO title: `Sley Workbench - AI-native inspection surface`
+    SEO title: `Sley Workbench - agent-native inspection surface`
 
-    SEO description: Inspect AI-first readiness, graph slices, query tables, lint findings, checked repair plans, traces, seals, and ZJX envelopes from a local workbench.
+    SEO description: Inspect agent-oriented readiness, graph slices, query tables, lint findings, checked repair plans, traces, seals, and ZJX envelopes from a local workbench.
 
-    Keywords: `Sley workbench`, `graph slice inspection`, `lint findings`, `repair plans`, `AI-native debugging`, `ZJX envelopes`
+    Keywords: `Sley workbench`, `graph slice inspection`, `lint findings`, `repair plans`, `agent-native debugging`, `ZJX envelopes`
 
     Canonical URL: `https://sleylang.org/tools/sley-workbench`
     - Geo metadata:
       - Region: United States (US)
       - Language: English
-      - Audience: AI-native language tooling teams and operators
+      - Audience: agent-native language tooling teams and operators
 
     GitHub URL: `https://github.com/GreyforgeLabs/sley-workbench`
 

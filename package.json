@@ -12,11 +12,12 @@
   "name": "sley-workbench",
   "private": true,
   "scripts": {
+    "check": "node --check src/server.mjs && node --check static/app.js",
     "fmt": "node test/check-format.mjs",
     "smoke": "node test/smoke.mjs",
     "test": "node test/smoke.mjs",
     "native": "make native"
   },
   "type": "module",
-  "version": "0.0.0-private"
+  "version": "0.1.0"
 }

@@ -1,7 +1,7 @@
 # SEO Draft
 
 Title:
-`Sley Workbench - AI-native structural inspection and token-efficient engineering`
+`Sley Workbench - agent-native structural inspection and token-efficient engineering`
 
 Meta description:
 `Inspect Sley readiness, graph slices, query tables, lint findings, checked repair plans, traces, seals, and ZJX envelopes from one local workbench.`
@@ -13,7 +13,7 @@ GitHub URL:
 `https://github.com/GreyforgeLabs/sley-workbench`
 
 Keywords:
-`Sley, Sley tools, graph and graft workbench, structural programming language, developer tooling, compiler contracts, AI-native inspection, token-efficient edits`
+`Sley, Sley tools, graph and graft workbench, structural programming language, developer tooling, compiler contracts, agent-native inspection, token-efficient edits`
 
 Social image:
 `assets/branding/social-card.png`
@@ -21,7 +21,7 @@ Social image:
 GEO metadata:
 - Region: United States (`US`)
 - Language: English (`en`)
-- Target audience: Compiler contributors, language implementers, and AI-native tool teams evaluating local workbench workflows
+- Target audience: Compiler contributors, language implementers, and agent-native tool teams evaluating local workbench workflows
 - Marketing angle: supports language-first teams with bounded graph slices and auditable edit planning.
 
 Release note:
