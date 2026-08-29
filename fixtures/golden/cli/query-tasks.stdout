@@ -1,0 +1,41 @@
+{
+  "schema": "sley.query.report.v0",
+  "kind": "tasks",
+  "entry_module": "app.hello",
+  "filters": {
+    "module": null,
+    "exported_only": false
+  },
+  "modules": [
+    {
+      "module": "app.hello",
+      "imports": [],
+      "types": [],
+      "effects": [],
+      "tasks": [
+        {
+          "name": "main",
+          "id": "task:app.hello.main",
+          "exported": false
+        }
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task:app.hello.main",
+      "name": "main",
+      "module": "app.hello",
+      "qualified_name": "app.hello.main",
+      "exported": false,
+      "takes": [],
+      "return_type": "Text",
+      "effects": [],
+      "outbound_call_count": 0,
+      "inbound_call_count": 0
+    }
+  ],
+  "types": [],
+  "effects": [],
+  "calls": []
+}

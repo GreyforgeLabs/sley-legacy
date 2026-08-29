@@ -1,0 +1,29 @@
+Sley Loom self-hosting stage-1 bootstrap CLI
+
+Usage:
+  sley [--help|--version]
+  sley <command> [--json] [options] <file-or-project>
+
+Commands:
+  parse, ast, check, explain, doctor, graph, graph-diff, query, lint, plan, verify, run
+  adapter, worker, test, validate, release, reference-replay, operational-workflow, operational-evidence, change, machine, deploy, trace, seal, zjx, graft, fix, format, new, self-hosting-status
+  claim-verify, arena
+
+Release candidate:
+  sley release build --output-dir dist --json
+  sley release verify --output-dir dist --json
+
+Reference replay:
+  sley reference-replay siglum-numerology --siglum-root PATH --execute --json
+
+Operational agent workflow:
+  sley operational-workflow plan --controller PATH --json
+  sley operational-workflow compare --controller PATH --raw-aggregate PATH --raw-evidence PATH --structural-aggregate PATH --structural-evidence PATH --approval-record PATH --execution-provenance PATH --json
+
+Operational evidence decision:
+  sley operational-evidence assemble --reference-replay PATH --agent-comparison PATH --controller PATH --raw-aggregate PATH --raw-evidence PATH --structural-aggregate PATH --structural-evidence PATH --approval-record PATH --execution-provenance PATH --json
+
+Companion tools:
+  git-sley-guard, sley-ci, sley-conformance, sley-contract, sley-corpus, sley-docgen, sley-lsp,
+  sley-workbench, sley-agent-bench, sley-migrate, sley-sandbox-runner,
+  sley-shadow, sley-zjx, sley-mcp-bridge
