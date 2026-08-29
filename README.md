@@ -35,6 +35,12 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 - `sley-ci verify --deny-warnings .`
 - `sley-ci smoke fixtures/cli_smokes/manifest.json`
 
+    Machine mode (`sley-ci --json ...`) always emits one final
+    `sley.ci.report.v1` document, including when a step fails or a required
+    executable is unavailable. Missing Sley or jq dependencies fail closed.
+    Non-gating diagnostics may opt into a recorded skip with
+    `--allow-missing`; CI and the GitHub Action never enable it by default.
+
     ## Consumed Sley Contracts
 
     This tool treats Loom, the Sley compiler, as the oracle. It consumes these
@@ -73,17 +79,17 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 
 ## SEO Surface
 
-    SEO title: `Sley CI - AI-native verification gates`
+    SEO title: `Sley CI - agent-native verification gates`
 
-    SEO description: Run AI-native workflow checks for format, lint, verify, seal, schema conformance, and manifest-backed CLI smoke checks.
+    SEO description: Run agent-native workflow checks for format, lint, verify, seal, schema conformance, and manifest-backed CLI smoke checks.
 
-    Keywords: `Sley CI`, `AI-native verification`, `compiler checks`, `schema conformance`, `token-efficient lint`, `release gating`, `CLI smoke tests`
+    Keywords: `Sley CI`, `agent-native verification`, `compiler checks`, `schema conformance`, `token-efficient lint`, `release gating`, `CLI smoke tests`
 
     Canonical URL: `https://sleylang.org/tools/sley-ci`
     - Geo metadata:
       - Region: United States (US)
       - Language: English
-      - Audience: AI-native language tooling teams and operators
+      - Audience: agent-native language tooling teams and operators
 
     GitHub URL: `https://github.com/GreyforgeLabs/sley-ci`
 

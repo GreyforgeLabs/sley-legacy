@@ -1,157 +1,231 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 SLEY_BIN="${SLEY_BIN:-sley}"
+JQ_BIN="${JQ_BIN:-jq}"
 OUTPUT_JSON="${SLEY_JSON:-0}"
-CMD="${1:-help}"
-shift || true
+ALLOW_MISSING="${SLEY_ALLOW_MISSING:-false}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPORTER="$SCRIPT_DIR/sley-ci-report.mjs"
+REPORT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sley-ci-report.XXXXXX")"
+trap 'rm -rf -- "$REPORT_DIR"' EXIT
 
-if [[ "$CMD" == "--json" ]]; then
-  OUTPUT_JSON=1
-  CMD="${1:-help}"
-  shift || true
-fi
-
-declare -a RESULTS=()
+declare -a RESULT_LABELS=()
+declare -a RESULT_STATUSES=()
+declare -a RESULT_STATES=()
+declare -a RESULT_FILES=()
 
 usage() {
   cat <<'USAGE'
-usage: sley-ci <check|verify|smoke|new-deploy-sequence|help> [args]
-       sley-ci --json <command> for machine-friendly output
+usage: sley-ci [--json] [--allow-missing] <check|verify|smoke|new-deploy-sequence|help> [args]
+
+Missing Sley or jq dependencies fail closed. --allow-missing explicitly records
+the unavailable step as skipped and is intended only for non-gating diagnostics.
 USAGE
 }
 
-require_sley_for_cmd() {
-  local cmd_label="$1"
-  if ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
-    if [[ "$OUTPUT_JSON" == "1" ]]; then
-      echo "{\"command\":\"$cmd_label\",\"success\":false,\"missing\":\"$SLEY_BIN\"}"
-    else
-      echo "sley executable not found: $SLEY_BIN" >&2
-      echo "skipping $cmd_label" >&2
-    fi
-    exit 127
-  fi
-}
-
-record() {
-  local status="$1"
-  local label="$2"
-  local output="$3"
-  local safe_output
-  safe_output="${output//$'\n'/\\n}"
-  safe_output="${safe_output//\"/\\\"}"
-  RESULTS+=("{\"command\":\"$label\",\"status\":$status,\"output\":\"$safe_output\"}")
-}
-
-run_step() {
-  local label="$1"
-  shift
-  local out rc
-  set +e
-  out="$("$SLEY_BIN" "$@" 2>&1)"
-  rc=$?
-  set -e
-  record "$rc" "$label" "$out"
-  if [[ "$rc" -ne 0 ]]; then
-    return "$rc"
-  fi
-}
-
-run_step_or_fail() {
-  run_step "$1" "$@"
-}
-
-exit_report() {
-  local final_status="${1:-0}"
-  if [[ "$OUTPUT_JSON" != "1" ]]; then
-    return "$final_status"
-  fi
-  local i
-  local body="["
-  for i in "${!RESULTS[@]}"; do
-    if [[ "$i" -gt 0 ]]; then
-      body+=","
-    fi
-    body+="${RESULTS[$i]}"
-  done
-  body+="]"
-  echo "{\"command\":\"$CMD\",\"success\":$([[ "$final_status" -eq 0 ]] && echo true || echo false),\"results\":$body}"
-  return "$final_status"
-}
-
-validate_smoke_manifest() {
-  local manifest="$1"
-  if [[ ! -f "$manifest" ]]; then
-    echo "smoke manifest not found: $manifest" >&2
-    return 2
-  fi
-  if ! jq -e . "$manifest" >/dev/null 2>&1; then
-    echo "smoke manifest is not valid JSON: $manifest" >&2
-    return 2
-  fi
-}
-
-case "$CMD" in
-  check)
-    require_sley_for_cmd "check"
-    target="${1:-.}"
-    run_step_or_fail "format" format "$target"
-    run_step_or_fail "check" check --json "$target"
-    run_step_or_fail "lint" lint --json --deny-warnings "$target"
-    ;;
-  verify)
-  if [[ "${1:-}" == "--help" || "${1:-}" == "-h" || "${1:-}" == "help" ]]; then
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --json)
+      OUTPUT_JSON=1
+      shift
+      ;;
+    --allow-missing)
+      ALLOW_MISSING=true
+      shift
+      ;;
+    --help)
       usage
-      exit_report 0
-    fi
-    require_sley_for_cmd "verify"
-    run_step_or_fail "verify" verify "$@"
-    ;;
-  smoke)
-    manifest="${1:-fixtures/cli_smokes/manifest.json}"
-    if [[ "${2:-}" == "--help" || "${2:-}" == "-h" || "${2:-}" == "help" ]]; then
-      usage
-      exit_report 0
-    fi
-    if ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
-      if [[ "$OUTPUT_JSON" == "1" ]]; then
-        echo "{\"command\":\"smoke\",\"success\":true,\"skipped\":true,\"reason\":\"missing_sley_binary\"}"
-      else
-        echo "sley executable not found: $SLEY_BIN (smoke skipped)" >&2
-      fi
       exit 0
-    fi
-    validate_smoke_manifest "$manifest"
-    # lightweight smoke check: ensure manifest exists and parse
-    target="${manifest%/*}"
-    if [[ "$target" == "$manifest" ]]; then
-      target="."
-    fi
-    run_step_or_fail "check" check --json "$target"
-    ;;
-  new-deploy-sequence)
-    require_sley_for_cmd "new-deploy-sequence"
-    target="${1:-.}"
-    run_step_or_fail "check" check --json "$target"
-    run_step_or_fail "doctor" doctor --json "$target"
-    run_step_or_fail "query" query --json --kind tasks "$target"
-    run_step_or_fail "plan" plan --json --graft-templates "$target"
-    run_step_or_fail "lint" lint --json --deny-warnings "$target"
-    run_step_or_fail "verify" verify --json --deny-warnings --cap Deploy --deploy-result staging staged "$target"
-    run_step_or_fail "run" run --json --cap Deploy --deploy-result staging staged "$target"
-    run_step_or_fail "seal" seal --json "$target"
-    run_step_or_fail "zjx" zjx --json "$target"
-    ;;
-  help|--help|-h)
-    usage
-    exit_report 0
-    ;;
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+CMD="${1:-help}"
+if [[ $# -gt 0 ]]; then
+  shift
+fi
+
+case "$ALLOW_MISSING" in
+  true|1) ALLOW_MISSING=true ;;
+  false|0|'') ALLOW_MISSING=false ;;
   *)
-    echo "unknown command: $CMD" >&2
-    usage >&2
-    exit_report 2
+    printf 'invalid SLEY_ALLOW_MISSING value: %s\n' "$ALLOW_MISSING" >&2
+    exit 2
     ;;
 esac
 
-exit_report "$?"
+record_file() {
+  local label="$1"
+  local status="$2"
+  local state="$3"
+  local output_file="$4"
+  RESULT_LABELS+=("$label")
+  RESULT_STATUSES+=("$status")
+  RESULT_STATES+=("$state")
+  RESULT_FILES+=("$output_file")
+}
+
+record_text() {
+  local label="$1"
+  local status="$2"
+  local state="$3"
+  local message="$4"
+  local output_file="$REPORT_DIR/result-${#RESULT_LABELS[@]}.log"
+  printf '%s' "$message" >"$output_file"
+  record_file "$label" "$status" "$state" "$output_file"
+  if [[ "$OUTPUT_JSON" != "1" && -n "$message" ]]; then
+    printf '%s\n' "$message" >&2
+  fi
+}
+
+run_command() {
+  local label="$1"
+  shift
+  local output_file="$REPORT_DIR/result-${#RESULT_LABELS[@]}.log"
+  local status state
+  "$@" >"$output_file" 2>&1
+  status=$?
+  if [[ "$status" -eq 0 ]]; then
+    state=passed
+  else
+    state=failed
+  fi
+  record_file "$label" "$status" "$state" "$output_file"
+  if [[ "$OUTPUT_JSON" != "1" ]]; then
+    cat "$output_file"
+  fi
+  return "$status"
+}
+
+record_missing() {
+  local label="$1"
+  local executable="$2"
+  if [[ "$ALLOW_MISSING" == true ]]; then
+    record_text "$label" 0 skipped "required executable unavailable (explicitly allowed): $executable"
+    return 0
+  fi
+  record_text "$label" 127 unavailable "required executable unavailable: $executable"
+  return 127
+}
+
+require_executable() {
+  local label="$1"
+  local executable="$2"
+  if command -v "$executable" >/dev/null 2>&1; then
+    return 0
+  fi
+  record_missing "$label" "$executable"
+}
+
+update_final_status() {
+  local candidate="$1"
+  if [[ "$candidate" -ne 0 && "$FINAL_STATUS" -eq 0 ]]; then
+    FINAL_STATUS="$candidate"
+  fi
+}
+
+run_sley() {
+  local label="$1"
+  shift
+  run_command "$label" "$SLEY_BIN" "$@"
+}
+
+emit_report() {
+  local -a report_args=(--command "$CMD" --status "$FINAL_STATUS")
+  local index
+  if [[ "$OUTPUT_JSON" != "1" ]]; then
+    return
+  fi
+  for index in "${!RESULT_LABELS[@]}"; do
+    report_args+=(
+      --result
+      "${RESULT_LABELS[$index]}"
+      "${RESULT_STATUSES[$index]}"
+      "${RESULT_STATES[$index]}"
+      "${RESULT_FILES[$index]}"
+    )
+  done
+  node "$REPORTER" "${report_args[@]}"
+}
+
+FINAL_STATUS=0
+
+case "$CMD" in
+  check)
+    if ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
+      record_missing check "$SLEY_BIN"
+      update_final_status "$?"
+    else
+      target="${1:-.}"
+      run_sley format format "$target"; update_final_status "$?"
+      run_sley check check --json "$target"; update_final_status "$?"
+      run_sley lint lint --json --deny-warnings "$target"; update_final_status "$?"
+    fi
+    ;;
+  verify)
+    if [[ "${1:-}" == "--help" || "${1:-}" == "-h" || "${1:-}" == "help" ]]; then
+      usage
+    elif ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
+      record_missing verify "$SLEY_BIN"
+      update_final_status "$?"
+    else
+      run_sley verify verify "$@"; update_final_status "$?"
+    fi
+    ;;
+  smoke)
+    manifest="${1:-fixtures/cli_smokes/manifest.json}"
+    if [[ "${1:-}" == "--help" || "${1:-}" == "-h" || "${1:-}" == "help" ]]; then
+      usage
+    elif ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
+      record_missing smoke "$SLEY_BIN"
+      update_final_status "$?"
+    elif ! command -v "$JQ_BIN" >/dev/null 2>&1; then
+      record_missing smoke-manifest "$JQ_BIN"
+      update_final_status "$?"
+    elif [[ ! -f "$manifest" ]]; then
+      record_text smoke-manifest 2 failed "smoke manifest not found: $manifest"
+      update_final_status 2
+    else
+      run_command smoke-manifest "$JQ_BIN" -e . "$manifest"; update_final_status "$?"
+      if [[ "$FINAL_STATUS" -eq 0 ]]; then
+        target="${manifest%/*}"
+        if [[ "$target" == "$manifest" ]]; then
+          target="."
+        fi
+        run_sley check check --json "$target"; update_final_status "$?"
+      fi
+    fi
+    ;;
+  new-deploy-sequence)
+    if ! command -v "$SLEY_BIN" >/dev/null 2>&1; then
+      record_missing new-deploy-sequence "$SLEY_BIN"
+      update_final_status "$?"
+    else
+      target="${1:-.}"
+      run_sley check check --json "$target"; update_final_status "$?"
+      run_sley doctor doctor --json "$target"; update_final_status "$?"
+      run_sley query query --json --kind tasks "$target"; update_final_status "$?"
+      run_sley plan plan --json --graft-templates "$target"; update_final_status "$?"
+      run_sley lint lint --json --deny-warnings "$target"; update_final_status "$?"
+      run_sley verify verify --json --deny-warnings --cap Deploy --deploy-result staging staged "$target"; update_final_status "$?"
+      run_sley run run --json --cap Deploy --deploy-result staging staged "$target"; update_final_status "$?"
+      run_sley seal seal --json "$target"; update_final_status "$?"
+      run_sley zjx zjx --json "$target"; update_final_status "$?"
+    fi
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  *)
+    record_text usage 2 failed "unknown command: $CMD"
+    usage >&2
+    FINAL_STATUS=2
+    ;;
+esac
+
+emit_report
+exit "$FINAL_STATUS"

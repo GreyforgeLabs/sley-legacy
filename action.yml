@@ -9,6 +9,10 @@ inputs:
     description: Sley executable
     required: false
     default: "sley"
+  allow-missing:
+    description: Explicitly allow a missing Sley or jq dependency
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
@@ -16,4 +20,7 @@ runs:
       shell: bash
       env:
         SLEY_BIN: ${{ inputs.sley-bin }}
-      run: ${{ github.action_path }}/bin/sley-ci check "${{ inputs.target }}"
+        SLEY_CI_TARGET: ${{ inputs.target }}
+        SLEY_ALLOW_MISSING: ${{ inputs.allow-missing }}
+      run: |
+        "$GITHUB_ACTION_PATH/bin/sley-ci" check "$SLEY_CI_TARGET"
