@@ -1,0 +1,16 @@
+{
+  "schema": "sley.diagnostics.report.v0",
+  "status": "error",
+  "diagnostics": [
+    {
+      "id": "UNKNOWN_IDENTIFIER",
+      "severity": "error",
+      "message": "unknown identifier `missing`",
+      "node": "block:task:corpus.rejected.main:stmt:0:expr",
+      "span": {
+        "line": 4,
+        "column": 10
+      }
+    }
+  ]
+}

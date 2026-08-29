@@ -1,4 +1,4 @@
-.PHONY: fmt diff-check build-cli build-bins test machine-test git-guard mcp-bridge graph-diff contracts contract-compatibility protocol-contracts transaction-contracts adapter-replay worker worker-clients user-tests validation-reports operational-replay operational-workflow operational-evidence release-contracts release-archive release-security-check release-candidate conformance public-release-check claim-audit ai-foundation corpus-governance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax self-hosted-cli parser-smoke checker-smoke runtime-smoke lint-smoke validation-planner quick core check-changed v1
+.PHONY: fmt diff-check build-cli build-bins test machine-test git-guard cli-golden mcp-bridge graph-diff contracts contract-compatibility protocol-contracts transaction-contracts adapter-replay worker worker-clients user-tests validation-reports operational-replay operational-workflow operational-evidence release-contracts release-archive release-security-check release-candidate conformance public-release-check claim-audit ai-foundation corpus-governance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax self-hosted-cli parser-smoke checker-smoke runtime-smoke lint-smoke validation-planner quick core check-changed v1
 
 SELF_HOSTED_ARGS := --help
 export PATH := $(CURDIR)/bin:$(PATH)
@@ -89,6 +89,9 @@ machine-test:
 
 git-guard:
 	scripts/test-git-sley-guard.sh
+
+cli-golden:
+	scripts/test-sley-cli-golden.sh
 
 mcp-bridge:
 	scripts/test-sley-mcp-bridge.sh
@@ -246,4 +249,4 @@ core: parser-smoke checker-smoke runtime-smoke lint-smoke contracts contract-com
 check-changed:
 	scripts/check-changed.sh
 
-v1: fmt diff-check test git-guard mcp-bridge graph-diff contracts contract-compatibility protocol-contracts transaction-contracts adapter-replay worker worker-clients user-tests validation-reports operational-replay operational-workflow operational-evidence release-contracts conformance claim-audit ai-foundation corpus-governance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax validation-planner
+v1: fmt diff-check test git-guard cli-golden mcp-bridge graph-diff contracts contract-compatibility protocol-contracts transaction-contracts adapter-replay worker worker-clients user-tests validation-reports operational-replay operational-workflow operational-evidence release-contracts conformance claim-audit ai-foundation corpus-governance corpus examples smoke lsp editor-shims workbench agent-bench migrate docgen sandbox-runner shadow zjx-tools arena syntax validation-planner
