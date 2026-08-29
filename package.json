@@ -12,11 +12,14 @@
   "name": "tree-sitter-sley",
   "private": true,
   "scripts": {
+    "generate": "tree-sitter generate",
     "fmt": "node test/check-format.mjs",
     "smoke": "node test/smoke.mjs",
-    "test": "node test/smoke.mjs",
+    "test": "tree-sitter generate && tree-sitter test && node test/smoke.mjs",
     "native": "make native"
   },
-  "type": "module",
-  "version": "0.0.0-private"
+  "version": "0.1.0",
+  "devDependencies": {
+    "tree-sitter-cli": "0.26.13"
+  }
 }

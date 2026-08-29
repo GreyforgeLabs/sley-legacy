@@ -7,3 +7,18 @@ task main -> Text {
   return "ok"
 }
 ----
+
+(source_file
+  (module_declaration
+    (qualified_identifier
+      (identifier)
+      (identifier)))
+  (task_declaration
+    (identifier)
+    (type_expression
+      (qualified_identifier
+        (identifier)))
+    (block
+      (return_statement
+        (expression
+          (string))))))
