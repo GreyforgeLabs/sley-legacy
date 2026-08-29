@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 - 2026-08-28
+
+- Restore the documented Node.js 20 CI floor by removing an unused Node.js 22-only filesystem import.
+
 ## 0.1.0 - 2026-08-28
 
 - Admit type aliases at the source-file root.

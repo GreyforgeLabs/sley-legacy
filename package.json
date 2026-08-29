@@ -18,7 +18,7 @@
     "test": "tree-sitter generate && tree-sitter test && node test/smoke.mjs",
     "native": "make native"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "devDependencies": {
     "tree-sitter-cli": "0.26.13"
   }
