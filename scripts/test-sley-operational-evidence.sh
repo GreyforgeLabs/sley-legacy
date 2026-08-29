@@ -46,7 +46,7 @@ REGISTRY="$WORK_DIR/registry.json"
 jq -e '
   .schema == "sley.operational.evidence_registry.v1"
   and .status == "decision_recorded"
-  and .release == "1.2.0"
+  and .release == "1.2.1"
   and .entries.reference_replay.id == "siglum-numerology-reference-v1"
   and .entries.reference_replay.correctness == {
     repeat_count:2,

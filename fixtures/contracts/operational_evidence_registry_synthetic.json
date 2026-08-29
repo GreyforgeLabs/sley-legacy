@@ -1,7 +1,7 @@
 {
   "schema": "sley.operational.evidence_registry.v1",
   "status": "decision_recorded",
-  "release": "1.2.0",
+  "release": "1.2.1",
   "identity": {
     "registry_source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "reference_replay_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",

@@ -1,6 +1,6 @@
 # Sley 1.2 status
 
-Status: W7 public release cut approved for `v1.2.0`
+Status: W7 public release cut approved for `v1.2.1`
 Owner: Sley maintainers
 Updated: 2026-08-26
 
@@ -12,7 +12,7 @@ Updated: 2026-08-26
 - Upstream relation: 18 commits ahead at implementation start
 - Working tree at implementation start: clean
 - Public reference baseline: `c973956`
-- Sley version: `1.2.0`
+- Sley version: `1.2.1`
 - Reconciled release: Sley 1.2 Governed Autonomy
 - Current wave: W7 release publication active under exact operator approval.
   W6 is complete with the bounded
@@ -29,7 +29,7 @@ Updated: 2026-08-26
   34 release targets, 89 schemas, 178/178 fixtures, 255/255 declared
   integration checks, corpus 96/96, examples 146/146, and smoke 5/5
 - Authoritative AI bootstrap: Bootstrap 0.2,
-  `sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061`
+  `sha256:d655da06a3527f0bc2cb15350dd1fd338f79ed07084f1623131cf6fccf81951d`
 - Historical W6 trials retain their original Bootstrap 0.2 digest in the
   immutable comparison and decision evidence; the current digest changes only
   the release-candidate version header and remains excluded from retroactive

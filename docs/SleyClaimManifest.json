@@ -55,7 +55,7 @@
       "id": "runnable_stage1_command",
       "claim": "A runnable self-hosted Sley command surface exists under bin/.",
       "status": "expected_pass",
-      "paths": ["bin/sley"],
+      "paths": ["bin/sley", "lib/sley"],
       "audit_command": ["bin/sley", "--version"]
     },
     {

@@ -3,7 +3,7 @@ module loom.bootstrap
 import loom.lint as lint
 
 export task implementation_version -> Text {
-  return "sley 1.2.0"
+  return "sley 1.2.1"
 }
 
 export task implementation_stage -> Text {
@@ -23,7 +23,7 @@ export task ai_bootstrap_path -> Text {
 }
 
 export task ai_bootstrap_digest -> Text {
-  return "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061"
+  return "sha256:d655da06a3527f0bc2cb15350dd1fd338f79ed07084f1623131cf6fccf81951d"
 }
 
 export task self_hosting_status -> Text {

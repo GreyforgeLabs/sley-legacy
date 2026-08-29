@@ -91,7 +91,7 @@ export task evidence_registry_schema -> Text {
 }
 
 export task evidence_registry_release -> Text {
-  return "1.2.0"
+  return "1.2.1"
 }
 
 export task evidence_registry_authority_mode -> Text {

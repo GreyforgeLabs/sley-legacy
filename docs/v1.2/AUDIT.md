@@ -607,7 +607,7 @@ guidance. Current probes demonstrate:
 
 ## W7 release closeout implementation
 
-- `loom.release` owns the 1.2.0 artifact identity, supported Linux x86_64
+- `loom.release` owns the 1.2.1 artifact identity, supported Linux x86_64
   target, required toolchain, archive entrypoints, metadata contracts, and
   non-public authority state.
 - The deterministic archive builder rejects dirty production inputs,

@@ -4,12 +4,12 @@ Canonical site: https://sleylang.org/
 Repository: https://github.com/GreyforgeLabs/sley/tree/public
 Organization: Greyforge Labs - https://greyforge.tech/
 License: Apache-2.0
-Release: Sley 1.2.0 local release candidate
+Release: Sley 1.2.1 local release candidate
 Status date: 2026-08-27
 
 ## Current Project Status
 
-Sley 1.2.0 completes Greyforge Labs' self-hosted, agent-native,
+Sley 1.2.1 completes Greyforge Labs' self-hosted, agent-native,
 human-readable structural programming line. Greyforge has frozen active
 feature development of the Sley 1.x architecture. The Apache-2.0 repository
 remains available for use, study, extension, experimentation, and forks.
@@ -91,7 +91,7 @@ make v1
 - Product home: https://sleylang.org/
 - Architectural transition: https://greyforge.tech/chronicles/sley-120-machine-native-break
 - Transition source note: https://greyforge.tech/research/sley-machine-native-break-source-note-2026-08-27.md
-- Release v1.2.0: https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.0
+- Release v1.2.1: https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.1
 - Technical brief: https://sleylang.org/docs
 - Workflow walkthrough: https://sleylang.org/tutorial
 - FAQ: https://sleylang.org/faq

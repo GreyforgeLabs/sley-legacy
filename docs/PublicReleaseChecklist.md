@@ -1,10 +1,10 @@
 # Sley Public Release Checklist
 
-Status: Sley 1.2 public release cut approved for `v1.2.0`.
+Status: Sley 1.2 public release cut approved for `v1.2.1`.
 Last checked: 2026-08-26.
 
 Exact operator approval was received on 2026-08-26 to push the finished Sley
-1.2 tree to the public branch, create and push tag `v1.2.0`, upload the verified
+1.2 tree to the public branch, create and push tag `v1.2.1`, upload the verified
 release packet to a GitHub Release, deploy the existing Sley WebForge surface,
 and publish the public release artifact. This approval applies to this cut only.
 
@@ -67,7 +67,7 @@ The current conformance report records:
    `docs/v1.2/RELEASE_ARTIFACTS.md`, and the generated artifact set.
 8. Confirm exact operator approval names the tag and publication targets before
    any irreversible public action. The approval record above satisfies this
-   step for `v1.2.0`, the GitHub Release, and the existing WebForge Sley surface.
+   step for `v1.2.1`, the GitHub Release, and the existing WebForge Sley surface.
 
 Crate/npm publication, package signing, provider calls, and unrelated runtime
 deployment remain outside this approval.

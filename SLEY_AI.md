@@ -1,7 +1,7 @@
 # Sley AI Bootstrap
 
 Status: active
-Sley version: 1.2.0
+Sley version: 1.2.1
 Bootstrap version: 0.2
 Last verified: 2026-08-26
 

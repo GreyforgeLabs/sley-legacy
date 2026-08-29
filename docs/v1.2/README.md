@@ -95,6 +95,6 @@ Current planning artifacts:
 
 The W6 SleyBench evidence remains historically pinned to the exact Bootstrap
 0.2 digest used for those runs. The release-candidate `SLEY_AI.md` header is
-version-coupled to Sley 1.2.0 and has its own current digest.
+version-coupled to Sley 1.2.1 and has its own current digest.
 These planning files do not authorize benchmark edits, training, provider
 calls, production shadowing, deployment, publication, merge, or push.

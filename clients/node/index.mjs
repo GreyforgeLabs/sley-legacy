@@ -2,6 +2,7 @@
 
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import nodeProcess from "node:process";
 import { TextDecoder } from "node:util";
 import {
   CONTRACT_VERSIONS,
@@ -15,10 +16,28 @@ export { CONTRACT_VERSIONS, OPERATIONS, PROTOCOL, SCHEMA_IDS, ZERO_DIGEST };
 
 export const DEFAULT_MAX_MESSAGE_BYTES = 20 * 1024 * 1024;
 export const DEFAULT_MAX_RETAINED_MESSAGES = 8192;
+export const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
+export const DEFAULT_MAX_TOMBSTONES = 1024;
 
 export class WorkerClientError extends Error {}
 export class WorkerClientClosedError extends WorkerClientError {}
 export class WorkerClientProtocolError extends WorkerClientError {}
+export class WorkerClientTimeoutError extends WorkerClientError {}
+export class WorkerClientCancelledError extends WorkerClientError {}
+
+const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/;
+const EXPECTED_FAILURE_CLASSES = Object.freeze([
+  "adapter_failed", "authority_denied", "budget_exhausted", "cancelled",
+  "internal_error", "invalid_result", "protocol_mismatch", "source_mismatch",
+  "timeout", "worker_crashed", "worker_unhealthy",
+]);
+const EXPECTED_REQUEST_STATES = Object.freeze([
+  "accepted", "running", "completed", "failed", "cancelled", "timed_out",
+]);
+
+function arraysEqual(left, right) {
+  return Array.isArray(left) && left.length === right.length && left.every((value, index) => value === right[index]);
+}
 
 export class WorkerClient {
   constructor({
@@ -29,6 +48,8 @@ export class WorkerClient {
     idleTimeoutMs = 300_000,
     maxMessageBytes = DEFAULT_MAX_MESSAGE_BYTES,
     maxRetainedMessages = DEFAULT_MAX_RETAINED_MESSAGES,
+    requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+    maxTombstones = DEFAULT_MAX_TOMBSTONES,
   } = {}) {
     if (!Array.isArray(command) || command.length === 0) {
       throw new TypeError("command must be a non-empty array");
@@ -42,6 +63,12 @@ export class WorkerClient {
     if (!Number.isInteger(maxMessageBytes) || maxMessageBytes < 1 || !Number.isInteger(maxRetainedMessages) || maxRetainedMessages < 1) {
       throw new RangeError("client stream bounds must be positive integers");
     }
+    if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 86_400_000) {
+      throw new RangeError("requestTimeoutMs must be between 1 and 86400000");
+    }
+    if (!Number.isInteger(maxTombstones) || maxTombstones < 1 || maxTombstones > 1_000_000) {
+      throw new RangeError("maxTombstones must be between 1 and 1000000");
+    }
     this.command = [...command];
     this.cwd = cwd;
     this.extraEnv = { ...env };
@@ -49,21 +76,34 @@ export class WorkerClient {
     this.idleTimeoutMs = idleTimeoutMs;
     this.maxMessageBytes = maxMessageBytes;
     this.maxRetainedMessages = maxRetainedMessages;
+    this.requestTimeoutMs = requestTimeoutMs;
+    this.maxTombstones = maxTombstones;
     this.process = null;
     this.workerDigest = null;
     this.runtimeDigest = null;
     this._messages = [];
     this.stderr = "";
     this.pending = new Map();
+    this.tombstones = new Map();
+    this.lateResponseCount = 0;
     this.eventWaiters = new Set();
     this.buffer = Buffer.alloc(0);
     this.lastEventSequence = -1;
     this.readerError = null;
+    this.closing = false;
     this.decoder = new TextDecoder("utf-8", { fatal: true });
   }
 
   get messages() {
     return this._messages.slice();
+  }
+
+  get pendingRequestCount() {
+    return this.pending.size;
+  }
+
+  get tombstoneCount() {
+    return this.tombstones.size;
   }
 
   async start({ timeoutMs = 15_000 } = {}) {
@@ -86,6 +126,7 @@ export class WorkerClient {
       env: { ...process.env, ...this.extraEnv },
       stdio: ["pipe", "pipe", "pipe"],
       windowsHide: true,
+      detached: nodeProcess.platform !== "win32",
     });
     this.process.stdout.on("data", (chunk) => this.#readChunk(chunk));
     this.process.stdout.on("end", () => {
@@ -99,12 +140,17 @@ export class WorkerClient {
       }
     });
     this.process.on("error", (error) => this.#failReader(error));
-    this.process.on("close", () => {
-      if ([...this.pending.values()].some((entry) => entry.settled === false)) {
-        this.#failReader(new WorkerClientClosedError("worker output closed before every response arrived"));
+    this.process.on("close", (code, signal) => {
+      if (!this.closing && this.readerError === null) {
+        this.#failReader(new WorkerClientClosedError(`worker exited unexpectedly (code=${code}, signal=${signal})`));
       }
     });
-    return this.waitForEvent({ code: "WORKER_READY", timeoutMs });
+    try {
+      return await this.waitForEvent({ code: "WORKER_READY", timeoutMs });
+    } catch (error) {
+      this.#failReader(error);
+      throw error;
+    }
   }
 
   #readChunk(chunk) {
@@ -144,27 +190,39 @@ export class WorkerClient {
     if (value.schema !== "sley.worker.event.v1" && value.schema !== "sley.worker.response.v1") {
       throw new WorkerClientProtocolError("worker emitted an unknown stream schema");
     }
-    if (this._messages.length >= this.maxRetainedMessages) {
-      throw new WorkerClientProtocolError("worker stream exceeded the configured retained-message bound");
-    }
     if (value.schema === "sley.worker.event.v1") {
       if (!Number.isInteger(value.sequence) || value.sequence <= this.lastEventSequence) {
         throw new WorkerClientProtocolError("worker event sequence is not strictly increasing");
       }
       this.lastEventSequence = value.sequence;
     }
-    this._messages.push(value);
     if (value.schema === "sley.worker.response.v1" && typeof value.request_id === "string") {
       const pending = this.pending.get(value.request_id);
+      const tombstone = this.tombstones.get(value.request_id);
+      if (!pending && tombstone) {
+        this.#validateResponse(value, tombstone.operation);
+        this.lateResponseCount += 1;
+        return;
+      }
       if (!pending || pending.settled !== false) {
         throw new WorkerClientProtocolError("worker response does not match one pending request");
       }
+      this.#validateResponse(value, pending.operation);
+      if (this._messages.length >= this.maxRetainedMessages) {
+        throw new WorkerClientProtocolError("worker stream exceeded the configured retained-message bound");
+      }
       pending.settled = true;
+      clearTimeout(pending.timer);
+      if (pending.signal !== undefined) pending.signal.removeEventListener("abort", pending.abort);
       this.pending.delete(value.request_id);
       pending.resolve(value);
     } else if (value.schema === "sley.worker.response.v1") {
       throw new WorkerClientProtocolError("worker response does not match one pending request");
     }
+    if (value.schema === "sley.worker.event.v1" && this._messages.length >= this.maxRetainedMessages) {
+      throw new WorkerClientProtocolError("worker stream exceeded the configured retained-message bound");
+    }
+    this._messages.push(value);
     if (value.schema === "sley.worker.event.v1") {
       for (const waiter of [...this.eventWaiters]) {
         if (waiter.predicate(value)) {
@@ -176,12 +234,84 @@ export class WorkerClient {
     }
   }
 
+  #validateResponse(value, operation) {
+    if (value.operation !== operation || !["passed", "failed", "cancelled"].includes(value.status)) {
+      throw new WorkerClientProtocolError("worker response operation or status disagrees with its pending request");
+    }
+    const worker = value.worker;
+    const isolation = value.isolation;
+    if (
+      worker === null || typeof worker !== "object" || Array.isArray(worker) ||
+      worker.schema !== "sley.worker.session.v1" || worker.protocol !== PROTOCOL ||
+      typeof worker.worker_id !== "string" || !/^worker:[A-Za-z0-9._-]+$/.test(worker.worker_id) ||
+      !DIGEST_PATTERN.test(worker.worker_digest) || !DIGEST_PATTERN.test(worker.runtime_digest) ||
+      !Number.isInteger(worker.generation) || worker.generation < 1 ||
+      !Number.isInteger(worker.request_count) || worker.request_count < 0 ||
+      worker.max_requests !== this.maxRequests ||
+      worker.cache?.policy !== "disabled" || worker.cache?.shared_mutable_state !== false || worker.cache?.hit_count !== 0
+    ) {
+      throw new WorkerClientProtocolError("worker response contains an invalid session identity or cache contract");
+    }
+    const expectedIsolation = {
+      class: "fresh_subprocess_per_invoke",
+      fresh_process_per_invoke: true,
+      request_local_tempdir: true,
+      clean_environment: true,
+      closed_inherited_fds: true,
+      resource_limits: true,
+      process_group_cancellation: true,
+      namespace_isolation_enforced: false,
+    };
+    if (
+      isolation === null || typeof isolation !== "object" || Array.isArray(isolation) ||
+      Object.keys(expectedIsolation).some((key) => isolation[key] !== expectedIsolation[key]) ||
+      Object.keys(isolation).length !== Object.keys(expectedIsolation).length ||
+      JSON.stringify(worker.isolation) !== JSON.stringify(isolation)
+    ) {
+      throw new WorkerClientProtocolError("worker response does not provide the required isolation capabilities");
+    }
+    if (operation === "handshake" && value.status === "passed") {
+      const result = value.result;
+      if (
+        result === null || typeof result !== "object" || Array.isArray(result) ||
+        result.protocol !== PROTOCOL ||
+        !arraysEqual(result.operations, OPERATIONS) ||
+        !arraysEqual(result.contract_versions, CONTRACT_VERSIONS) ||
+        !arraysEqual(result.failure_classes, EXPECTED_FAILURE_CLASSES) ||
+        !arraysEqual(result.request_states, EXPECTED_REQUEST_STATES)
+      ) {
+        throw new WorkerClientProtocolError("handshake response disagrees with canonical worker capabilities");
+      }
+    }
+  }
+
+  #rememberTombstone(requestId, operation) {
+    this.tombstones.delete(requestId);
+    this.tombstones.set(requestId, { operation });
+    while (this.tombstones.size > this.maxTombstones) {
+      this.tombstones.delete(this.tombstones.keys().next().value);
+    }
+  }
+
+  #terminateProcess(signal = "SIGTERM") {
+    const child = this.process;
+    if (child === null || child.exitCode !== null || child.signalCode !== null) return;
+    try {
+      if (nodeProcess.platform === "win32") child.kill(signal);
+      else nodeProcess.kill(-child.pid, signal);
+    } catch (error) {
+      if (error?.code !== "ESRCH") throw error;
+    }
+  }
+
   #failReader(error) {
     if (this.readerError !== null) return;
     this.readerError = error instanceof Error ? error : new WorkerClientError(String(error));
     for (const [requestId, pending] of this.pending) {
       if (pending.settled === false) {
         pending.settled = true;
+        clearTimeout(pending.timer);
+        if (pending.signal !== undefined) pending.signal.removeEventListener("abort", pending.abort);
         pending.reject(new WorkerClientClosedError(`${requestId}: ${this.readerError.message}`));
       }
     }
@@ -191,9 +321,20 @@ export class WorkerClient {
       waiter.reject(new WorkerClientClosedError(this.readerError.message));
     }
     this.eventWaiters.clear();
+    if (this.process !== null && this.process.exitCode === null && this.process.signalCode === null) {
+      this.process.stdin.destroy();
+      try {
+        this.#terminateProcess("SIGTERM");
+      } catch {}
+      const killTimer = setTimeout(() => {
+        try { this.#terminateProcess("SIGKILL"); } catch {}
+      }, 1000);
+      killTimer.unref();
+      this.process.once("close", () => clearTimeout(killTimer));
+    }
   }
 
-  send(request) {
+  send(request, { timeoutMs = this.requestTimeoutMs, signal } = {}) {
     if (request?.schema !== "sley.worker.request.v1" || request?.protocol !== PROTOCOL) {
       throw new WorkerClientProtocolError("request does not use the canonical worker envelope");
     }
@@ -212,18 +353,51 @@ export class WorkerClient {
     if (this.process === null || this.process.exitCode !== null || !this.process.stdin.writable) {
       throw new WorkerClientClosedError("worker process is not running");
     }
-    if (this.pending.has(request.request_id)) {
-      throw new WorkerClientProtocolError("request_id is already pending in this client");
+    if (this.pending.has(request.request_id) || this.tombstones.has(request.request_id)) {
+      throw new WorkerClientProtocolError("request_id has already been used in this client");
+    }
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 86_400_000) {
+      throw new RangeError("timeoutMs must be between 1 and 86400000");
+    }
+    if (signal !== undefined && !(signal instanceof AbortSignal)) {
+      throw new TypeError("signal must be an AbortSignal");
+    }
+    if (signal?.aborted) {
+      throw new WorkerClientCancelledError(`${request.request_id}: request wait was cancelled before send`);
     }
     const encoded = JSON.stringify(request) + "\n";
+    if (Buffer.byteLength(encoded, "utf8") > this.maxMessageBytes) {
+      throw new WorkerClientProtocolError("request exceeds the client outbound byte bound");
+    }
     return new Promise((resolve, reject) => {
-      const entry = { resolve, reject, settled: false };
+      const abandon = (error) => {
+        if (entry.settled) return;
+        entry.settled = true;
+        clearTimeout(entry.timer);
+        if (entry.signal !== undefined) entry.signal.removeEventListener("abort", entry.abort);
+        this.pending.delete(request.request_id);
+        this.#rememberTombstone(request.request_id, request.operation);
+        reject(error);
+      };
+      const entry = {
+        resolve,
+        reject,
+        settled: false,
+        operation: request.operation,
+        signal,
+        abort: () => abandon(new WorkerClientCancelledError(`${request.request_id}: request wait was cancelled`)),
+        timer: null,
+      };
+      entry.timer = setTimeout(
+        () => abandon(new WorkerClientTimeoutError(`${request.request_id}: timed out after ${timeoutMs}ms`)),
+        timeoutMs,
+      );
+      entry.timer.unref();
+      if (signal !== undefined) signal.addEventListener("abort", entry.abort, { once: true });
       this.pending.set(request.request_id, entry);
       this.process.stdin.write(encoded, "utf8", (error) => {
         if (error && entry.settled === false) {
-          entry.settled = true;
-          this.pending.delete(request.request_id);
-          reject(error);
+          this.#failReader(error);
         }
       });
     });
@@ -336,9 +510,6 @@ export class WorkerClient {
   async handshake(budgets) {
     const response = await this.send(this.buildControlRequest("handshake", budgets));
     if (response.status === "passed") {
-      if (response.result?.protocol !== PROTOCOL || JSON.stringify(response.result.contract_versions) !== JSON.stringify(CONTRACT_VERSIONS)) {
-        throw new WorkerClientProtocolError("handshake response disagrees with canonical client contracts");
-      }
       this.workerDigest = response.worker.worker_digest;
       this.runtimeDigest = response.worker.runtime_digest;
     }
@@ -356,6 +527,7 @@ export class WorkerClient {
   async shutdown(budgets, { timeoutMs = 15_000 } = {}) {
     const stopped = this.waitForEvent({ code: "WORKER_STOPPED", timeoutMs });
     const response = await this.send(this.buildControlRequest("shutdown", budgets));
+    this.closing = true;
     await stopped;
     await this.waitForExit(timeoutMs);
     return response;
@@ -372,7 +544,15 @@ export class WorkerClient {
     });
   }
 
-  close() {
-    if (this.process !== null && this.process.exitCode === null) this.process.kill("SIGTERM");
+  async close({ timeoutMs = 5_000 } = {}) {
+    this.closing = true;
+    if (this.process === null || this.process.exitCode !== null || this.process.signalCode !== null) return;
+    this.#failReader(new WorkerClientClosedError("worker client was closed"));
+    try {
+      await this.waitForExit(timeoutMs);
+    } catch {
+      this.#terminateProcess("SIGKILL");
+      await this.waitForExit(timeoutMs);
+    }
   }
 }

@@ -1,11 +1,17 @@
 """Reference Python client for ``sley.worker.v1``."""
 
 from .client import (
+    DEFAULT_MAX_MESSAGE_BYTES,
+    DEFAULT_MAX_RETAINED_MESSAGES,
+    DEFAULT_MAX_TOMBSTONES,
+    DEFAULT_REQUEST_TIMEOUT,
     PendingResponse,
     WorkerClient,
+    WorkerClientCancelledError,
     WorkerClientClosedError,
     WorkerClientError,
     WorkerClientProtocolError,
+    WorkerClientTimeoutError,
 )
 from .generated.models import (
     CONTRACT_VERSIONS,
@@ -22,14 +28,20 @@ from .generated.models import (
 
 __all__ = [
     "CONTRACT_VERSIONS",
+    "DEFAULT_MAX_MESSAGE_BYTES",
+    "DEFAULT_MAX_RETAINED_MESSAGES",
+    "DEFAULT_MAX_TOMBSTONES",
+    "DEFAULT_REQUEST_TIMEOUT",
     "OPERATIONS",
     "PROTOCOL",
     "PendingResponse",
     "SCHEMA_IDS",
     "WorkerClient",
+    "WorkerClientCancelledError",
     "WorkerClientClosedError",
     "WorkerClientError",
     "WorkerClientProtocolError",
+    "WorkerClientTimeoutError",
     "WorkerEvent",
     "WorkerRequest",
     "WorkerRequestBudgets",

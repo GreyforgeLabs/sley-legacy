@@ -6,7 +6,7 @@ source rewrite is required for accepted 1.1 programs.
 
 ## Required operator changes
 
-1. Use version `1.2.0` for the CLI and Python/Node worker clients.
+1. Use version `1.2.1` for the CLI and Python/Node worker clients.
 2. Run `sley doctor --toolchain --json` after installing or extracting the
    supported Linux archive.
 3. Keep existing read-only commands. For governed writes, adopt the explicit

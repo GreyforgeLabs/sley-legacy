@@ -162,6 +162,15 @@ for path in "${changed_files[@]}"; do
   esac
 
   case "$path" in
+    bin/sley|lib/sley/*|scripts/test-sley-cli-golden.sh|scripts/test-sley-cli-modules.sh|fixtures/golden/cli/*)
+      add_subsystem cli-modules
+      add_target cli-modules
+      add_target fmt
+      matched=1
+      ;;
+  esac
+
+  case "$path" in
     scripts/check-self-hosted-code.sh)
       add_subsystem self-hosted-core
       add_target syntax
@@ -431,7 +440,7 @@ for path in "${changed_files[@]}"; do
   esac
 
   case "$path" in
-    bin/sley|scripts/self-hosted-test.sh)
+    scripts/self-hosted-test.sh)
       add_subsystem core-cli
       add_target test
       add_target smoke
@@ -478,7 +487,7 @@ target_order=(
   diff-check fmt syntax validation-planner parser-smoke checker-smoke
   runtime-smoke lint-smoke test smoke contracts contract-compatibility
   protocol-contracts transaction-contracts adapter-replay worker worker-clients user-tests validation-reports operational-replay operational-workflow operational-evidence release-contracts conformance ai-foundation
-  claim-audit corpus examples git-guard mcp-bridge graph-diff lsp
+  claim-audit corpus examples git-guard cli-modules mcp-bridge graph-diff lsp
   editor-shims workbench migrate docgen sandbox-runner shadow zjx-tools
   arena machine-test agent-bench corpus-governance
 )
@@ -486,7 +495,7 @@ target_order=(
 subsystem_order=(
   validation-architecture parser checker runtime lint self-hosted-core core-cli
   contracts claims corpus smoke ci-runner lsp-editor migration docgen sandbox
-  shadow zjx arena machine agent-bench ai-foundation corpus-governance workbench mcp-bridge graph-diff git-guard adapter-replay
+  shadow zjx arena machine agent-bench ai-foundation corpus-governance workbench mcp-bridge graph-diff git-guard cli-modules adapter-replay
   shell-tooling examples documentation unclassified worker worker-clients user-tests operational-evidence release-artifact
 )
 

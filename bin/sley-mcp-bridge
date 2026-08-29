@@ -5,8 +5,9 @@ export LC_ALL=C
 BRIDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SLEY_REPO="$(cd "$BRIDGE_DIR/.." && pwd)"
 SLEY_BIN="$BRIDGE_DIR/sley"
+PROCESS_RUNNER="$SLEY_REPO/scripts/sley-process-runner.sh"
 MCP_PROTOCOL_VERSION="2025-06-18"
-MCP_SERVER_VERSION="0.2.0"
+MCP_SERVER_VERSION="0.3.0"
 MAX_REQUEST_BYTES="${SLEY_MCP_MAX_REQUEST_BYTES:-1048576}"
 MAX_RESPONSE_BYTES="${SLEY_MCP_MAX_RESPONSE_BYTES:-2097152}"
 TOOL_TIMEOUT_SECONDS="${SLEY_MCP_TOOL_TIMEOUT_SECONDS:-120}"
@@ -14,6 +15,18 @@ MAX_CONFIGURED_FRAME_BYTES=67108864
 MAX_CONFIGURED_TIMEOUT_SECONDS=3600
 REPOSITORY_ROOT=""
 STATE="created"
+MAX_PENDING_CALLS=64
+MAX_COMPLETED_CALLS=1024
+ACTIVE_CALL_KEY=""
+CALL_QUEUE=()
+COMPLETED_ORDER=()
+declare -A CALL_ID=()
+declare -A CALL_TOOL=()
+declare -A CALL_ARGS_FILE=()
+declare -A CALL_WORKSPACE=()
+declare -A CALL_PID=()
+declare -A CALL_STATE=()
+declare -A COMPLETED_STATE=()
 
 log() {
   printf 'sley-mcp-bridge: %s\n' "$*" >&2
@@ -328,11 +341,11 @@ tool_result_error_json() {
 }
 
 run_tool_json() {
-  local tool="$1" args_json="$2" workspace="$3"
+  local tool="$1" args_json="$2" workspace="$3" cancel_file="$4" pgid_file="$5"
   local requested_path="" confined_path="" inspection_path="" operation_path="" plan_path="" preview_path=""
   local request_path="" grant_path="" authorization_path="" apply_path="" rollback_path="" trace_path=""
   local stdout_file="$workspace/stdout" stderr_file="$workspace/stderr"
-  local rc=0 response_bytes stderr_bytes file_limit_blocks compact_report actual_schema is_error=false
+  local rc=0 response_bytes stderr_bytes file_limit_bytes compact_report actual_schema is_error=false
   local structured_schema_allowed=false
   local item
   local -a cmd=()
@@ -508,11 +521,20 @@ run_tool_json() {
       ;;
   esac
 
-  file_limit_blocks=$(( (MAX_RESPONSE_BYTES + 1023) / 1024 ))
-  if (
-    ulimit -f "$file_limit_blocks"
-    exec timeout --signal=TERM --kill-after=2 "$TOOL_TIMEOUT_SECONDS" "${cmd[@]}"
-  ) > "$stdout_file" 2> "$stderr_file"; then
+  if [[ -e "$cancel_file" ]]; then
+    tool_result_error_json "SLEY_MCP_CANCELLED" "request was cancelled before tool launch"
+    return
+  fi
+
+  file_limit_bytes=$(( ((MAX_RESPONSE_BYTES + 1023) / 1024) * 1024 ))
+  if "$PROCESS_RUNNER" \
+    --timeout-seconds "$TOOL_TIMEOUT_SECONDS" \
+    --file-limit-bytes "$file_limit_bytes" \
+    --cancel-file "$cancel_file" \
+    --pgid-file "$pgid_file" \
+    --stdout-file "$stdout_file" \
+    --stderr-file "$stderr_file" \
+    -- "${cmd[@]}"; then
     rc=0
   else
     rc=$?
@@ -520,7 +542,11 @@ run_tool_json() {
   if [[ -s "$stderr_file" ]]; then
     sed 's/^/tool: /' "$stderr_file" >&2
   fi
-  if [[ "$rc" -eq 124 || "$rc" -eq 137 ]]; then
+  if [[ -e "$cancel_file" ]]; then
+    tool_result_error_json "SLEY_MCP_CANCELLED" "request cancellation was accepted and the tool process group was reaped"
+    return
+  fi
+  if [[ "$rc" -eq 124 ]]; then
     tool_result_error_json "SLEY_MCP_TOOL_TIMEOUT" "tool execution exceeded ${TOOL_TIMEOUT_SECONDS}s"
     return
   fi
@@ -559,8 +585,216 @@ run_tool_json() {
   fi
 }
 
+call_key() {
+  printf '%s' "$1" | sha256sum | awk '{print $1}'
+}
+
+remember_completed_call() {
+  local key="$1" state="$2" expired
+  COMPLETED_STATE["$key"]="$state"
+  COMPLETED_ORDER+=("$key")
+  while [[ "${#COMPLETED_ORDER[@]}" -gt "$MAX_COMPLETED_CALLS" ]]; do
+    expired="${COMPLETED_ORDER[0]}"
+    COMPLETED_ORDER=("${COMPLETED_ORDER[@]:1}")
+    unset 'COMPLETED_STATE[$expired]'
+  done
+}
+
+remove_queued_key() {
+  local target="$1" item
+  local -a retained=()
+  for item in "${CALL_QUEUE[@]}"; do
+    [[ "$item" == "$target" ]] || retained+=("$item")
+  done
+  CALL_QUEUE=("${retained[@]}")
+}
+
+forget_call() {
+  local key="$1" workspace="${CALL_WORKSPACE[$1]:-}"
+  if [[ -n "$workspace" && -d "$workspace" ]]; then
+    rm -rf -- "$workspace"
+  fi
+  unset 'CALL_ID[$key]' 'CALL_TOOL[$key]' 'CALL_ARGS_FILE[$key]' \
+    'CALL_WORKSPACE[$key]' 'CALL_PID[$key]' 'CALL_STATE[$key]'
+}
+
+start_next_call() {
+  local key tool args_file workspace result_file cancel_file pgid_file
+  [[ -z "$ACTIVE_CALL_KEY" ]] || return 0
+  while [[ "${#CALL_QUEUE[@]}" -gt 0 ]]; do
+    key="${CALL_QUEUE[0]}"
+    CALL_QUEUE=("${CALL_QUEUE[@]:1}")
+    [[ "${CALL_STATE[$key]:-}" == queued ]] || continue
+    ACTIVE_CALL_KEY="$key"
+    CALL_STATE["$key"]="active"
+    tool="${CALL_TOOL[$key]}"
+    args_file="${CALL_ARGS_FILE[$key]}"
+    workspace="${CALL_WORKSPACE[$key]}"
+    result_file="$workspace/mcp-result.json"
+    cancel_file="$workspace/cancel.requested"
+    pgid_file="$workspace/tool.pgid"
+    (
+      local_result=""
+      if ! local_result="$(run_tool_json "$tool" "$(<"$args_file")" "$workspace" "$cancel_file" "$pgid_file")"; then
+        local_result="$(tool_result_error_json "SLEY_MCP_INTERNAL_ERROR" "tool adapter failed before returning a result")"
+      fi
+      printf '%s\n' "$local_result" > "$result_file.tmp"
+      mv -f -- "$result_file.tmp" "$result_file"
+      : > "$workspace/call.finished"
+    ) &
+    CALL_PID["$key"]=$!
+    log "started tool request ${CALL_ID[$key]} (${CALL_TOOL[$key]})"
+    return 0
+  done
+  return 0
+}
+
+collect_finished_call() {
+  local key="$ACTIVE_CALL_KEY" pid workspace result_json id_json wait_rc=0
+  [[ -n "$key" ]] || { start_next_call; return 0; }
+  pid="${CALL_PID[$key]}"
+  if kill -0 "$pid" 2>/dev/null; then
+    return 0
+  fi
+  if ! wait "$pid"; then
+    wait_rc=$?
+  fi
+  workspace="${CALL_WORKSPACE[$key]}"
+  id_json="${CALL_ID[$key]}"
+  if [[ "$wait_rc" -eq 0 && -s "$workspace/mcp-result.json" ]] \
+    && result_json="$(jq -ce . "$workspace/mcp-result.json" 2>/dev/null)"; then
+    jsonrpc_result "$id_json" "$result_json"
+  else
+    result_json="$(tool_result_error_json "SLEY_MCP_INTERNAL_ERROR" "tool adapter exited without one valid result")"
+    jsonrpc_result "$id_json" "$result_json"
+  fi
+  log "completed tool request $id_json (${CALL_TOOL[$key]})"
+  remember_completed_call "$key" completed
+  forget_call "$key"
+  ACTIVE_CALL_KEY=""
+  start_next_call
+  return 0
+}
+
+enqueue_tool_call() {
+  local id_json="$1" tool="$2" args_json="$3" key workspace pending_count
+  key="$(call_key "$id_json")"
+  if [[ -n "${CALL_STATE[$key]:-}" ]]; then
+    jsonrpc_error "$id_json" -32600 "request id is already active or queued"
+    return
+  fi
+  pending_count="${#CALL_QUEUE[@]}"
+  [[ -z "$ACTIVE_CALL_KEY" ]] || pending_count=$((pending_count + 1))
+  if [[ "$pending_count" -ge "$MAX_PENDING_CALLS" ]]; then
+    jsonrpc_error "$id_json" -32000 "tool request queue is full"
+    return
+  fi
+  workspace="$(mktemp -d "${TMPDIR:-/tmp}/sley-mcp-call.XXXXXXXX")"
+  printf '%s\n' "$args_json" > "$workspace/arguments.json"
+  CALL_ID["$key"]="$id_json"
+  CALL_TOOL["$key"]="$tool"
+  CALL_ARGS_FILE["$key"]="$workspace/arguments.json"
+  CALL_WORKSPACE["$key"]="$workspace"
+  CALL_STATE["$key"]="queued"
+  CALL_QUEUE+=("$key")
+  start_next_call
+  return 0
+}
+
+cancel_tool_call() {
+  local request_id="$1" reason="$2" key state workspace pid pgid="" id_json result_json
+  local signalled=false attempt
+  collect_finished_call
+  key="$(call_key "$request_id")"
+  state="${CALL_STATE[$key]:-}"
+  if [[ "$state" == queued ]]; then
+    remove_queued_key "$key"
+    workspace="${CALL_WORKSPACE[$key]}"
+    : > "$workspace/cancel.requested"
+    id_json="${CALL_ID[$key]}"
+    result_json="$(tool_result_error_json "SLEY_MCP_CANCELLED" "queued request was cancelled before tool launch")"
+    jsonrpc_result "$id_json" "$result_json"
+    log "cancelled queued request $request_id${reason:+: $reason}"
+    remember_completed_call "$key" cancelled
+    forget_call "$key"
+    return 0
+  fi
+  if [[ "$state" == active ]]; then
+    workspace="${CALL_WORKSPACE[$key]}"
+    pid="${CALL_PID[$key]}"
+    if [[ -e "$workspace/call.finished" ]] || ! kill -0 "$pid" 2>/dev/null; then
+      collect_finished_call
+      log "ignored cancellation for completed request $request_id${reason:+: $reason}"
+      return 0
+    fi
+    : > "$workspace/cancel.requested"
+    for attempt in {1..50}; do
+      if [[ -s "$workspace/tool.pgid" ]]; then
+        pgid="$(<"$workspace/tool.pgid")"
+        if [[ "$pgid" =~ ^[1-9][0-9]*$ ]]; then
+          kill -TERM -- "-$pgid" 2>/dev/null || true
+          signalled=true
+        fi
+      fi
+      kill -0 "$pid" 2>/dev/null || break
+      sleep 0.05
+    done
+    if kill -0 "$pid" 2>/dev/null; then
+      if [[ "$signalled" == true ]]; then
+        kill -KILL -- "-$pgid" 2>/dev/null || true
+      fi
+      kill -TERM "$pid" 2>/dev/null || true
+      for attempt in {1..10}; do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 0.05
+      done
+      kill -KILL "$pid" 2>/dev/null || true
+    fi
+    wait "$pid" 2>/dev/null || true
+    id_json="${CALL_ID[$key]}"
+    result_json="$(tool_result_error_json "SLEY_MCP_CANCELLED" "request cancellation was accepted and the tool process group was reaped")"
+    jsonrpc_result "$id_json" "$result_json"
+    log "cancelled active request $request_id${reason:+: $reason}"
+    remember_completed_call "$key" cancelled
+    forget_call "$key"
+    ACTIVE_CALL_KEY=""
+    start_next_call
+    return 0
+  fi
+  if [[ -n "${COMPLETED_STATE[$key]:-}" ]]; then
+    log "ignored cancellation for completed request $request_id${reason:+: $reason}"
+  else
+    log "ignored cancellation for inactive request $request_id${reason:+: $reason}"
+  fi
+  return 0
+}
+
+cleanup_bridge() {
+  local key workspace pid pgid
+  if [[ -n "$ACTIVE_CALL_KEY" ]]; then
+    key="$ACTIVE_CALL_KEY"
+    workspace="${CALL_WORKSPACE[$key]:-}"
+    pid="${CALL_PID[$key]:-}"
+    [[ -z "$workspace" ]] || : > "$workspace/cancel.requested"
+    if [[ -n "$workspace" && -s "$workspace/tool.pgid" ]]; then
+      pgid="$(<"$workspace/tool.pgid")"
+      [[ "$pgid" =~ ^[1-9][0-9]*$ ]] && kill -TERM -- "-$pgid" 2>/dev/null || true
+    fi
+    [[ -z "$pid" ]] || kill -TERM "$pid" 2>/dev/null || true
+    [[ -z "$pid" ]] || wait "$pid" 2>/dev/null || true
+  fi
+  for key in "${CALL_QUEUE[@]}"; do
+    workspace="${CALL_WORKSPACE[$key]:-}"
+    [[ -z "$workspace" || ! -d "$workspace" ]] || rm -rf -- "$workspace"
+  done
+  if [[ -n "$ACTIVE_CALL_KEY" ]]; then
+    workspace="${CALL_WORKSPACE[$ACTIVE_CALL_KEY]:-}"
+    [[ -z "$workspace" || ! -d "$workspace" ]] || rm -rf -- "$workspace"
+  fi
+}
+
 handle_request() {
-  local message="$1" id_json method params_json result_json tool args_json workspace
+  local message="$1" id_json method params_json result_json tool args_json
   id_json="$(jq -c '.id // null' <<< "$message")"
   method="$(jq -r '.method // ""' <<< "$message")"
   params_json="$(jq -c '.params // {}' <<< "$message")"
@@ -609,17 +843,13 @@ handle_request() {
         jsonrpc_error "$id_json" -32602 "invalid arguments for tool: $tool"
         return
       fi
-      workspace="$(mktemp -d "${TMPDIR:-/tmp}/sley-mcp-call.XXXXXXXX")"
-      if ! result_json="$(run_tool_json "$tool" "$args_json" "$workspace")"; then
-        result_json="$(tool_result_error_json "SLEY_MCP_INTERNAL_ERROR" "tool adapter failed before returning a result")"
-      fi
-      rm -rf -- "$workspace"
-      jsonrpc_result "$id_json" "$result_json"
+      enqueue_tool_call "$id_json" "$tool" "$args_json"
       ;;
     *)
       jsonrpc_error "$id_json" -32601 "method not found: $method"
       ;;
   esac
+  return 0
 }
 
 handle_notification() {
@@ -640,17 +870,53 @@ handle_notification() {
     notifications/cancelled)
       request_id="$(jq -c '.params.requestId // null' <<< "$message")"
       reason="$(jq -r '.params.reason // ""' <<< "$message")"
-      log "ignored cancellation for inactive request $request_id${reason:+: $reason}"
+      cancel_tool_call "$request_id" "$reason"
       ;;
     *)
       log "ignored notification $method"
       ;;
   esac
+  return 0
+}
+
+process_frame() {
+  local line="$1" message id_present method_present
+  if [[ -z "$line" ]]; then
+    jsonrpc_error null -32700 "empty JSON-RPC frame"
+    return
+  fi
+  if ! message="$(jq -ce . <<< "$line" 2>/dev/null)"; then
+    jsonrpc_error null -32700 "invalid JSON-RPC message"
+    return
+  fi
+  if [[ "$(jq -r type <<< "$message")" != object ]]; then
+    jsonrpc_error null -32600 "JSON-RPC message must be an object"
+    return
+  fi
+  if ! jq -e '.jsonrpc == "2.0" and (.method | type == "string" and length > 0)' <<< "$message" >/dev/null; then
+    jsonrpc_error null -32600 "invalid JSON-RPC request"
+    return
+  fi
+  id_present="$(jq -r 'has("id")' <<< "$message")"
+  method_present="$(jq -r 'has("method")' <<< "$message")"
+  if [[ "$id_present" == true ]] && ! jq -e '.id == null or (.id | type == "string") or ((.id | type == "number") and (.id | floor == .))' <<< "$message" >/dev/null; then
+    jsonrpc_error null -32600 "request id must be a string, integer, or null"
+  elif [[ "$method_present" != true ]]; then
+    jsonrpc_error null -32600 "invalid JSON-RPC request"
+  elif [[ "$id_present" == true ]]; then
+    handle_request "$message"
+  else
+    case "$(jq -r '.method' <<< "$message")" in
+      initialize|ping|tools/list|tools/call) jsonrpc_error null -32600 "request method requires an id" ;;
+      *) handle_notification "$message" ;;
+    esac
+  fi
+  return 0
 }
 
 main() {
-  local requested_root="" root_real git_root line bytes message id_present method_present
-  local read_limit read_status discard discard_status
+  local requested_root="" root_real git_root read_limit read_status chunk chunk_bytes frame_bytes
+  local frame="" discarding=false stdin_closed=false
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --root) requested_root="${2:-}"; shift 2 ;;
@@ -661,71 +927,79 @@ main() {
   require_bounded_positive_integer SLEY_MCP_MAX_REQUEST_BYTES "$MAX_REQUEST_BYTES" "$MAX_CONFIGURED_FRAME_BYTES"
   require_bounded_positive_integer SLEY_MCP_MAX_RESPONSE_BYTES "$MAX_RESPONSE_BYTES" "$MAX_CONFIGURED_FRAME_BYTES"
   require_bounded_positive_integer SLEY_MCP_TOOL_TIMEOUT_SECONDS "$TOOL_TIMEOUT_SECONDS" "$MAX_CONFIGURED_TIMEOUT_SECONDS"
+  [[ -x "$PROCESS_RUNNER" ]] || { log "bounded process runner is not executable"; return 2; }
   [[ "$requested_root" == /* && -d "$requested_root" ]] || { log "--root must name an absolute directory"; return 2; }
   root_real="$(realpath -e -- "$requested_root")" || { log "repository root does not exist"; return 2; }
   git_root="$(git -C "$root_real" rev-parse --show-toplevel 2>/dev/null)" || { log "--root is not a Git repository"; return 2; }
   git_root="$(realpath -e -- "$git_root")"
   [[ "$root_real" == "$git_root" ]] || { log "--root must be the Git repository top level"; return 2; }
   REPOSITORY_ROOT="$root_real"
+  if [[ -n "${SLEY_MCP_TEST_SLEY_BIN:-}" ]]; then
+    [[ "${SLEY_ALLOW_TEST_HOOKS:-0}" == 1 ]] || { log "test compiler override requires SLEY_ALLOW_TEST_HOOKS=1"; return 2; }
+    [[ "$SLEY_MCP_TEST_SLEY_BIN" == /* && -f "$SLEY_MCP_TEST_SLEY_BIN" && -x "$SLEY_MCP_TEST_SLEY_BIN" && ! -L "$SLEY_MCP_TEST_SLEY_BIN" ]] \
+      || { log "test compiler override must be an absolute executable regular non-symlink file"; return 2; }
+    SLEY_BIN="$(realpath -e -- "$SLEY_MCP_TEST_SLEY_BIN")"
+    [[ "$SLEY_BIN" == "$SLEY_REPO/"* ]] || { log "test compiler override must stay inside the Sley repository"; return 2; }
+    log "using explicit test-only compiler override"
+  fi
   log "serving bounded MCP for $REPOSITORY_ROOT"
+  trap cleanup_bridge EXIT
+  trap 'exit 130' HUP INT TERM
 
   read_limit=$((MAX_REQUEST_BYTES + 1))
   while :; do
-    line=""
-    if IFS= read -r -n "$read_limit" line; then
+    collect_finished_call
+    if [[ "$stdin_closed" == true ]]; then
+      if [[ -z "$ACTIVE_CALL_KEY" && "${#CALL_QUEUE[@]}" -eq 0 ]]; then
+        break
+      fi
+      sleep 0.02
+      continue
+    fi
+
+    chunk=""
+    if IFS= read -r -t 0.05 -n "$read_limit" chunk; then
       read_status=0
     else
       read_status=$?
     fi
-    bytes="${#line}"
-    if [[ "$bytes" -eq 0 && "$read_status" -ne 0 ]]; then
-      break
-    fi
-    if [[ "$bytes" -eq 0 ]]; then
-      jsonrpc_error null -32700 "empty JSON-RPC frame"
+    chunk_bytes="${#chunk}"
+
+    if [[ "$discarding" == true ]]; then
+      if [[ "$read_status" -eq 0 && "$chunk_bytes" -lt "$read_limit" ]]; then
+        jsonrpc_error null -32600 "request exceeds ${MAX_REQUEST_BYTES} bytes"
+        discarding=false
+      elif [[ "$read_status" -eq 1 ]]; then
+        jsonrpc_error null -32600 "request exceeds ${MAX_REQUEST_BYTES} bytes"
+        discarding=false
+        stdin_closed=true
+      fi
       continue
     fi
-    if [[ "$bytes" -gt "$MAX_REQUEST_BYTES" ]]; then
-      while [[ "$bytes" -eq "$read_limit" ]]; do
-        discard=""
-        if IFS= read -r -n "$read_limit" discard; then
-          discard_status=0
-        else
-          discard_status=$?
-        fi
-        bytes="${#discard}"
-        if [[ "$bytes" -lt "$read_limit" || "$discard_status" -ne 0 ]]; then
-          break
-        fi
-      done
-      jsonrpc_error null -32600 "request exceeds ${MAX_REQUEST_BYTES} bytes"
+
+    frame+="$chunk"
+    frame_bytes="${#frame}"
+    if [[ "$frame_bytes" -gt "$MAX_REQUEST_BYTES" ]]; then
+      frame=""
+      discarding=true
+      if [[ "$read_status" -eq 0 && "$chunk_bytes" -lt "$read_limit" ]]; then
+        jsonrpc_error null -32600 "request exceeds ${MAX_REQUEST_BYTES} bytes"
+        discarding=false
+      elif [[ "$read_status" -eq 1 ]]; then
+        jsonrpc_error null -32600 "request exceeds ${MAX_REQUEST_BYTES} bytes"
+        discarding=false
+        stdin_closed=true
+      fi
       continue
     fi
-    if ! message="$(jq -ce . <<< "$line" 2>/dev/null)"; then
-      jsonrpc_error null -32700 "invalid JSON-RPC message"
-      continue
-    fi
-    if [[ "$(jq -r type <<< "$message")" != "object" ]]; then
-      jsonrpc_error null -32600 "JSON-RPC message must be an object"
-      continue
-    fi
-    if ! jq -e '.jsonrpc == "2.0" and (.method | type == "string" and length > 0)' <<< "$message" >/dev/null; then
-      jsonrpc_error null -32600 "invalid JSON-RPC request"
-      continue
-    fi
-    id_present="$(jq -r 'has("id")' <<< "$message")"
-    method_present="$(jq -r 'has("method")' <<< "$message")"
-    if [[ "$id_present" == true ]] && ! jq -e '.id == null or (.id | type == "string") or ((.id | type == "number") and (.id | floor == .))' <<< "$message" >/dev/null; then
-      jsonrpc_error null -32600 "request id must be a string, integer, or null"
-    elif [[ "$method_present" != true ]]; then
-      jsonrpc_error null -32600 "invalid JSON-RPC request"
-    elif [[ "$id_present" == true ]]; then
-      handle_request "$message"
-    else
-      case "$(jq -r '.method' <<< "$message")" in
-        initialize|ping|tools/list|tools/call) jsonrpc_error null -32600 "request method requires an id" ;;
-        *) handle_notification "$message" ;;
-      esac
+
+    if [[ "$read_status" -eq 0 && "$chunk_bytes" -lt "$read_limit" ]]; then
+      process_frame "$frame"
+      frame=""
+    elif [[ "$read_status" -eq 1 ]]; then
+      [[ -z "$frame" ]] || process_frame "$frame"
+      frame=""
+      stdin_closed=true
     fi
   done
 }

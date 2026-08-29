@@ -73,9 +73,10 @@ Measured on the Greyforge development host on 2026-08-22: 78.91 seconds.
 For narrower tool changes, run the selected target printed by
 `make check-changed`, such as `contracts`, `lsp`, `migrate`, `docgen`,
 `sandbox-runner`, `shadow`, `zjx-tools`, `arena`, `agent-bench`, or
-`corpus-governance`. SleyBench evaluator and split-governance changes both use
-`agent-bench`. Do not add unrelated tools merely to make the report look
-comprehensive.
+`corpus-governance`. CLI launcher or `lib/sley/` changes use `cli-modules`,
+which includes clean-package golden behavior. SleyBench evaluator and split-
+governance changes both use `agent-bench`. Do not add unrelated tools merely
+to make the report look comprehensive.
 
 Run the broader `make test` self-hosted integration suite when a completed core
 change needs evidence beyond the focused parser, checker, runtime, and lint

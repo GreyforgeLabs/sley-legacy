@@ -74,27 +74,38 @@ if [[ "${#source_paths[@]}" -eq 0 && "$contracts_changed" == false ]]; then
 fi
 
 snapshot_parent="$(mktemp -d "${TMPDIR:-/tmp}/git-sley-guard.XXXXXX")"
+materialized="$snapshot_parent/materialized"
 snapshot="$snapshot_parent/index"
-mkdir -p "$snapshot"
+snapshot_manifest="$snapshot_parent/snapshot-manifest.json"
+mkdir -p "$materialized"
 cleanup() {
   rm -rf -- "$snapshot_parent"
 }
 trap cleanup EXIT HUP INT TERM
 
-git -C "$repo_root" checkout-index --all --prefix="$snapshot/" \
-  || die "could not materialize the staged index"
-
-for path in "${changed_paths[@]}"; do
-  case "$path" in
-    *.sley|sley.toml|*/sley.toml|docs/schemas/*.schema.json|fixtures/contracts/*.json)
-      if [[ -L "$snapshot/$path" ]]; then
-        printf '[git-sley-guard] error: staged validation path is a symlink: %q\n' \
-          "$path" >&2
-        exit 2
-      fi
+while IFS=' ' read -r mode _stage _object path; do
+  case "$mode" in
+    100644|100755) ;;
+    120000)
+      printf '[git-sley-guard] error: staged index entry is a symlink: %q\n' "$path" >&2
+      exit 2
+      ;;
+    160000)
+      printf '[git-sley-guard] error: staged index entry is a gitlink: %q\n' "$path" >&2
+      exit 2
+      ;;
+    *)
+      printf '[git-sley-guard] error: staged index entry has unsupported mode %q: %q\n' "$mode" "$path" >&2
+      exit 2
       ;;
   esac
-done
+done < <(git -C "$repo_root" ls-files --stage)
+
+git -C "$repo_root" checkout-index --all --prefix="$materialized/" \
+  || die "could not materialize the staged index"
+"$SCRIPT_DIR/../scripts/sley-snapshot.sh" \
+  "$materialized" "$snapshot" "$snapshot_manifest" \
+  || die "could not seal the staged index snapshot"
 
 sley_bin="${SLEY_BIN:-$DEFAULT_SLEY_BIN}"
 contract_bin="${SLEY_CONTRACT_BIN:-$DEFAULT_CONTRACT_BIN}"

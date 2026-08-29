@@ -111,7 +111,7 @@ commit_all "$repo"
 ln -s "$ROOT_DIR/examples/hello.sley" "$repo/outside.sley"
 git -C "$repo" add outside.sley
 expect_fail "$repo" symlink_escape
-grep -Fq 'staged validation path is a symlink' "$TEST_ROOT/symlink_escape.err"
+grep -Fq 'staged index entry is a symlink' "$TEST_ROOT/symlink_escape.err"
 
 repo="$(new_repo invalid_contract)"
 mkdir -p "$repo/docs" "$repo/fixtures"
@@ -122,5 +122,7 @@ printf '{ invalid json\n' >"$repo/fixtures/contracts/ast_minimal_program.json"
 git -C "$repo" add fixtures/contracts/ast_minimal_program.json
 expect_fail "$repo" invalid_contract
 grep -Fq 'staged contract fixtures were rejected' "$TEST_ROOT/invalid_contract.err"
+
+"$ROOT_DIR/scripts/test-sley-snapshot.sh"
 
 printf 'git-sley-guard tests passed\n'

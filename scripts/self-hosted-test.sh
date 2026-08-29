@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 export PATH="$ROOT_DIR/bin:$PATH"
+SLEY_HOST_SOURCE_FILES=(bin/sley lib/sley/*.sh)
 
 fail() {
   echo "self-hosted test failed: $*" >&2
@@ -289,7 +290,7 @@ bash -n bin/sley
 ./scripts/check-self-hosted-code.sh
 
 bin/sley --help >/dev/null
-bin/sley --version | grep -q '^sley 1\.2\.0$'
+bin/sley --version | grep -q '^sley 1\.2\.1$'
 if ! bin/sley --version >/tmp/sley-version-startup.out 2>/tmp/sley-version-startup.err; then
   fail "sley startup must evaluate every Sley-owned diagnostic message template"
 fi
@@ -299,7 +300,7 @@ self_hosting_status_field '.schema == "sley.self_hosting.status.v0" and .status 
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bootstrap_source_metadata_task_execution")) and (.bootstrap_owned_by_sley | index("lint_source_metadata_task_execution"))'
 
-if grep -Eq 'extract_sley_[A-Za-z0-9_]+ "\$SELF_HOSTED_SOURCE_ROOT/loom/[A-Za-z_]+\.sley"' bin/sley; then
+if grep -Eq 'extract_sley_[A-Za-z0-9_]+ "\$SELF_HOSTED_SOURCE_ROOT/loom/[A-Za-z_]+\.sley"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "self-hosted module metadata must execute through Sley source tasks, not raw host extractors"
 fi
 
@@ -316,11 +317,11 @@ if bin/sley run --json --cap DbRead=orders --db-table users=examples/users.json 
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "RUNTIME_CAPABILITY_SCOPE_DENIED" and .diagnostics[0].message == "DatabaseRead/DbRead scope does not allow `users`"' "$runtime_report" >/dev/null
 
-if grep -Eq 'RUNTIME_(CAPABILITY_REQUIRED_ID|CAPABILITY_SCOPE_DENIED_ID|TAKE_REQUIRED_ID|CAPABILITY_REQUIRED_MESSAGE_PREFIX|CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE|CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX|TAKE_REQUIRED_MESSAGE_PREFIX|TAKE_REQUIRED_MESSAGE_SUFFIX)="\$\{RUNTIME_' bin/sley; then
+if grep -Eq 'RUNTIME_(CAPABILITY_REQUIRED_ID|CAPABILITY_SCOPE_DENIED_ID|TAKE_REQUIRED_ID|CAPABILITY_REQUIRED_MESSAGE_PREFIX|CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE|CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX|TAKE_REQUIRED_MESSAGE_PREFIX|TAKE_REQUIRED_MESSAGE_SUFFIX)="\$\{RUNTIME_' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime diagnostic messages must come from loom.runtime without shell fallback literals"
 fi
 
-if grep -Eq 'os\.environ\.get\("SLEY_RUNTIME_(DEFAULT_DATABASE_TABLE|CAPABILITY_REQUIRED_ID|CAPABILITY_SCOPE_DENIED_ID|CAPABILITY_REQUIRED_MESSAGE_PREFIX|CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE|CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX|TAKE_REQUIRED_ID|TAKE_REQUIRED_MESSAGE_PREFIX|TAKE_REQUIRED_MESSAGE_SUFFIX)",' bin/sley; then
+if grep -Eq 'os\.environ\.get\("SLEY_RUNTIME_(DEFAULT_DATABASE_TABLE|CAPABILITY_REQUIRED_ID|CAPABILITY_SCOPE_DENIED_ID|CAPABILITY_REQUIRED_MESSAGE_PREFIX|CAPABILITY_SCOPE_DENIED_MESSAGE_MIDDLE|CAPABILITY_SCOPE_DENIED_MESSAGE_SUFFIX|TAKE_REQUIRED_ID|TAKE_REQUIRED_MESSAGE_PREFIX|TAKE_REQUIRED_MESSAGE_SUFFIX)",' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime diagnostic values must not fall back to Python host literals"
 fi
 
@@ -329,7 +330,7 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_default_da
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_value_kinds_task_execution"))'
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("err_text_runtime_task_execution"))'
 
-if grep -Eq 'RUNTIME_(INT|TEXT|BOOL|RAW|UNIT|OK_TEXT|OK_INT|ERR_TEXT)_VALUE_KIND="\$\{RUNTIME_[A-Z_]+:-' bin/sley; then
+if grep -Eq 'RUNTIME_(INT|TEXT|BOOL|RAW|UNIT|OK_TEXT|OK_INT|ERR_TEXT)_VALUE_KIND="\$\{RUNTIME_[A-Z_]+:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime value-kind names must come from loom.runtime without shell fallback literals"
 fi
 
@@ -341,19 +342,19 @@ bin/sley run --json self-hosted/ \
 bin/sley run --json self-hosted/sley.toml \
   | json_field '.status == "passed" and .value.kind == "Int" and .value.value >= 1'
 
-if grep -Fq "RUNTIME_SELF_HOSTED_TARGETS_JSON='[\"self-hosted\"" bin/sley; then
+if grep -Fq "RUNTIME_SELF_HOSTED_TARGETS_JSON='[\"self-hosted\"" "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "self-hosted runtime target aliases must come from loom.runtime without shell fallback literals"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_source_metadata_task_execution"))'
 
-if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' bin/sley \
-  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' bin/sley; then
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/runtime.sley"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime metadata must execute through Sley source tasks, not raw host extractors"
 fi
 
-if ! grep -Fq 'sley_source_task loom.runtime' bin/sley \
-  || ! grep -Fq 'sley_source_list_task_json loom.runtime' bin/sley; then
+if ! grep -Fq 'sley_source_task loom.runtime' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'sley_source_list_task_json loom.runtime' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime metadata source task dispatch is missing"
 fi
 
@@ -362,7 +363,7 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_status_nam
 bin/sley run --json examples/hello.sley \
   | json_field '.status == "passed" and .value.kind == "Text" and .value.value == "hello sley"'
 
-if grep -Eq 'RUNTIME_(PASSED|FAILED|SKIPPED)_STATUS="\$\{RUNTIME_(PASSED|FAILED|SKIPPED)_STATUS:-' bin/sley; then
+if grep -Eq 'RUNTIME_(PASSED|FAILED|SKIPPED)_STATUS="\$\{RUNTIME_(PASSED|FAILED|SKIPPED)_STATUS:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime status names must come from loom.runtime without shell fallback literals"
 fi
 
@@ -374,9 +375,9 @@ bin/sley run --json examples/project \
 bin/sley run --json --cap SecretRead --cap Network --cap ModelCall --cap Deploy examples/agent_deploy_pipeline.sley \
   | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Text" and .value.value.value == "profile ready | plan approved | staged"'
 
-if grep -Fq 'RUNTIME_AGENT_DEPLOY_SUFFIX="${RUNTIME_AGENT_DEPLOY_SUFFIX:-' bin/sley \
-  || grep -Fq 'RUNTIME_PROJECT_READY_CALL_PROBE="${RUNTIME_PROJECT_READY_CALL_PROBE:-' bin/sley \
-  || grep -Fq 'RUNTIME_PROJECT_READY_BINDING_PROBE="${RUNTIME_PROJECT_READY_BINDING_PROBE:-' bin/sley; then
+if grep -Fq 'RUNTIME_AGENT_DEPLOY_SUFFIX="${RUNTIME_AGENT_DEPLOY_SUFFIX:-' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'RUNTIME_PROJECT_READY_CALL_PROBE="${RUNTIME_PROJECT_READY_CALL_PROBE:-' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'RUNTIME_PROJECT_READY_BINDING_PROBE="${RUNTIME_PROJECT_READY_BINDING_PROBE:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime target probes must come from loom.runtime without shell fallback literals"
 fi
 
@@ -391,14 +392,14 @@ bin/sley run --json examples/raw_host_migration.sley \
 bin/sley run --json --cap Shell --shell-output date "owned date" examples/shell_gate.sley \
   | json_field '.status == "passed" and .value.kind == "Ok" and .value.value.kind == "Text" and .value.value.value == "owned date"'
 
-if grep -Eq 'RUNTIME_(HELLO_VALUE|PROJECT_READY_VALUE|DEFAULT_PROFILE|DEFAULT_MODEL_PLAN|DEFAULT_DEPLOY_RESULT|DEFAULT_RAW_VALUE|DEFAULT_FILE_WRITE_TEXT|DEFAULT_DATABASE_WRITE_TEXT|DEFAULT_AGENT_DATA_WRITE_TEXT|DEFAULT_DATABASE_READ_TEXT|DEFAULT_DATABASE_TABLE|DEFAULT_SHELL_TEXT|DEFAULT_SECRET_TEXT|DEFAULT_SPEND_AUTHORIZATION_TEXT)="\$\{RUNTIME_' bin/sley; then
+if grep -Eq 'RUNTIME_(HELLO_VALUE|PROJECT_READY_VALUE|DEFAULT_PROFILE|DEFAULT_MODEL_PLAN|DEFAULT_DEPLOY_RESULT|DEFAULT_RAW_VALUE|DEFAULT_FILE_WRITE_TEXT|DEFAULT_DATABASE_WRITE_TEXT|DEFAULT_AGENT_DATA_WRITE_TEXT|DEFAULT_DATABASE_READ_TEXT|DEFAULT_DATABASE_TABLE|DEFAULT_SHELL_TEXT|DEFAULT_SECRET_TEXT|DEFAULT_SPEND_AUTHORIZATION_TEXT)="\$\{RUNTIME_' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime default values must come from loom.runtime without shell fallback literals"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_run_fallback_removal_task_execution"))'
 
-if grep -Eq 'eval_(seeded_agent_deploy_value|runtime_[A-Za-z0-9_]+_task|project_ready_value_task)[^\n]*\|\| printf' bin/sley \
-  || grep -Eq 'eval_runtime_status_task 0 \|\| printf' bin/sley; then
+if grep -Eq 'eval_(seeded_agent_deploy_value|runtime_[A-Za-z0-9_]+_task|project_ready_value_task)[^\n]*\|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Eq 'eval_runtime_status_task 0 \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime command values must execute through loom.runtime without host printf fallbacks"
 fi
 
@@ -495,11 +496,11 @@ if ! awk '
   in_fn && /sley_eval_source_task_list_json "\$parser_file" expression_dispatch_plan/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_expression_dispatch_plan_text must execute expression_dispatch_plan through the shared Sley source list evaluator"
 fi
 
-if ! grep -Fq 'PARSER_EXPRESSION_DISPATCH_PLAN_TEXT="$(eval_parser_expression_dispatch_plan_text)"' bin/sley; then
+if ! grep -Fq 'PARSER_EXPRESSION_DISPATCH_PLAN_TEXT="$(eval_parser_expression_dispatch_plan_text)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser expression dispatch plan source task dispatch is missing"
 fi
 
@@ -508,11 +509,11 @@ if ! awk '
   in_fn && /sley_eval_source_task_list_json "\$parser_file" declaration_dispatch_plan/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_declaration_dispatch_plan_text must execute declaration_dispatch_plan through the shared Sley source list evaluator"
 fi
 
-if ! grep -Fq 'PARSER_DECLARATION_DISPATCH_PLAN_TEXT="$(eval_parser_declaration_dispatch_plan_text)"' bin/sley; then
+if ! grep -Fq 'PARSER_DECLARATION_DISPATCH_PLAN_TEXT="$(eval_parser_declaration_dispatch_plan_text)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser declaration dispatch plan source task dispatch is missing"
 fi
 
@@ -521,11 +522,11 @@ if ! awk '
   in_fn && /sley_eval_source_task_list_json "\$parser_file" statement_dispatch_plan/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_statement_dispatch_plan_text must execute statement_dispatch_plan through the shared Sley source list evaluator"
 fi
 
-if ! grep -Fq 'PARSER_STATEMENT_DISPATCH_PLAN_TEXT="$(eval_parser_statement_dispatch_plan_text)"' bin/sley; then
+if ! grep -Fq 'PARSER_STATEMENT_DISPATCH_PLAN_TEXT="$(eval_parser_statement_dispatch_plan_text)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement dispatch plan source task dispatch is missing"
 fi
 
@@ -534,11 +535,11 @@ if ! awk '
   in_fn && /sley_eval_source_task_list_json "\$parser_file" statement_source_dispatch_plan/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_statement_source_dispatch_plan_text must execute statement_source_dispatch_plan through the shared Sley source list evaluator"
 fi
 
-if ! grep -Fq 'PARSER_STATEMENT_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_statement_source_dispatch_plan_text)"' bin/sley; then
+if ! grep -Fq 'PARSER_STATEMENT_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_statement_source_dispatch_plan_text)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement source dispatch plan source task dispatch is missing"
 fi
 
@@ -547,11 +548,11 @@ if ! awk '
   in_fn && /sley_eval_source_task_list_json "\$parser_file" take_source_dispatch_plan/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_take_source_dispatch_plan_text must execute take_source_dispatch_plan through the shared Sley source list evaluator"
 fi
 
-if ! grep -Fq 'PARSER_TAKE_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_take_source_dispatch_plan_text)"' bin/sley; then
+if ! grep -Fq 'PARSER_TAKE_SOURCE_DISPATCH_PLAN_TEXT="$(eval_parser_take_source_dispatch_plan_text)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser take source dispatch plan source task dispatch is missing"
 fi
 
@@ -561,7 +562,7 @@ if ! awk '
   in_fn && /expr_candidate_json\(expression_dispatch_id\[dispatch_index\]/ {candidate=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (plan && candidate) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "expr_json must iterate Sley-owned parser expression dispatch candidates"
 fi
 
@@ -571,7 +572,7 @@ if ! awk '
   in_parse && /expression_dispatch_match_value\[expression_dispatch_count\]=expression_dispatch_parts\[4\]/ {match_value=1}
   in_parse && /raw_declaration_dispatch_count=split/ {exit}
   END {exit (strategy && match_value) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser expression dispatch must parse Sley-owned matcher strategy and patterns"
 fi
 
@@ -583,7 +584,7 @@ if ! awk '
   in_fn && /strategy=="always"/ {always=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (pattern && literal && binary && always) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser expression matching must evaluate Sley-owned matcher patterns"
 fi
 
@@ -592,11 +593,11 @@ if ! awk '
   in_fn && /expr_candidate_matches\(candidate_id, expr, strategy, match_value\)/ {matcher=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit matcher ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser expression candidate rendering must be guarded by Sley-owned matcher data"
 fi
 
-if grep -Fq 'if(expr ~ int_pattern){return' bin/sley; then
+if grep -Fq 'if(expr ~ int_pattern){return' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser expression dispatch must not fall back to a host hard-coded expression ladder"
 fi
 
@@ -606,7 +607,7 @@ if ! awk '
   in_fn && /declaration_candidate_matches\(declaration_dispatch_id\[dispatch_index\]/ {candidate=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (plan && candidate) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser declarations must iterate Sley-owned declaration dispatch candidates"
 fi
 
@@ -615,7 +616,7 @@ if ! awk '
   in_parse && /declaration_dispatch_pattern\[declaration_dispatch_count\]=declaration_dispatch_parts\[3\]/ {pattern=1}
   in_parse && /raw_statement_dispatch_count=split/ {exit}
   END {exit pattern ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser declaration dispatch must parse Sley-owned declaration source patterns"
 fi
 
@@ -624,7 +625,7 @@ if ! awk '
   in_fn && /line ~ pattern/ {pattern=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit pattern ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser declaration matching must evaluate Sley-owned declaration source patterns"
 fi
 
@@ -633,7 +634,7 @@ if awk '
   in_fn && /candidate_id==[0-9]/ {hard_ladder=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hard_ladder ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser declaration dispatch must not keep a host hard-coded declaration matcher ladder"
 fi
 
@@ -642,7 +643,7 @@ if awk '
   in_ast_decl && /^[ \t]*\/\^\[ \\t\]\*module\[ \\t\]\+\// {hard_ladder=1}
   in_ast_decl && /^[ \t]*in_task[ \t]*\{/ {exit}
   END {exit hard_ladder ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser declaration dispatch must not fall back to a host hard-coded declaration pattern ladder"
 fi
 
@@ -652,7 +653,7 @@ if ! awk '
   in_fn && /statement_candidate_print\(statement_dispatch_id\[dispatch_index\]/ {candidate=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (plan && candidate) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "print_statement must iterate Sley-owned parser statement dispatch candidates"
 fi
 
@@ -661,7 +662,7 @@ if ! awk '
   in_parse && /statement_dispatch_match_kind\[statement_dispatch_count\]=statement_dispatch_parts\[3\]/ {match_kind=1}
   in_parse && /raw_statement_source_dispatch_count=split/ {exit}
   END {exit match_kind ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement dispatch must parse Sley-owned statement kind matches"
 fi
 
@@ -670,7 +671,7 @@ if ! awk '
   in_fn && /parts\[1\] != expected_kind/ {expected=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit expected ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement rendering must be guarded by Sley-owned statement kind matches"
 fi
 
@@ -679,11 +680,11 @@ if awk '
   in_fn && /&& parts\[1\]==/ {hard_ladder=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hard_ladder ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement dispatch must not keep host hard-coded statement kind match guards"
 fi
 
-if grep -Fq 'else if(parts[1]==expr_statement_kind)' bin/sley; then
+if grep -Fq 'else if(parts[1]==expr_statement_kind)' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement dispatch must not fall back to a host hard-coded statement ladder"
 fi
 
@@ -693,7 +694,7 @@ if ! awk '
   in_fn && /statement_source_candidate_matches\(statement_source_dispatch_id\[dispatch_index\]/ {candidate=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (plan && candidate) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement source classification must iterate Sley-owned source dispatch candidates"
 fi
 
@@ -704,7 +705,7 @@ if ! awk '
   in_parse && /statement_source_dispatch_secondary_value\[statement_source_dispatch_count\]=statement_source_dispatch_parts\[5\]/ {secondary=1}
   in_parse && /raw_take_source_dispatch_count=split/ {exit}
   END {exit (strategy && match_value && secondary) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement source dispatch must parse Sley-owned matcher strategy and patterns"
 fi
 
@@ -715,7 +716,7 @@ if ! awk '
   in_fn && /line ~ secondary_value/ {depth_pattern=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (pattern && prefix && depth_pattern) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement source matching must evaluate Sley-owned matcher patterns"
 fi
 
@@ -725,7 +726,7 @@ if awk '
   in_fn && /call_expression_prefix/ {hard_ladder=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hard_ladder ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement source dispatch must not keep a host hard-coded statement matcher ladder"
 fi
 
@@ -735,7 +736,7 @@ if awk '
   in_task && /else if\(index\(line, call_expression_prefix\)/ {hard_ladder=1}
   in_task && /^[ \t]*depth \+=/ {exit}
   END {exit hard_ladder ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser statement source classification must not fall back to a host hard-coded line ladder"
 fi
 
@@ -745,7 +746,7 @@ if ! awk '
   in_fn && /take_source_candidate_matches\(take_source_dispatch_id\[dispatch_index\]/ {candidate=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (plan && candidate) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser take source classification must iterate Sley-owned take source dispatch candidates"
 fi
 
@@ -755,7 +756,7 @@ if ! awk '
   in_parse && /take_source_dispatch_match_value\[take_source_dispatch_count\]=take_source_dispatch_parts\[4\]/ {match_value=1}
   in_parse && /^[ \t]*}/ {exit}
   END {exit (strategy && match_value) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser take source dispatch must parse Sley-owned matcher strategy and patterns"
 fi
 
@@ -765,7 +766,7 @@ if ! awk '
   in_fn && /source !~ match_value/ {not_pattern=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (pattern && not_pattern) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser take source matching must evaluate Sley-owned matcher patterns"
 fi
 
@@ -774,7 +775,7 @@ if awk '
   in_fn && /candidate_id==[0-9]/ {hard_ladder=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hard_ladder ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser take source dispatch must not keep a host hard-coded take matcher ladder"
 fi
 
@@ -783,7 +784,7 @@ if awk '
   in_task && /if\(t ~ \/\^gate/ {hard_ladder=1}
   in_task && /^[ \t]*name=t/ {exit}
   END {exit hard_ladder ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser take source classification must not fall back to a host hard-coded gate-take ladder"
 fi
 
@@ -793,7 +794,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_expression_classifiers_json must execute classify_expression through the shared Sley source task evaluator"
 fi
 
@@ -803,7 +804,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_expression_feature_classifiers_json must execute classify_expression_features through the shared Sley source task evaluator"
 fi
 
@@ -813,7 +814,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_operator_feature_classifiers_json must execute classify_expression_operator_features through the shared Sley source task evaluator"
 fi
 
@@ -823,7 +824,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_binary_operator_names_json must execute binary_operator_name through the shared Sley source task evaluator"
 fi
 
@@ -833,7 +834,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_expression_surface_classifiers_json must execute classify_expression_surface_features through the shared Sley source task evaluator"
 fi
 
@@ -843,7 +844,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_declaration_feature_classifiers_json must execute classify_declaration_features through the shared Sley source task evaluator"
 fi
 
@@ -853,7 +854,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_statement_feature_classifiers_json must execute classify_statement_features through the shared Sley source task evaluator"
 fi
 
@@ -863,7 +864,7 @@ if ! awk '
   in_fn && /extract_sley_task_body/ {body_walk=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_eval && !body_walk) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "eval_parser_binding_feature_classifiers_json must execute classify_binding_features through the shared Sley source task evaluator"
 fi
 
@@ -903,21 +904,21 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_fallback_re
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("parser_call_prefix_fallback_removal_task_execution"))'
 
-if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley \
-  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' bin/sley; then
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/parser.sley"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser metadata must execute through Sley source tasks, not raw host extractors"
 fi
 
-if ! grep -Fq 'sley_source_task loom.parser' bin/sley; then
+if ! grep -Fq 'sley_source_task loom.parser' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser metadata source task dispatch is missing"
 fi
 
-if grep -Eq 'eval_parser_(id|message)_template [A-Za-z0-9_]+( [A-Za-z0-9_]+)? \|\| printf' bin/sley \
-  || grep -Eq 'PARSER_[A-Z0-9_]+="\$\{PARSER_[A-Z0-9_]+:-' bin/sley; then
+if grep -Eq 'eval_parser_(id|message)_template [A-Za-z0-9_]+( [A-Za-z0-9_]+)? \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Eq 'PARSER_[A-Z0-9_]+="\$\{PARSER_[A-Z0-9_]+:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser metadata and templates must not use host fallback literals"
 fi
 
-if grep -Fq '${PARSER_CALL_EXPRESSION_PREFIX:-call }' bin/sley; then
+if grep -Fq '${PARSER_CALL_EXPRESSION_PREFIX:-call }' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "parser call-expression prefix must come from loom.parser without host fallback literals"
 fi
 
@@ -985,11 +986,11 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("diagnostics_report
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("target_release")) and (.bootstrap_owned_by_sley | index("ai_bootstrap_version")) and (.bootstrap_owned_by_sley | index("ai_bootstrap_path")) and (.bootstrap_owned_by_sley | index("ai_bootstrap_digest")) and (.bootstrap_owned_by_sley | index("explain_report_shape")) and (.bootstrap_owned_by_sley | index("explain_report_builder")) and (.bootstrap_owned_by_sley | index("explain_report_builder_task_execution")) and (.bootstrap_owned_by_sley | index("checker_diagnostic_explain_catalog_task_execution")) and (.bootstrap_owned_by_sley | index("checker_diagnostic_explain_unknown_task_execution"))'
 
-if ! grep -Fq 'CHECKER_DIAGNOSTIC_EXPLAIN_CATALOG_JSON="$(sley_source_list_task_json loom.checker diagnostic_explain_catalog' bin/sley \
-  || ! grep -Fq 'SCHEMA_EXPLAIN="$(sley_source_task loom.reports explain_schema)"' bin/sley \
-  || ! grep -Fq 'AI_BOOTSTRAP_DIGEST="$(sley_source_task loom.bootstrap ai_bootstrap_digest)"' bin/sley \
-  || ! grep -Fq 'DIAG_EXPLAIN_UNKNOWN="$(sley_source_task loom.checker explain_unknown_diagnostic_id)"' bin/sley \
-  || ! grep -Fq 'EXPLAIN_UNKNOWN_DIAGNOSTIC_MESSAGE_TEMPLATE="$(eval_checker_message_template explain_unknown_diagnostic_message diagnostic_id)"' bin/sley; then
+if ! grep -Fq 'CHECKER_DIAGNOSTIC_EXPLAIN_CATALOG_JSON="$(sley_source_list_task_json loom.checker diagnostic_explain_catalog' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'SCHEMA_EXPLAIN="$(sley_source_task loom.reports explain_schema)"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'AI_BOOTSTRAP_DIGEST="$(sley_source_task loom.bootstrap ai_bootstrap_digest)"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'DIAG_EXPLAIN_UNKNOWN="$(sley_source_task loom.checker explain_unknown_diagnostic_id)"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'EXPLAIN_UNKNOWN_DIAGNOSTIC_MESSAGE_TEMPLATE="$(eval_checker_message_template explain_unknown_diagnostic_message diagnostic_id)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "explain catalog, report schema, and Bootstrap version context must come from Sley source tasks"
 fi
 
@@ -1022,27 +1023,27 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("reports_source_met
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("reports_fallback_removal_task_execution")) and (.bootstrap_owned_by_sley | index("bootstrap_status_fallback_removal_task_execution"))'
 
-if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley \
-  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' bin/sley; then
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/reports.sley"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report metadata must execute through Sley source tasks, not raw host extractors"
 fi
 
-if grep -Eq '^(VERSION|SCHEMA_[A-Z0-9_]+|SELF_HOSTING_REPORT_SOURCE_ROOT)="\$\{[^}]+:-' bin/sley \
-  || grep -Eq '^[[:space:]]*(DEFAULT_RULES_JSON|[A-Z0-9_]+_(REPORT_)?(FIELDS|BUILDER)_JSON)='\''\[' bin/sley \
-  || grep -Eq 'if \[\[ "\$[A-Z0-9_]+_(REPORT_)?(FIELDS|BUILDER)_JSON" == "\[\]" \]\]' bin/sley; then
+if grep -Eq '^(VERSION|SCHEMA_[A-Z0-9_]+|SELF_HOSTING_REPORT_SOURCE_ROOT)="\$\{[^}]+:-' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Eq '^[[:space:]]*(DEFAULT_RULES_JSON|[A-Z0-9_]+_(REPORT_)?(FIELDS|BUILDER)_JSON)='\''\[' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Eq 'if \[\[ "\$[A-Z0-9_]+_(REPORT_)?(FIELDS|BUILDER)_JSON" == "\[\]" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "bootstrap/report metadata must come from Sley source without host fallback literals"
 fi
 
-if grep -Fq "owned_json='[\"implementation_version\"" bin/sley \
-  || grep -Fq 'status="${status:-bootstrap}"' bin/sley \
-  || grep -Fq 'strict="${strict:-false}"' bin/sley \
-  || grep -Fq 'eval_bootstrap_list_count_task semantic_source_count || true' bin/sley \
-  || grep -Fq 'find "$SELF_HOSTED_SOURCE_ROOT" -type f -name' bin/sley; then
+if grep -Fq "owned_json='[\"implementation_version\"" "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'status="${status:-bootstrap}"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'strict="${strict:-false}"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'eval_bootstrap_list_count_task semantic_source_count || true' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'find "$SELF_HOSTED_SOURCE_ROOT" -type f -name' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "self-hosting status metadata must come from loom.bootstrap without host fallback discovery"
 fi
 
-if ! grep -Fq 'sley_source_task loom.reports' bin/sley \
-  || ! grep -Fq 'sley_source_list_task_json loom.reports' bin/sley; then
+if ! grep -Fq 'sley_source_task loom.reports' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'sley_source_list_task_json loom.reports' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report metadata source task dispatch is missing"
 fi
 
@@ -1058,12 +1059,12 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_text_
   fail "runtime text binary operator plan markers are missing"
 fi
 
-if ! grep -Fq 'RUNTIME_TEXT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime text_binary_operator_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_TEXT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime text_binary_operator_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime text binary operator plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'runtime_text_binary_task_name()' bin/sley \
-  || ! grep -Fq 'eval_runtime_text_binary_operator_value_task "+"' bin/sley; then
+if ! grep -Fq 'runtime_text_binary_task_name()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_text_binary_operator_value_task "+"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime text binary operator dispatch must use Sley-owned operator plan"
 fi
 
@@ -1072,7 +1073,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_text_concat_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime text concat call sites must route through the Sley-owned text operator plan"
 fi
 
@@ -1084,7 +1085,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_runti
   fail "generic runtime return-type dispatch markers are missing"
 fi
 
-if ! grep -Fq 'RUNTIME_GENERIC_RETURN_PLAN_JSON="$(sley_source_list_task_json loom.runtime generic_runtime_return_type_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_GENERIC_RETURN_PLAN_JSON="$(sley_source_list_task_json loom.runtime generic_runtime_return_type_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic runtime return-type dispatch plan source task dispatch is missing"
 fi
 
@@ -1093,7 +1094,7 @@ if ! awk '
   in_fn && /RUNTIME_GENERIC_RETURN_PLAN_JSON/ {plan=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit plan ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic runtime return-type descriptor lookup must read the Sley-owned plan"
 fi
 
@@ -1103,7 +1104,7 @@ if ! awk '
   in_fn && /runtime_generic_eval_value_task/ {value_task=1}
   in_fn && /^}/ {exit}
   END {exit (descriptor && value_task) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic runtime main evaluation must dispatch return value normalization through the Sley-owned return-type plan"
 fi
 
@@ -1112,7 +1113,7 @@ if awk '
   in_fn && /^[ \t]*case[ \t]+"\$return_type"[ \t]+in/ {host_case=1}
   in_fn && /^}/ {exit}
   END {exit host_case ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic runtime main evaluation must not use a host hard-coded return-type case ladder"
 fi
 
@@ -1194,7 +1195,7 @@ if ! awk '
   in_fn && /sley_eval_source_call_env_json/ {binds=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (takes && binds) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "sley_eval_source_call must bind call arguments to Sley take names before task evaluation"
 fi
 
@@ -1204,19 +1205,19 @@ for source_bind_eval_fn in eval_bootstrap_smoke_task eval_bootstrap_list_count_t
     in_fn && /sley_eval_source_task/ {found=1}
     in_fn && /^[ \t]*}/ {exit}
     END {exit found ? 0 : 1}
-  ' bin/sley; then
+  ' "${SLEY_HOST_SOURCE_FILES[@]}"; then
     fail "$source_bind_eval_fn must execute through the shared Sley source task evaluator"
   fi
 done
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("bootstrap_smoke_fallback_removal_task_execution"))'
 
-if grep -Fq 'eval_bootstrap_smoke_task || printf' bin/sley; then
+if grep -Fq 'eval_bootstrap_smoke_task || printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "self-hosted runtime smoke must execute through loom.bootstrap without host fallback counts"
 fi
 
-if grep -Fq 'extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main' bin/sley \
-  || grep -Fq 'value="${value:-hello sley}"' bin/sley; then
+if grep -Fq 'extract_sley_string_task "$ROOT_DIR/examples/hello.sley" main' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'value="${value:-hello sley}"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "FileRead runtime seeds must execute the source file task without host fallback literals"
 fi
 
@@ -1258,7 +1259,7 @@ do
     in_fn && /sley_eval_source_task/ {found=1}
     in_fn && /^[ \t]*}/ {exit}
     END {exit found ? 0 : 1}
-  ' bin/sley; then
+  ' "${SLEY_HOST_SOURCE_FILES[@]}"; then
     fail "$source_task_eval_fn must execute through the shared Sley source task evaluator"
   fi
 done
@@ -1299,11 +1300,11 @@ self_hosting_status_field '(.source_modules | index("loom.validation")) and (.bo
 self_hosting_status_field '(.source_modules | index("loom.operational")) and (.bootstrap_owned_by_sley | index("operational_contract_vocabulary_task_execution"))'
 self_hosting_status_field '(.source_modules | index("loom.release")) and (.bootstrap_owned_by_sley | index("release_contract_vocabulary_task_execution"))'
 
-if ! grep -Fq 'REPORT_BUILDER_VALUE_TYPE_PLAN_JSON="$(sley_source_list_task_json loom.reports report_builder_value_type_plan' bin/sley; then
+if ! grep -Fq 'REPORT_BUILDER_VALUE_TYPE_PLAN_JSON="$(sley_source_list_task_json loom.reports report_builder_value_type_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report builder value type plan must come from loom.reports"
 fi
 
-if ! grep -Fq 'REPORT_BUILDER_REGISTRY_JSON="$(sley_source_list_task_json loom.reports report_builder_registry' bin/sley; then
+if ! grep -Fq 'REPORT_BUILDER_REGISTRY_JSON="$(sley_source_list_task_json loom.reports report_builder_registry' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report builder registry must come from loom.reports"
 fi
 
@@ -1315,7 +1316,7 @@ if ! awk '
   in_fn && /\$value_type == "Text"/ {hardcoded=1}
   in_fn && /^}/ {in_fn=0}
   END {exit (type_plan && descriptor && type_ok && !hardcoded) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report builder type checks must dispatch through the Sley-owned value type plan"
 fi
 
@@ -1325,7 +1326,7 @@ if ! awk '
   in_fn && /select\(\.namespace == \$namespace\)/ {select_namespace=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (registry && select_namespace) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report builder descriptor lookup must read the Sley-owned registry"
 fi
 
@@ -1335,7 +1336,7 @@ if ! awk '
   in_fn && /sley_report_builder_json "\$builder_json"/ {builder=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source && builder) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report builder call sites must resolve builders through the Sley-owned registry"
 fi
 
@@ -1344,11 +1345,11 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /sley_report_builder_json "\$[A-Z0-9_]+/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report builder call sites must not call concrete builder constants directly"
 fi
 
-if grep -Fq 'sley_report_builder_from_report_json' bin/sley; then
+if grep -Fq 'sley_report_builder_from_report_json' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "report-from-report call sites must route through the Sley-owned report builder registry"
 fi
 
@@ -1456,7 +1457,7 @@ if ! awk '
   in_fn && /eval_source_generic_main_return "\$target"/ {generic=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (effect && type_match && generic) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime FileRead evaluator must route through generic source main evaluation"
 fi
 
@@ -1468,7 +1469,7 @@ if ! awk '
   in_result && /eval_source_file_read_main_return "\$1" "Result"/ {result=1}
   in_result && /^[ \t]*}/ {exit}
   END {exit (text && result) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "direct FileRead runtime wrappers must use the generic FileRead source evaluator"
 fi
 
@@ -1478,7 +1479,7 @@ for file_read_eval_fn in eval_source_direct_file_read_text_main_return eval_sour
     in_fn && /(awk|read_info|extract_sley_task_body|runtime_file_read_seed_text)/ {hardcoded=1}
     in_fn && /^[ \t]*}/ {exit}
     END {exit hardcoded ? 0 : 1}
-  ' bin/sley; then
+  ' "${SLEY_HOST_SOURCE_FILES[@]}"; then
     fail "$file_read_eval_fn must not keep a host-side FileRead pattern interpreter"
   fi
 done
@@ -1500,7 +1501,7 @@ if ! awk '
   in_fn && /eval_source_generic_main_return "\$target" "\$@"/ {generic=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (effect && type_match && generic) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime seeded host evaluator must route through generic source main evaluation"
 fi
 
@@ -1512,7 +1513,7 @@ if ! awk '
   in_text && /eval_source_seeded_host_main_return "\$target" "Text" "\$@"/ {text=1}
   in_text && /^[ \t]*}/ {exit}
   END {exit (result && text) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "seeded host runtime wrappers must use the generic seeded host source evaluator"
 fi
 
@@ -1522,7 +1523,7 @@ for seeded_host_eval_fn in eval_source_seeded_host_result_main_return eval_sourc
     in_fn && /(sley_runtime_seed_env_json|sley_eval_source_task|eval_runtime_ok_int_value_task|eval_runtime_text_identity_value_task)/ {hardcoded=1}
     in_fn && /^[ \t]*}/ {exit}
     END {exit hardcoded ? 0 : 1}
-  ' bin/sley; then
+  ' "${SLEY_HOST_SOURCE_FILES[@]}"; then
     fail "$seeded_host_eval_fn must not keep host-side seeded return normalization"
   fi
 done
@@ -1533,7 +1534,7 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_import_sou
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_entry_source_runtime_execution"))'
 
-if grep -Fq 'file="$(collect_files "$target" | head -n 1)"' bin/sley; then
+if grep -Fq 'file="$(collect_files "$target" | head -n 1)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "source evaluators must use sley.toml entry files for project targets"
 fi
 
@@ -1543,24 +1544,24 @@ for source_entry_fn in eval_source_seeded_host_result_main_return eval_source_se
     in_fn && /collect_files "\$target" \| head -n 1/ {found=1}
     in_fn && /^}/ {in_fn=0}
     END {exit found ? 0 : 1}
-  ' bin/sley; then
+  ' "${SLEY_HOST_SOURCE_FILES[@]}"; then
     fail "$source_entry_fn must use sley.toml entry files for project targets"
   fi
 done
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_host_effect_fallback_removal_execution"))'
 
-if grep -Eq 'elif runtime_project_ready_probe_matches "\$target"' bin/sley; then
+if grep -Eq 'elif runtime_project_ready_probe_matches "\$target"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "project runtime calls must execute through source evaluation, not project-ready probe fallback"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("project_ready_runtime_fallback_removal_execution"))'
 
-if grep -Eq 'elif runtime_source_has_host_effect "\$target" "(FileRead|FileWrite|DatabaseWrite|DatabaseRead|Network|Shell|ModelCall|SecretRead)"' bin/sley; then
+if grep -Eq 'elif runtime_source_has_host_effect "\$target" "(FileRead|FileWrite|DatabaseWrite|DatabaseRead|Network|Shell|ModelCall|SecretRead)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime host effects must execute through source evaluation, not generic host-effect fallbacks"
 fi
 
-if grep -Eq 'elif .*runtime_agent_pipeline_probe_matches "\$target"|elif runtime_deploy_stage_probe_matches "\$target"|elif runtime_spend_authorize_probe_matches "\$target"' bin/sley; then
+if grep -Eq 'elif .*runtime_agent_pipeline_probe_matches "\$target"|elif runtime_deploy_stage_probe_matches "\$target"|elif runtime_spend_authorize_probe_matches "\$target"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "agent/deploy/spend runtime must execute through source evaluation, not probe-based fallbacks"
 fi
 
@@ -1615,16 +1616,16 @@ bin/sley run --json fixtures/corpus/accepted/collections_indexing.sley \
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_collection_index_operator_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_collection_index_operator_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_collection_index_call_site_plan_execution"))'
 
-if ! grep -Fq 'RUNTIME_COLLECTION_INDEX_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime collection_index_operator_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_COLLECTION_INDEX_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime collection_index_operator_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime collection-index operator plan must come from loom.runtime"
 fi
 
-if ! grep -Fq 'runtime_collection_index_descriptor_json()' bin/sley \
-  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task()' bin/sley \
-  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "list" "Int"' bin/sley \
-  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "list" "Text"' bin/sley \
-  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "map" "Int"' bin/sley \
-  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "map" "Text"' bin/sley; then
+if ! grep -Fq 'runtime_collection_index_descriptor_json()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "list" "Int"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "list" "Text"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "map" "Int"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_collection_index_operator_value_task "map" "Text"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime collection-index call sites must route through the Sley-owned operator plan"
 fi
 
@@ -1634,7 +1635,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_(list_index_int_value_task|list_index_text_value_task|map_index_text_value_task|map_index_int_value_task)/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime collection index call sites must not call concrete index helpers directly"
 fi
 
@@ -1646,13 +1647,13 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("record_field_call_
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_record_field_access_plan_task_execution")) and (.bootstrap_owned_by_sley | index("runtime_record_field_access_dispatch_execution")) and (.bootstrap_owned_by_sley | index("runtime_record_field_access_call_site_plan_execution"))'
 
-if ! grep -Fq 'RUNTIME_RECORD_FIELD_ACCESS_PLAN_JSON="$(sley_source_list_task_json loom.runtime record_field_access_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_RECORD_FIELD_ACCESS_PLAN_JSON="$(sley_source_list_task_json loom.runtime record_field_access_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime record-field access plan must come from loom.runtime"
 fi
 
-if ! grep -Fq 'runtime_record_field_access_descriptor_json()' bin/sley \
-  || ! grep -Fq 'eval_runtime_record_field_access_value_task()' bin/sley \
-  || ! grep -Fq 'eval_runtime_record_field_access_value_task "Text"' bin/sley; then
+if ! grep -Fq 'runtime_record_field_access_descriptor_json()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_record_field_access_value_task()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_record_field_access_value_task "Text"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime record-field call sites must route through the Sley-owned access plan"
 fi
 
@@ -1662,7 +1663,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_record_field_text_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime record-field call sites must not call the concrete field helper directly"
 fi
 
@@ -1689,7 +1690,7 @@ if ! awk '
   in_fn && /eval_source_value_main_return "\$1" "Int"/ {local_source=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_task && generic_plan && generic_eval && local_source) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime local-call int evaluator must route through source task execution and the Sley-owned generic return plan"
 fi
 
@@ -1698,7 +1699,7 @@ if awk '
   in_fn && /(awk -v call_prefix|extract_sley_task_body|eval_runtime_int_identity_value_task)/ {hardcoded=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hardcoded ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime local-call int evaluator must not keep the host call interpreter"
 fi
 
@@ -1721,7 +1722,7 @@ if ! awk '
   in_fn && /eval_source_value_main_return "\$1"/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime zero-argument project-call evaluator must route through source task execution"
 fi
 
@@ -1730,7 +1731,7 @@ if awk '
   in_fn && /(awk -v call_prefix|runtime_context_files|resolve_project_import_prefix|extract_sley_task_body|eval_runtime_(int|text)_identity_value_task)/ {hardcoded=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hardcoded ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime zero-argument project-call evaluator must not keep the host project-call interpreter"
 fi
 
@@ -1748,14 +1749,14 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_equal
   fail "runtime equality operator plan markers are missing"
 fi
 
-if ! grep -Fq 'RUNTIME_EQUALITY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime equality_operator_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_EQUALITY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime equality_operator_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime equality operator plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'runtime_equality_operator_descriptor_json()' bin/sley \
-  || ! grep -Fq 'select(.value_kind == $value_kind and .op == $op)' bin/sley \
-  || ! grep -Fq 'eval_runtime_equality_operator_value_task "Bool" "=="' bin/sley \
-  || ! grep -Fq 'eval_runtime_equality_operator_value_task "Text" "=="' bin/sley; then
+if ! grep -Fq 'runtime_equality_operator_descriptor_json()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'select(.value_kind == $value_kind and .op == $op)' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_equality_operator_value_task "Bool" "=="' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_equality_operator_value_task "Text" "=="' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime equality operator dispatch must use Sley-owned operator plan"
 fi
 
@@ -1764,7 +1765,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_(bool_equal|text_equal)_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime bool/text equality call sites must route through the Sley-owned equality operator plan"
 fi
 
@@ -1772,15 +1773,15 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_if_va
   fail "runtime if-value plan markers are missing"
 fi
 
-if ! grep -Fq 'RUNTIME_IF_VALUE_PLAN_JSON="$(sley_source_list_task_json loom.runtime if_value_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_IF_VALUE_PLAN_JSON="$(sley_source_list_task_json loom.runtime if_value_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime if-value plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'runtime_if_value_descriptor_json()' bin/sley \
-  || ! grep -Fq 'select(.value_kind == $value_kind)' bin/sley \
-  || ! grep -Fq 'eval_runtime_if_value_task "Bool"' bin/sley \
-  || ! grep -Fq 'eval_runtime_if_value_task "Int"' bin/sley \
-  || ! grep -Fq 'eval_runtime_if_value_task "Text"' bin/sley; then
+if ! grep -Fq 'runtime_if_value_descriptor_json()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'select(.value_kind == $value_kind)' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_if_value_task "Bool"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_if_value_task "Int"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_if_value_task "Text"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime if-value dispatch must use Sley-owned value-kind plan"
 fi
 
@@ -1789,7 +1790,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_(bool|int|text)_if_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime Bool/Int/Text if call sites must route through the Sley-owned if-value plan"
 fi
 
@@ -1801,14 +1802,14 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_bool_
   fail "runtime bool binary operator plan markers are missing"
 fi
 
-if ! grep -Fq 'RUNTIME_BOOL_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_binary_operator_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_BOOL_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_binary_operator_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime bool binary operator plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'runtime_bool_binary_task_name()' bin/sley \
-  || ! grep -Fq 'select(.op == $op) | .task' bin/sley \
-  || ! grep -Fq 'eval_runtime_bool_binary_operator_value_task "&&"' bin/sley \
-  || ! grep -Fq 'eval_runtime_bool_binary_operator_value_task "||"' bin/sley; then
+if ! grep -Fq 'runtime_bool_binary_task_name()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'select(.op == $op) | .task' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_bool_binary_operator_value_task "&&"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_bool_binary_operator_value_task "||"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime bool binary operator dispatch must use Sley-owned operator plan"
 fi
 
@@ -1817,7 +1818,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_bool_(and|or)_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime bool binary call sites must route through the Sley-owned binary operator plan"
 fi
 
@@ -1825,13 +1826,13 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_bool_
   fail "runtime bool unary operator plan markers are missing"
 fi
 
-if ! grep -Fq 'RUNTIME_BOOL_UNARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_unary_operator_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_BOOL_UNARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime bool_unary_operator_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime bool unary operator plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'runtime_bool_unary_task_name()' bin/sley \
-  || ! grep -Fq 'select(.op == $op) | .task' bin/sley \
-  || ! grep -Fq 'eval_runtime_bool_unary_operator_value_task "!"' bin/sley; then
+if ! grep -Fq 'runtime_bool_unary_task_name()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'select(.op == $op) | .task' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_bool_unary_operator_value_task "!"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime bool unary operator dispatch must use Sley-owned operator plan"
 fi
 
@@ -1840,7 +1841,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_bool_not_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime bool-not call sites must route through the Sley-owned unary operator plan"
 fi
 
@@ -1862,19 +1863,19 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_int_b
   fail "runtime int binary call-site plan marker is missing"
 fi
 
-if ! grep -Fq 'RUNTIME_INT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_binary_operator_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_INT_BINARY_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_binary_operator_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime int binary operator plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'runtime_int_binary_task_name()' bin/sley \
-  || ! grep -Fq 'select(.op == $op) | .task' bin/sley \
-  || ! grep -Fq 'eval_runtime_int_binary_operator_value_task "$op"' bin/sley; then
+if ! grep -Fq 'runtime_int_binary_task_name()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'select(.op == $op) | .task' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_int_binary_operator_value_task "$op"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime int binary operator dispatch must use Sley-owned operator plan"
 fi
 
-if grep -Fq '[[ "$op" == "+" || "$op" == "*" ]]' bin/sley \
-  || grep -Fq 'task_name="int_add_value"' bin/sley \
-  || grep -Fq 'task_name="int_multiply_value"' bin/sley; then
+if grep -Fq '[[ "$op" == "+" || "$op" == "*" ]]' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'task_name="int_add_value"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'task_name="int_multiply_value"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime int binary operator dispatch must not keep host hard-coded operator map"
 fi
 
@@ -1883,7 +1884,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   !in_helper && /eval_runtime_int_binary_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime int binary call sites must route through the Sley-owned binary operator plan"
 fi
 
@@ -1903,13 +1904,13 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_int_c
   fail "runtime int comparison call-site plan marker is missing"
 fi
 
-if ! grep -Fq 'RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_comparison_operator_plan' bin/sley; then
+if ! grep -Fq 'RUNTIME_INT_COMPARISON_OPERATOR_PLAN_JSON="$(sley_source_list_task_json loom.runtime int_comparison_operator_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime int comparison operator plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'runtime_int_comparison_descriptor_json()' bin/sley \
-  || ! grep -Fq 'select(.op == $op)' bin/sley \
-  || ! grep -Fq 'eval_runtime_int_comparison_operator_value_task "$op"' bin/sley; then
+if ! grep -Fq 'runtime_int_comparison_descriptor_json()' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'select(.op == $op)' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'eval_runtime_int_comparison_operator_value_task "$op"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime int comparison operator dispatch must use Sley-owned comparison plan"
 fi
 
@@ -1920,7 +1921,7 @@ if awk '
   in_fn && /eval_runtime_int_equal_value_task/ {hard_map=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hard_map ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source comparison runtime must not keep host hard-coded int comparison task map"
 fi
 
@@ -1929,7 +1930,7 @@ if awk '
   in_helper && /^[ \t]*}/ {in_helper=0; next}
   /eval_runtime_int_(less_than|equal|greater_equal)_value_task/ {hard_call=1}
   END {exit hard_call ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime int comparison call sites must route through the Sley-owned comparison operator plan"
 fi
 
@@ -1980,16 +1981,16 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("runtime_dispa
   fail "runtime dispatch plan/id/function-map markers are missing"
 fi
 
-if grep -Fq 'elif simple_runtime="$(eval_source_unit_main_return "$target" 2>/dev/null)"' bin/sley; then
+if grep -Fq 'elif simple_runtime="$(eval_source_unit_main_return "$target" 2>/dev/null)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime dispatch order must come from loom.runtime, not a host hard-coded elif chain"
 fi
 
-if ! grep -Fq 'RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_order)"' bin/sley; then
+if ! grep -Fq 'RUNTIME_DISPATCH_ORDER_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_order)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime dispatch order source task dispatch is missing"
 fi
 
-if ! grep -Fq 'RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan' bin/sley \
-  || ! grep -Fq 'evaluator_function:.[2]' bin/sley; then
+if ! grep -Fq 'RUNTIME_DISPATCH_PLAN_JSON="$(sley_source_list_task_json loom.runtime runtime_dispatch_plan' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'evaluator_function:.[2]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime dispatch plan source task dispatch is missing"
 fi
 
@@ -1999,16 +2000,16 @@ if ! awk '
   in_fn && /RUNTIME_DISPATCH_PLAN_JSON/ {plan=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (candidate && plan) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "run_json must iterate Sley-owned runtime dispatch candidates"
 fi
 
-if grep -Fq 'unit_main) eval_source_unit_main_return "$target" ;;' bin/sley \
-  || grep -Fq 'generic_main) eval_source_generic_main_return "$target"' bin/sley; then
+if grep -Fq 'unit_main) eval_source_unit_main_return "$target" ;;' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'generic_main) eval_source_generic_main_return "$target"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime dispatch candidate execution must use Sley-owned evaluator ids, not host string branches"
 fi
 
-if grep -Fq 'case "$evaluator_id" in' bin/sley; then
+if grep -Fq 'case "$evaluator_id" in' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime dispatch candidate execution must not use a host hard-coded evaluator-id case ladder"
 fi
 
@@ -2020,7 +2021,7 @@ if ! awk '
   in_fn && /"\$evaluator_fn" "\$target" "\$http_text"/ {dynamic_call=1}
   in_fn && /^}/ {exit}
   END {exit (descriptor && source_function && declared && dynamic_call) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime dispatch candidate execution must call the Sley-owned evaluator function map"
 fi
 
@@ -2050,7 +2051,7 @@ if grep -Eq '^[[:space:]]+"[0-9]+\|(result_flow_int|compute_text_call|while_list
   fail "legacy compatibility evaluators must not remain in the active runtime dispatch plan"
 fi
 
-if grep -Fq 'line ~ /^(while|forge)([ \t{]|$)/' bin/sley; then
+if grep -Fq 'line ~ /^(while|forge)([ \t{]|$)/' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic runtime block support must be driven by loom.runtime, not a host hard-coded while/forge block list"
 fi
 
@@ -2095,7 +2096,7 @@ if ! awk '
   in_fn && /default_alias == alias/ {default_match=1}
   in_fn && /^}/ {exit}
   END {exit (default_alias && default_trim && default_match) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source call resolver must support default aliases from imported module names"
 fi
 
@@ -2104,7 +2105,7 @@ if ! awk '
   in_fn && /eval_source_value_main_return "\$1" "Int"/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime project-call int evaluator must route through source task execution"
 fi
 
@@ -2113,7 +2114,7 @@ if awk '
   in_fn && /(awk -v call_prefix|runtime_context_files|collect_files|extract_sley_task_body|eval_runtime_int_binary_operator_value_task)/ {hardcoded=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hardcoded ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime project-call int evaluator must not keep the host project-call interpreter"
 fi
 
@@ -2124,7 +2125,7 @@ if ! awk '
   in_fn && /resolve_sley_unqualified_imported_task_file/ {found=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit found ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source call evaluator must resolve unqualified imported tasks before project-call host fallback"
 fi
 
@@ -2153,7 +2154,7 @@ if ! awk '
   in_fn && /eval_source_value_main_return "\$1" "Int"/ {source_eval=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit source_eval ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime main-call int evaluator must route through source task execution and the Sley-owned generic return plan"
 fi
 
@@ -2162,7 +2163,7 @@ if awk '
   in_fn && /(ast_json "\$target"|def eval_expr|sley_eval_source_task "\$file" main)/ {hardcoded=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit hardcoded ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "runtime main-call int evaluator must not keep the host jq call interpreter"
 fi
 
@@ -2219,23 +2220,23 @@ bin/sley check --json examples/hello.sley \
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_status_fallback_removal_task_execution"))'
 
-if grep -Eq 'CHECK_(OK|ERROR)_STATUS="\$\{CHECK_(OK|ERROR)_STATUS:-' bin/sley; then
+if grep -Eq 'CHECK_(OK|ERROR)_STATUS="\$\{CHECK_(OK|ERROR)_STATUS:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker status names must come from loom.checker without shell fallback literals"
 fi
 
-if grep -Fq 'eval_checker_status_task "$diagnostic_count" ||' bin/sley; then
+if grep -Fq 'eval_checker_status_task "$diagnostic_count" ||' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker status selection must not fall back to shell-side status logic"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_id_fallback_removal_task_execution"))'
 
-if grep -Eq 'DIAG_[A-Z0-9_]+="\$\{DIAG_[A-Z0-9_]+:-' bin/sley; then
+if grep -Eq 'DIAG_[A-Z0-9_]+="\$\{DIAG_[A-Z0-9_]+:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker diagnostic ids must come from loom.checker without shell fallback literals"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_diagnostic_pass_order_task_execution"))'
 
-if grep -Fq '[duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags' bin/sley; then
+if grep -Fq '[duplicate_effect_diags, duplicate_type_diags, duplicate_task_diags' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker diagnostic pass order must come from loom.checker"
 fi
 
@@ -2277,57 +2278,57 @@ if grep -Fq '|legacy|' self-hosted/src/loom/checker.sley; then
   fail "checker diagnostic pass descriptors must not retain legacy executor rows"
 fi
 
-if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags|duplicate_effect_diags|duplicate_type_diags|duplicate_task_diags|duplicate_take_diags|duplicate_map_key_diags|duplicate_record_field_diags|duplicate_record_literal_field_diags|record_field_missing_diags|record_field_unknown_diags|record_field_type_mismatch_diags|record_literal_non_record_type_diags|unknown_record_field_diags|list_element_type_diags|index_diags|map_key_type_diags|map_value_type_diags|unknown_task_diags|call_arity_diags|call_argument_type_diags|type_mismatch_diags|return_type_mismatch_diags|missing_return_diags|task_diags|question_requires_result_diags):' bin/sley; then
+if grep -Eq 'def (return_type_diags|take_type_diags|unknown_effect_diags|gate_take_type_diags|gate_effect_diags|direct_effect_diags|transitive_effect_diags|duplicate_effect_diags|duplicate_type_diags|duplicate_task_diags|duplicate_take_diags|duplicate_map_key_diags|duplicate_record_field_diags|duplicate_record_literal_field_diags|record_field_missing_diags|record_field_unknown_diags|record_field_type_mismatch_diags|record_literal_non_record_type_diags|unknown_record_field_diags|list_element_type_diags|index_diags|map_key_type_diags|map_value_type_diags|unknown_task_diags|call_arity_diags|call_argument_type_diags|type_mismatch_diags|return_type_mismatch_diags|missing_return_diags|task_diags|question_requires_result_diags):' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker descriptor-backed diagnostics must run through Sley-owned pass descriptor engines"
 fi
 
-if grep -Fq 'if ($pass.diagnostic_id_task // "") == "unknown_identifier_id"' bin/sley \
-  || grep -Fq 'if ($pass.message_task // "") == "unknown_identifier_message"' bin/sley; then
+if grep -Fq 'if ($pass.diagnostic_id_task // "") == "unknown_identifier_id"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'if ($pass.message_task // "") == "unknown_identifier_message"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker descriptor values must use lookup maps, not host if/elif chains"
 fi
 
-if ! grep -Fq '$diagnostic_id_task_values[($pass.diagnostic_id_task // "")] // ""' bin/sley \
-  || ! grep -Fq '$message_template_task_values[($pass.message_task // "")] // ""' bin/sley; then
+if ! grep -Fq '$diagnostic_id_task_values[($pass.diagnostic_id_task // "")] // ""' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq '$message_template_task_values[($pass.message_task // "")] // ""' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker descriptor value lookup maps are missing"
 fi
 
-if ! grep -Fq 'CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_pass_plan' bin/sley; then
+if ! grep -Fq 'CHECKER_DIAGNOSTIC_PASS_DESCRIPTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_pass_plan' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker diagnostic pass plan source task dispatch is missing"
 fi
 
-if ! grep -Fq 'executor:$parts[2]' bin/sley \
-  || ! grep -Fq 'diagnostic_id_task:$parts[3]' bin/sley \
-  || ! grep -Fq 'node_scope:$parts[7]' bin/sley; then
+if ! grep -Fq 'executor:$parts[2]' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'diagnostic_id_task:$parts[3]' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'node_scope:$parts[7]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker diagnostic pass plan must parse Sley-owned executor names"
 fi
 
-if grep -Fq 'executor_id:($executors | index' bin/sley; then
+if grep -Fq 'executor_id:($executors | index' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker executor ids must come from loom.checker diagnostic_pass_plan"
 fi
 
-if grep -Fq '($pass.executor // "") == "identifier_resolution"' bin/sley \
-  || grep -Fq '($pass.executor // "") == "unknown_reference"' bin/sley; then
+if grep -Fq '($pass.executor // "") == "identifier_resolution"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq '($pass.executor // "") == "unknown_reference"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker executor dispatch must use Sley-owned executor ids, not host string branches"
 fi
 
-if ! grep -Fq 'CHECKER_DIAGNOSTIC_EXECUTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_executors)"' bin/sley \
-  || ! grep -Fq 'descriptor_executor_id($pass)' bin/sley; then
+if ! grep -Fq 'CHECKER_DIAGNOSTIC_EXECUTORS_JSON="$(sley_source_list_task_json loom.checker diagnostic_executors)"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'descriptor_executor_id($pass)' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker executor dispatch source map is missing"
 fi
 
-if ! grep -Fq '$diagnostic_executors[$executor_id] == ($pass.executor // "")' bin/sley; then
+if ! grep -Fq '$diagnostic_executors[$executor_id] == ($pass.executor // "")' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker executor ids must be validated against Sley-owned executor names"
 fi
 
-if grep -Fq 'elif ($callee | contains(".")) then true' bin/sley; then
+if grep -Fq 'elif ($callee | contains(".")) then true' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker qualified-task call policy must come from loom.checker"
 fi
 
-if ! grep -Fq 'CHECKER_ASSUME_QUALIFIED_TASK_CALLS_KNOWN="$(sley_source_task loom.checker assume_qualified_task_calls_known)"' bin/sley; then
+if ! grep -Fq 'CHECKER_ASSUME_QUALIFIED_TASK_CALLS_KNOWN="$(sley_source_task loom.checker assume_qualified_task_calls_known)"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker qualified-task call policy source task dispatch is missing"
 fi
 
-if grep -Fq '$diagnostic_pass_order' bin/sley; then
+if grep -Fq '$diagnostic_pass_order' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker dispatch must use Sley-owned diagnostic pass descriptors, not the old order list"
 fi
 
@@ -2368,15 +2369,15 @@ jq -er '.status == "error" and .diagnostics[0].id == "UNKNOWN_IDENTIFIER" and .d
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_unknown_message_fallback_removal_task_execution"))'
 
-if grep -Eq 'eval_checker_message_template (unknown_identifier_message identifier_name|unknown_type_message type_name|unknown_task_message task_name) \|\| printf' bin/sley; then
+if grep -Eq 'eval_checker_message_template (unknown_identifier_message identifier_name|unknown_type_message type_name|unknown_task_message task_name) \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker unknown diagnostic message templates must come from loom.checker without printf fallbacks"
 fi
 
-if grep -Eq 'UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX)="\$\{UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+if grep -Eq 'UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX)="\$\{UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX):-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker unknown diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
 fi
 
-if grep -Eq 'if \[\[ -z "\$UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+if grep -Eq 'if \[\[ -z "\$UNKNOWN_(IDENTIFIER|TYPE|TASK)_MESSAGE_TEMPLATE" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker unknown diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
@@ -2388,11 +2389,11 @@ bin/sley check --json examples/unused_take.sley \
 bin/sley check --json fixtures/corpus/accepted/mutable_sum.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
 
-if grep -Fq "CHECKER_IDENTIFIER_INPUTS_JSON='[\"task_names\",\"take_names\",\"binding_names\"]'" bin/sley; then
+if grep -Fq "CHECKER_IDENTIFIER_INPUTS_JSON='[\"task_names\",\"take_names\",\"binding_names\"]'" "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker identifier inputs must come from loom.checker without shell fallback JSON"
 fi
 
-if grep -Fq 'if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]' bin/sley; then
+if grep -Fq 'if [[ "$CHECKER_IDENTIFIER_INPUTS_JSON" == "[]" ]]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker identifier inputs must not fall back when loom.checker extraction is empty"
 fi
 
@@ -2426,15 +2427,15 @@ jq -er '.status == "error" and [.diagnostics[].id] == ["TYPE_MISMATCH", "RETURN_
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_call_type_message_fallback_removal_task_execution"))'
 
-if grep -Eq 'eval_checker_message_template (call_arity_mismatch_message task_name|call_argument_type_mismatch_message task_name|type_mismatch_message binding_name|return_type_mismatch_message task_name) \|\| printf' bin/sley; then
+if grep -Eq 'eval_checker_message_template (call_arity_mismatch_message task_name|call_argument_type_mismatch_message task_name|type_mismatch_message binding_name|return_type_mismatch_message task_name) \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker call/type diagnostic message templates must come from loom.checker without printf fallbacks"
 fi
 
-if grep -Eq '(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX)="\$\{(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+if grep -Eq '(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX)="\$\{(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX):-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker call/type diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
 fi
 
-if grep -Eq 'if \[\[ -z "\$(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+if grep -Eq 'if \[\[ -z "\$(CALL_ARITY_MISMATCH|CALL_ARGUMENT_TYPE_MISMATCH|TYPE_MISMATCH|RETURN_TYPE_MISMATCH)_MESSAGE_TEMPLATE" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker call/type diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
@@ -2445,7 +2446,7 @@ jq -er '.status == "error" and .diagnostics[0].id == "MISSING_RETURN" and .diagn
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_repair_hint_fallback_removal_task_execution"))'
 
-if grep -Eq 'CHECKER_(DECLARE_OR_IMPORT_TASK|INSPECT_RETURN_TYPE|INSERT_RETURN|REPLACE_TASK_BODY|REPLACE_EXPRESSION)_HINT_KIND="\$\{CHECKER_[A-Z_]+:-' bin/sley; then
+if grep -Eq 'CHECKER_(DECLARE_OR_IMPORT_TASK|INSPECT_RETURN_TYPE|INSERT_RETURN|REPLACE_TASK_BODY|REPLACE_EXPRESSION)_HINT_KIND="\$\{CHECKER_[A-Z_]+:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker repair hint kinds must come from loom.checker without shell fallback literals"
 fi
 
@@ -2456,11 +2457,11 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_builtin_ty
 bin/sley check --json examples/result_flow.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
 
-if grep -Eq 'CHECKER_(INT|TEXT|BOOL|UNIT|RESULT|ERROR|GATE|LIST|MAP)_TYPE="\$\{CHECKER_[A-Z_]+:-' bin/sley; then
+if grep -Eq 'CHECKER_(INT|TEXT|BOOL|UNIT|RESULT|ERROR|GATE|LIST|MAP)_TYPE="\$\{CHECKER_[A-Z_]+:-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker builtin type names must come from loom.checker without shell fallback literals"
 fi
 
-if grep -Fq 'eval_checker_builtin_types_json || printf' bin/sley; then
+if grep -Fq 'eval_checker_builtin_types_json || printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker builtin type list must come from loom.checker without shell fallback JSON"
 fi
 
@@ -2470,19 +2471,19 @@ if ! awk '
   in_fn && /extract_sley_list_task_json/ {extract_list=1}
   in_fn && /^[ \t]*}/ {exit}
   END {exit (source_list && !extract_list) ? 0 : 1}
-' bin/sley; then
+' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker builtin type list must execute through the shared Sley source list evaluator"
 fi
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_source_metadata_task_execution"))'
 
-if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' bin/sley \
-  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' bin/sley; then
+if grep -Fq 'extract_sley_string_task "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || grep -Fq 'extract_sley_list_task_json "$SELF_HOSTED_SOURCE_ROOT/loom/checker.sley"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker metadata must execute through Sley source tasks, not raw host extractors"
 fi
 
-if ! grep -Fq 'sley_source_task loom.checker' bin/sley \
-  || ! grep -Fq 'sley_source_list_task_json loom.checker' bin/sley; then
+if ! grep -Fq 'sley_source_task loom.checker' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'sley_source_list_task_json loom.checker' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker metadata source task dispatch is missing"
 fi
 
@@ -2508,15 +2509,15 @@ jq -er '.status == "error" and [.diagnostics[].id] == ["DUPLICATE_EFFECT", "DUPL
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_duplicate_message_fallback_removal_task_execution"))'
 
-if grep -Eq 'eval_checker_message_template (duplicate_take_message take_name|duplicate_map_key_message key_name|duplicate_field_message field_name|duplicate_record_literal_field_message field_name|duplicate_effect_message effect_name|duplicate_type_message type_name|duplicate_task_message task_name) \|\| printf' bin/sley; then
+if grep -Eq 'eval_checker_message_template (duplicate_take_message take_name|duplicate_map_key_message key_name|duplicate_field_message field_name|duplicate_record_literal_field_message field_name|duplicate_effect_message effect_name|duplicate_type_message type_name|duplicate_task_message task_name) \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker duplicate diagnostic message templates must come from loom.checker without printf fallbacks"
 fi
 
-if grep -Eq 'DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX)="\$\{DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+if grep -Eq 'DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX)="\$\{DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_(PREFIX|SUFFIX):-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker duplicate diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
 fi
 
-if grep -Eq 'if \[\[ -z "\$DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+if grep -Eq 'if \[\[ -z "\$DUPLICATE_(TAKE|MAP_KEY|FIELD|RECORD_LITERAL_FIELD|EFFECT|TYPE|TASK)_MESSAGE_TEMPLATE" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker duplicate diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
@@ -2533,11 +2534,11 @@ bin/sley check --json fixtures/corpus/accepted/authority/shell_run.sley \
 bin/sley check --json fixtures/corpus/accepted/authority/spend_authorize.sley \
   | json_field '.status == "ok" and (.diagnostics | length) == 0'
 
-if grep -Fq "CHECKER_BUILTIN_EFFECTS_JSON='[\"DatabaseRead\",\"DatabaseWrite\",\"DbRead\",\"DbWrite\",\"Deploy\",\"FileRead\",\"FileWrite\",\"ModelCall\",\"Network\",\"SecretRead\",\"Shell\",\"Spend\"]'" bin/sley; then
+if grep -Fq "CHECKER_BUILTIN_EFFECTS_JSON='[\"DatabaseRead\",\"DatabaseWrite\",\"DbRead\",\"DbWrite\",\"Deploy\",\"FileRead\",\"FileWrite\",\"ModelCall\",\"Network\",\"SecretRead\",\"Shell\",\"Spend\"]'" "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker builtin effects must come from loom.checker without shell fallback JSON"
 fi
 
-if grep -Fq 'if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]' bin/sley; then
+if grep -Fq 'if [[ "$CHECKER_BUILTIN_EFFECTS_JSON" == "[]" ]]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker builtin effects must not fall back when loom.checker extraction is empty"
 fi
 
@@ -2551,11 +2552,11 @@ if bin/sley check --json fixtures/corpus/rejected/authority/missing_database_ali
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "EFFECT_UNAUTHORIZED" and .diagnostics[0].message == "effect unauthorized `DatabaseWrite`"' /tmp/sley-rejected-missing-db-alias-write-effect-check.json >/dev/null
 
-if grep -Fq "CHECKER_EFFECT_ALIASES_JSON='[\"DatabaseRead|DbRead\",\"DatabaseWrite|DbWrite\"]'" bin/sley; then
+if grep -Fq "CHECKER_EFFECT_ALIASES_JSON='[\"DatabaseRead|DbRead\",\"DatabaseWrite|DbWrite\"]'" "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker effect aliases must come from loom.checker without shell fallback JSON"
 fi
 
-if grep -Fq 'if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]' bin/sley; then
+if grep -Fq 'if [[ "$CHECKER_EFFECT_ALIASES_JSON" == "[]" ]]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker effect aliases must not fall back when loom.checker extraction is empty"
 fi
 
@@ -2569,11 +2570,11 @@ if bin/sley check --json fixtures/corpus/rejected/authority/missing_transitive_d
 fi
 jq -er '.status == "error" and .diagnostics[0].id == "EFFECT_UNAUTHORIZED" and .diagnostics[0].message == "effect unauthorized `DatabaseWrite`"' /tmp/sley-rejected-missing-transitive-data-write-effect-check.json >/dev/null
 
-if grep -Fq "CHECKER_HOST_EFFECT_NEEDLES_JSON='[" bin/sley; then
+if grep -Fq "CHECKER_HOST_EFFECT_NEEDLES_JSON='[" "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker host-effect needles must come from loom.checker without shell fallback JSON"
 fi
 
-if grep -Fq 'if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]' bin/sley; then
+if grep -Fq 'if [[ "$CHECKER_HOST_EFFECT_NEEDLES_JSON" == "[]" ]]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker host-effect needles must not fall back when loom.checker extraction is empty"
 fi
 
@@ -2613,27 +2614,27 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_return_mes
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_question_message_fallback_removal_task_execution"))'
 
-if grep -Eq 'eval_checker_message_template (unknown_effect_message effect_name|gate_take_type_mismatch_message actual_type|gate_effect_undeclared_message effect_name|effect_unauthorized_message effect_name) \|\| printf' bin/sley; then
+if grep -Eq 'eval_checker_message_template (unknown_effect_message effect_name|gate_take_type_mismatch_message actual_type|gate_effect_undeclared_message effect_name|effect_unauthorized_message effect_name) \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker effect diagnostic message templates must come from loom.checker without printf fallbacks"
 fi
 
-if grep -Eq '(UNKNOWN_EFFECT|GATE_TAKE_TYPE_MISMATCH|GATE_EFFECT_UNDECLARED|EFFECT_UNAUTHORIZED)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+if grep -Eq '(UNKNOWN_EFFECT|GATE_TAKE_TYPE_MISMATCH|GATE_EFFECT_UNDECLARED|EFFECT_UNAUTHORIZED)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker effect diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
 fi
 
-if grep -Eq 'if \[\[ -z "\$(UNKNOWN_EFFECT|GATE_TAKE_TYPE_MISMATCH|GATE_EFFECT_UNDECLARED|EFFECT_UNAUTHORIZED)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+if grep -Eq 'if \[\[ -z "\$(UNKNOWN_EFFECT|GATE_TAKE_TYPE_MISMATCH|GATE_EFFECT_UNDECLARED|EFFECT_UNAUTHORIZED)_MESSAGE_TEMPLATE" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker effect diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
-if grep -Eq 'eval_checker_message_template (missing_return_message task_name|question_requires_result_message task_name) \|\| printf' bin/sley; then
+if grep -Eq 'eval_checker_message_template (missing_return_message task_name|question_requires_result_message task_name) \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker return/question diagnostic message templates must come from loom.checker without printf fallbacks"
 fi
 
-if grep -Eq '(MISSING_RETURN|QUESTION_REQUIRES_RESULT)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+if grep -Eq '(MISSING_RETURN|QUESTION_REQUIRES_RESULT)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker return/question diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
 fi
 
-if grep -Eq 'if \[\[ -z "\$(MISSING_RETURN|QUESTION_REQUIRES_RESULT)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+if grep -Eq 'if \[\[ -z "\$(MISSING_RETURN|QUESTION_REQUIRES_RESULT)_MESSAGE_TEMPLATE" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker return/question diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
@@ -2701,27 +2702,27 @@ self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_record_mes
 
 self_hosting_status_field '(.bootstrap_owned_by_sley | index("checker_collection_message_fallback_removal_task_execution"))'
 
-if grep -Eq 'eval_checker_message_template (record_field_missing_message field_name|record_field_unknown_message field_name|record_field_type_mismatch_message field_name|unknown_record_field_message field_name|record_literal_non_record_type_message type_name) \|\| printf' bin/sley; then
+if grep -Eq 'eval_checker_message_template (record_field_missing_message field_name|record_field_unknown_message field_name|record_field_type_mismatch_message field_name|unknown_record_field_message field_name|record_literal_non_record_type_message type_name) \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker record diagnostic message templates must come from loom.checker without printf fallbacks"
 fi
 
-if grep -Eq '(RECORD_FIELD_MISSING|RECORD_FIELD_UNKNOWN|RECORD_FIELD_TYPE_MISMATCH|UNKNOWN_RECORD_FIELD|RECORD_LITERAL_NON_RECORD_TYPE)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+if grep -Eq '(RECORD_FIELD_MISSING|RECORD_FIELD_UNKNOWN|RECORD_FIELD_TYPE_MISMATCH|UNKNOWN_RECORD_FIELD|RECORD_LITERAL_NON_RECORD_TYPE)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker record diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
 fi
 
-if grep -Eq 'if \[\[ -z "\$(RECORD_FIELD_MISSING|RECORD_FIELD_UNKNOWN|RECORD_FIELD_TYPE_MISMATCH|UNKNOWN_RECORD_FIELD|RECORD_LITERAL_NON_RECORD_TYPE)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+if grep -Eq 'if \[\[ -z "\$(RECORD_FIELD_MISSING|RECORD_FIELD_UNKNOWN|RECORD_FIELD_TYPE_MISMATCH|UNKNOWN_RECORD_FIELD|RECORD_LITERAL_NON_RECORD_TYPE)_MESSAGE_TEMPLATE" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker record diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
-if grep -Eq 'eval_checker_message_template (list_element_type_mismatch_message actual_type|index_not_int_message actual_type|index_key_type_mismatch_message actual_type|map_key_type_mismatch_message actual_type|map_value_type_mismatch_message actual_type) \|\| printf' bin/sley; then
+if grep -Eq 'eval_checker_message_template (list_element_type_mismatch_message actual_type|index_not_int_message actual_type|index_key_type_mismatch_message actual_type|map_key_type_mismatch_message actual_type|map_value_type_mismatch_message actual_type) \|\| printf' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker collection diagnostic message templates must come from loom.checker without printf fallbacks"
 fi
 
-if grep -Eq '(LIST_ELEMENT_TYPE_MISMATCH|INDEX_NOT_INT|INDEX_KEY_TYPE_MISMATCH|MAP_KEY_TYPE_MISMATCH|MAP_VALUE_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' bin/sley; then
+if grep -Eq '(LIST_ELEMENT_TYPE_MISMATCH|INDEX_NOT_INT|INDEX_KEY_TYPE_MISMATCH|MAP_KEY_TYPE_MISMATCH|MAP_VALUE_TYPE_MISMATCH)_MESSAGE_(PREFIX|SUFFIX)="\$\{[A-Z_]+_MESSAGE_(PREFIX|SUFFIX):-' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker collection diagnostic message prefixes/suffixes must come from loom.checker without shell fallbacks"
 fi
 
-if grep -Eq 'if \[\[ -z "\$(LIST_ELEMENT_TYPE_MISMATCH|INDEX_NOT_INT|INDEX_KEY_TYPE_MISMATCH|MAP_KEY_TYPE_MISMATCH|MAP_VALUE_TYPE_MISMATCH)_MESSAGE_TEMPLATE" \]\]' bin/sley; then
+if grep -Eq 'if \[\[ -z "\$(LIST_ELEMENT_TYPE_MISMATCH|INDEX_NOT_INT|INDEX_KEY_TYPE_MISMATCH|MAP_KEY_TYPE_MISMATCH|MAP_VALUE_TYPE_MISMATCH)_MESSAGE_TEMPLATE" \]\]' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "checker collection diagnostic message templates must not use empty-template shell fallback branches"
 fi
 
@@ -2816,7 +2817,7 @@ bin/sley lint --json --rule empty_if_statement examples/empty_if_statement.sley 
 bin/sley lint --json --rule empty_else_statement examples/empty_else_statement.sley \
   | json_field '([.findings[]? | select(.id == "EMPTY_ELSE_STATEMENT" and .rule == "empty_else_statement" and .message == "task `app.empty_else.main` has an empty else branch" and .hint == "remove this no-op else branch") | .node] | index("block:task:app.empty_else.main:stmt:1"))'
 
-if grep -Eq 'LINT_(EMPTY_FOR|EMPTY_WHILE|EMPTY_FORGE|EMPTY_IF|EMPTY_ELSE|OK_STATUS|FINDINGS_STATUS|EMPTY_FOR_RULE|EMPTY_WHILE_RULE|EMPTY_FORGE_RULE|EMPTY_IF_RULE|EMPTY_ELSE_RULE|EMPTY_FOR_MESSAGE|EMPTY_WHILE_MESSAGE|EMPTY_FORGE_MESSAGE|EMPTY_IF_MESSAGE|EMPTY_ELSE_MESSAGE|EMPTY_FOR_HINT|EMPTY_WHILE_HINT|EMPTY_FORGE_HINT|EMPTY_IF_HINT|EMPTY_ELSE_HINT)="\$\{LINT_' bin/sley; then
+if grep -Eq 'LINT_(EMPTY_FOR|EMPTY_WHILE|EMPTY_FORGE|EMPTY_IF|EMPTY_ELSE|OK_STATUS|FINDINGS_STATUS|EMPTY_FOR_RULE|EMPTY_WHILE_RULE|EMPTY_FORGE_RULE|EMPTY_IF_RULE|EMPTY_ELSE_RULE|EMPTY_FOR_MESSAGE|EMPTY_WHILE_MESSAGE|EMPTY_FORGE_MESSAGE|EMPTY_IF_MESSAGE|EMPTY_ELSE_MESSAGE|EMPTY_FOR_HINT|EMPTY_WHILE_HINT|EMPTY_FORGE_HINT|EMPTY_IF_HINT|EMPTY_ELSE_HINT)="\$\{LINT_' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "lint empty finding values must come from loom.lint without shell fallback literals"
 fi
 
@@ -2860,7 +2861,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_liter
   fail "generic literal len runtime marker is missing"
 fi
 
-if ! grep -Fq 'if [[ "$expr" =~ ^len\(\[([^\]]*)\]\)$ ]]; then' bin/sley; then
+if ! grep -Fq 'if [[ "$expr" =~ ^len\(\[([^\]]*)\]\)$ ]]; then' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source runtime must evaluate literal-list len expressions directly"
 fi
 
@@ -2877,7 +2878,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_paren
   fail "generic parenthesized arithmetic runtime marker is missing"
 fi
 
-if ! grep -Fq 'sley_split_top_level_token "$expr" "*"' bin/sley; then
+if ! grep -Fq 'sley_split_top_level_token "$expr" "*"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source runtime must evaluate parenthesized multiplication directly"
 fi
 
@@ -2909,7 +2910,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_top_l
   fail "generic top-level comparison runtime marker is missing"
 fi
 
-if ! grep -Fq 'sley_split_top_level_comparison "$expr"' bin/sley; then
+if ! grep -Fq 'sley_split_top_level_comparison "$expr"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source runtime must evaluate top-level comparison expressions directly"
 fi
 
@@ -2920,7 +2921,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_balan
   fail "generic balanced-parentheses runtime marker is missing"
 fi
 
-if ! grep -Fq 'if sley_expr_wrapped_by_parens "$expr"; then' bin/sley; then
+if ! grep -Fq 'if sley_expr_wrapped_by_parens "$expr"; then' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source runtime must strip only balanced wrapping parentheses"
 fi
 
@@ -2946,7 +2947,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_paren
   fail "generic parenthesized boolean-and runtime marker is missing"
 fi
 
-if ! grep -Fq 'sley_split_top_level_token "$expr" "&&"' bin/sley; then
+if ! grep -Fq 'sley_split_top_level_token "$expr" "&&"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source runtime must evaluate boolean-and expressions directly"
 fi
 
@@ -2957,7 +2958,7 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("bool_or_runti
   fail "generic boolean-or runtime markers are missing"
 fi
 
-if ! grep -Fq 'sley_split_top_level_token "$expr" "||"' bin/sley; then
+if ! grep -Fq 'sley_split_top_level_token "$expr" "||"' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source runtime must evaluate boolean-or expressions directly"
 fi
 
@@ -2974,8 +2975,8 @@ if ! self_hosting_status_field '(.bootstrap_owned_by_sley | index("generic_not_e
   fail "generic runtime negation/parenthesized boolean markers are missing"
 fi
 
-if ! grep -Fq 'if [[ "$expr" =~ ^!(.+)$ ]]; then' bin/sley \
-  || ! grep -Fq 'if sley_expr_wrapped_by_parens "$expr"; then' bin/sley; then
+if ! grep -Fq 'if [[ "$expr" =~ ^!(.+)$ ]]; then' "${SLEY_HOST_SOURCE_FILES[@]}" \
+  || ! grep -Fq 'if sley_expr_wrapped_by_parens "$expr"; then' "${SLEY_HOST_SOURCE_FILES[@]}"; then
   fail "generic source runtime must evaluate negation and parenthesized expressions directly"
 fi
 
@@ -3304,7 +3305,7 @@ bin/sley-contract validate --schema sley.query.report.v0 fixtures/contracts/quer
   | json_field 'keys == (["schema","status","validation_level","requested_schema","report_path","schema_dir","report_schema","issues"] | sort)'
 
 bin/sley explain --json --diagnostic-id UNSUPPORTED_RAW_EXPRESSION > "$artifact_dir/explain_raw.json"
-json_field '.schema == "sley.explain.report.v0" and .status == "ok" and .query == {kind:"diagnostic_id",value:"UNSUPPORTED_RAW_EXPRESSION"} and .diagnostic_id == "UNSUPPORTED_RAW_EXPRESSION" and .version_context.target_release == "Sley 1.2" and .version_context.bootstrap.version == "Bootstrap 0.2" and .version_context.bootstrap.path == "SLEY_AI.md" and .version_context.bootstrap.digest == "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061" and .explanation.repair_kind == "rewrite_supported_expression" and .explanation.spec_ref == "docs/SleyLanguageSpec.md#executable-syntax-recovery-and-placement" and .explanation.accepted_example == "fixtures/corpus/accepted/w2_discoverability_forms.sley" and .explanation.rejected_example == "fixtures/corpus/rejected/unsupported_raw_expression.sley" and .explanation.command == "sley explain --diagnostic-id UNSUPPORTED_RAW_EXPRESSION"' < "$artifact_dir/explain_raw.json"
+json_field '.schema == "sley.explain.report.v0" and .status == "ok" and .query == {kind:"diagnostic_id",value:"UNSUPPORTED_RAW_EXPRESSION"} and .diagnostic_id == "UNSUPPORTED_RAW_EXPRESSION" and .version_context.target_release == "Sley 1.2" and .version_context.bootstrap.version == "Bootstrap 0.2" and .version_context.bootstrap.path == "SLEY_AI.md" and .version_context.bootstrap.digest == "sha256:d655da06a3527f0bc2cb15350dd1fd338f79ed07084f1623131cf6fccf81951d" and .explanation.repair_kind == "rewrite_supported_expression" and .explanation.spec_ref == "docs/SleyLanguageSpec.md#executable-syntax-recovery-and-placement" and .explanation.accepted_example == "fixtures/corpus/accepted/w2_discoverability_forms.sley" and .explanation.rejected_example == "fixtures/corpus/rejected/unsupported_raw_expression.sley" and .explanation.command == "sley explain --diagnostic-id UNSUPPORTED_RAW_EXPRESSION"' < "$artifact_dir/explain_raw.json"
 
 bin/sley explain CONTROL_FLOW_EXPRESSION_BOUNDARY \
   | grep -Fq 'CONTROL_FLOW_EXPRESSION_BOUNDARY - Conditional expression boundary'

@@ -7,9 +7,9 @@
   "properties": {
     "schema": {"const": "sley.release.verification.v1"},
     "status": {"enum": ["passed", "failed"]},
-    "release": {"const": "1.2.0"},
-    "artifact_id": {"const": "sley-1.2.0-linux-x86_64"},
-    "archive": {"const": "sley-1.2.0-linux-x86_64.tar.gz"},
+    "release": {"const": "1.2.1"},
+    "artifact_id": {"const": "sley-1.2.1-linux-x86_64"},
+    "archive": {"const": "sley-1.2.1-linux-x86_64.tar.gz"},
     "source_commit": {"type": ["string", "null"], "pattern": "^[0-9a-f]{40}$"},
     "check_count": {"type": "integer", "minimum": 1},
     "passed_count": {"type": "integer", "minimum": 0},
