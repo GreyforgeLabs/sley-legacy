@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { globSync } from "node:fs";
 
 const files = ["README.md", "docs/contracts.md", "docs/architecture.md", "docs/seo.md"];
 for (const file of files) {

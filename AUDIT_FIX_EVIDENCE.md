@@ -1,6 +1,6 @@
 # Audit Fix Evidence
 
-Version: 0.1.0
+Version: 0.1.1
 
 Resolved findings: GF-AUD-017 and GF-AUD-040.
 
