@@ -18,5 +18,5 @@
     "native": "make native"
   },
   "type": "module",
-  "version": "0.0.0-private"
+  "version": "0.0.1-private"
 }

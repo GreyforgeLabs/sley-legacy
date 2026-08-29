@@ -35,6 +35,11 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 - `sley-conformance report --root ../sley --markdown`
 - `sley-conformance coverage --root ../sley --require-tag cli:verify`
 
+    Mandatory corpus, smoke, schema, and contract evidence must be non-empty,
+    parse successfully, and contain unique identifiers. Reports expose
+    discovered, parsed, malformed, duplicate, and validated counts. Any
+    malformed mandatory artifact makes `report`, `coverage`, and `guard` fail.
+
     ## Consumed Sley Contracts
 
     This tool treats Loom, the Sley compiler, as the oracle. It consumes these
@@ -74,17 +79,17 @@ Implementation reality: Sley-native source-of-truth is now in `src/tool.sley`; c
 
     ## SEO Surface
 
-    SEO title: `Sley Conformance - AI-native report coverage`
+    SEO title: `Sley Conformance - agent-native report coverage`
 
     SEO description: Generate conformance reports for Sley coverage, schema-to-contract mappings, smoke tags, and release-readiness gaps.
 
-    Keywords: `Sley conformance`, `contract coverage`, `AI-native validation`, `schema mapping`, `release readiness`, `smoke reports`
+    Keywords: `Sley conformance`, `contract coverage`, `agent-native validation`, `schema mapping`, `release readiness`, `smoke reports`
 
     Canonical URL: `https://sleylang.org/tools/sley-conformance`
     - Geo metadata:
       - Region: United States (US)
       - Language: English
-      - Audience: AI-native language tooling teams and operators
+      - Audience: agent-native language tooling teams and operators
 
     GitHub URL: `https://github.com/GreyforgeLabs/sley-conformance`
 
