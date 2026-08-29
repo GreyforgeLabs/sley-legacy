@@ -28,7 +28,7 @@
   },
   "bootstrap": {
     "path": "SLEY_AI.md",
-    "digest": "sha256:e0c388056373d011d80d2ecddf659390f1ebde843bd8cd9e31afef612e9fe061"
+    "digest": "sha256:d655da06a3527f0bc2cb15350dd1fd338f79ed07084f1623131cf6fccf81951d"
   },
   "tool_allowlist": ["query"],
   "system_prompt": {

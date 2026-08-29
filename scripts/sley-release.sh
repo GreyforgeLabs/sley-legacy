@@ -41,6 +41,7 @@ PAYLOAD_PREFIXES = (
     "docs/",
     "examples/",
     "fixtures/",
+    "lib/",
     "reports/operational/",
     "scripts/",
     "self-hosted/",
@@ -255,7 +256,7 @@ def spdx_document(values: dict[str, Any], commit: str, epoch: int, files: list[d
         "SPDXID": "SPDXRef-DOCUMENT",
         "name": values["artifact_id"],
         "documentNamespace": namespace,
-        "creationInfo": {"created": created, "creators": ["Tool: sley-release-1.2.0"]},
+        "creationInfo": {"created": created, "creators": ["Tool: sley-release-1.2.1"]},
         "packages": [{
             "name": "sley",
             "SPDXID": "SPDXRef-Package",
@@ -556,7 +557,7 @@ def verify(root: pathlib.Path, output_dir: pathlib.Path, values: dict[str, Any],
             smoke_env = os.environ.copy()
             smoke_env["PATH"] = f"{unpacked / 'bin'}:{smoke_env.get('PATH', '')}"
             smoke_commands = (
-                ([str(unpacked / "bin/sley"), "--version"], "sley 1.2.0"),
+                ([str(unpacked / "bin/sley"), "--version"], "sley 1.2.1"),
                 ([str(unpacked / "bin/sley"), "doctor", "--toolchain", "--json"], '"status": "ready"'),
                 ([str(unpacked / "bin/sley"), "check", "--json", "examples/hello.sley"], '"status": "ok"'),
             )

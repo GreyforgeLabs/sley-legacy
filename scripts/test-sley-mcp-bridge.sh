@@ -142,6 +142,8 @@ jq -s -e 'length == 5 and ([.[1:][] | .result.isError] | all(. == true)) and ([.
 jq -s -e 'length == 2 and .[1].id == 40 and .[1].result == {}' "$WORK_DIR/cancellation.out" >/dev/null || fail "cancellation notification disrupted the session"
 grep -Fq 'ignored cancellation for inactive request 99: test cancellation' "$WORK_DIR/cancellation.err" || fail "cancellation was not logged to stderr"
 
+PYTHONDONTWRITEBYTECODE=1 "$ROOT_DIR/scripts/test-sley-mcp-cancellation.sh" "$ROOT_DIR" "$WORK_DIR"
+
 {
   initialize_message
   initialized_message

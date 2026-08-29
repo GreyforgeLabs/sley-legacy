@@ -1,8 +1,8 @@
 {
   "schema": "sley.release.manifest.v1",
   "status": "release_candidate",
-  "release": "1.2.0",
-  "artifact_id": "sley-1.2.0-linux-x86_64",
+  "release": "1.2.1",
+  "artifact_id": "sley-1.2.1-linux-x86_64",
   "platform": {
     "os": "linux",
     "architecture": "x86_64",
@@ -28,7 +28,7 @@
     ]
   },
   "toolchain": {
-    "sley_version": "sley 1.2.0",
+    "sley_version": "sley 1.2.1",
     "ai_bootstrap_version": "Bootstrap 0.2",
     "worker_protocol": "sley.worker.v1",
     "required_tools": ["bash|5", "jq|1.6"]

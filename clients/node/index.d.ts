@@ -9,10 +9,14 @@ export * from "./generated/models.js";
 
 export declare const DEFAULT_MAX_MESSAGE_BYTES: number;
 export declare const DEFAULT_MAX_RETAINED_MESSAGES: number;
+export declare const DEFAULT_REQUEST_TIMEOUT_MS: number;
+export declare const DEFAULT_MAX_TOMBSTONES: number;
 
 export declare class WorkerClientError extends Error {}
 export declare class WorkerClientClosedError extends WorkerClientError {}
 export declare class WorkerClientProtocolError extends WorkerClientError {}
+export declare class WorkerClientTimeoutError extends WorkerClientError {}
+export declare class WorkerClientCancelledError extends WorkerClientError {}
 
 export interface WorkerClientOptions {
   command?: readonly string[];
@@ -22,6 +26,8 @@ export interface WorkerClientOptions {
   idleTimeoutMs?: number;
   maxMessageBytes?: number;
   maxRetainedMessages?: number;
+  requestTimeoutMs?: number;
+  maxTombstones?: number;
 }
 
 export interface ControlRequestOptions {
@@ -48,14 +54,22 @@ export interface EventWaitOptions {
   timeoutMs?: number;
 }
 
+export interface SendOptions {
+  timeoutMs?: number;
+  signal?: AbortSignal;
+}
+
 export declare class WorkerClient {
   constructor(options?: WorkerClientOptions);
   readonly messages: ReadonlyArray<WorkerEvent | WorkerResponse>;
+  readonly pendingRequestCount: number;
+  readonly tombstoneCount: number;
+  readonly lateResponseCount: number;
   stderr: string;
   workerDigest: string | null;
   runtimeDigest: string | null;
   start(options?: { timeoutMs?: number }): Promise<WorkerEvent>;
-  send(request: WorkerRequest): Promise<WorkerResponse>;
+  send(request: WorkerRequest, options?: SendOptions): Promise<WorkerResponse>;
   waitForEvent(options?: EventWaitOptions): Promise<WorkerEvent>;
   static identity(prefix: "request" | "nonce" | "idempotency" | string): string;
   buildControlRequest(
@@ -77,5 +91,5 @@ export declare class WorkerClient {
   health(budgets: WorkerRequestBudgets): Promise<WorkerResponse>;
   shutdown(budgets: WorkerRequestBudgets, options?: { timeoutMs?: number }): Promise<WorkerResponse>;
   waitForExit(timeoutMs?: number): Promise<number | null>;
-  close(): void;
+  close(options?: { timeoutMs?: number }): Promise<void>;
 }

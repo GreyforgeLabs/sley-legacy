@@ -8,7 +8,7 @@
   "properties": {
     "schema": {"const": "sley.operational.evidence_registry.v1"},
     "status": {"const": "decision_recorded"},
-    "release": {"const": "1.2.0"},
+    "release": {"const": "1.2.1"},
     "identity": {
       "type": "object",
       "additionalProperties": false,

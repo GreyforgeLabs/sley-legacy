@@ -74,11 +74,19 @@ Compiler stdout and stderr are protected by a process file-size ceiling before
 the response-size contract is evaluated, so a tool cannot fill the temporary
 workspace with an unbounded report.
 
-This bootstrap bridge processes one stdio request at a time. It recognizes and
-logs `notifications/cancelled` for inactive requests, but cannot preempt a
-foreground compiler call because it does not read the next frame until that
-call returns or times out. Clients should rely on the bounded timeout rather
-than assume concurrent cancellation.
+The controller keeps reading stdio while preserving the prior one-tool-at-a-
+time execution order. Valid calls enter a 64-entry bounded queue. A cancellation
+notification removes a queued call before launch or marks the active call,
+signals its isolated process group, and emits exactly one terminal
+`SLEY_MCP_CANCELLED` tool result only after the group has been reaped. Duplicate,
+inactive, and post-completion cancellations are logged with their explicit
+state and do not create a second response.
+
+Each compiler call runs below a child-subreaper supervisor. The supervisor
+applies the response file-size limit, enforces the wall deadline, owns the
+process-group ID, escalates from `TERM` to `KILL`, and waits for adopted
+descendants before returning. This keeps timeout and cancellation cleanup
+observable instead of treating a signal request as proof of termination.
 
 ## Validation
 
@@ -88,7 +96,8 @@ make mcp-bridge
 
 The focused gate covers lifecycle negotiation, tool discovery and calls,
 malformed frames, path and symlink escape attempts, request/response bounds,
-timeout behavior, cancellation notification handling, stdout protocol purity,
+timeout behavior, active/queued/completed cancellation, descendant reaping,
+late-output suppression, stdout protocol purity,
 exact CLI/MCP transaction parity, confirmation denial, operator-only authority
 issuance, verified apply, post-apply verification, terminal review publication,
 and post-seal rollback denial.

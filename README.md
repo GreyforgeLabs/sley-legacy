@@ -21,8 +21,8 @@
 </p>
 
 <!-- SEO / discovery metadata -->
-<meta name="description" content="Sley 1.2.0 completes Greyforge Labs' open human-readable structural language while active research moves to the clean machine-native Sley 2.x architecture." />
-<meta name="keywords" content="Sley 1.2.0, Sley 2.0, self-hosted programming language, agent-native structural programming, machine-native programming, compiler-mediated software change, Greyforge Labs" />
+<meta name="description" content="Sley 1.2.1 completes Greyforge Labs' open human-readable structural language while active research moves to the clean machine-native Sley 2.x architecture." />
+<meta name="keywords" content="Sley 1.2.1, Sley 2.0, self-hosted programming language, agent-native structural programming, machine-native programming, compiler-mediated software change, Greyforge Labs" />
 <link rel="canonical" href="https://sleylang.org/" />
 <meta property="og:title" content="Sley | Software Change, Made Structural" />
 <meta property="og:description" content="The completed human-readable Sley 1.x line and the architectural transition to machine-native Sley 2.x." />
@@ -46,7 +46,7 @@ handoff. Human-readable source stays central while the compiler exposes the
 program structure tools need to work precisely.
 
 > [!IMPORTANT]
-> **Sley 1.2.0 completes the human-readable 1.x architecture.** Greyforge has
+> **Sley 1.2.1 completes the human-readable 1.x architecture.** Greyforge has
 > frozen active feature development of this line and moved language research
 > to a clean machine-native Sley 2.x architecture. The Apache-2.0 1.x
 > repository remains available for use, study, extension, experimentation, and
@@ -88,9 +88,9 @@ bootstrap, and report semantics in Sley source. The public command layer turns
 that language-owned implementation into a practical local workflow and
 verification surface.
 
-Canonical release: [`v1.2.0`](https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.0),
-commit `d281cd1`, published August 27, 2026. The release also records 11 of 11
-release-packet checks and 4 of 4 public-release checks.
+Canonical release: [`v1.2.1`](https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.1),
+published August 29, 2026. The release records 11 of 11 release-packet checks
+and 4 of 4 public-release checks.
 
 ## Start Locally
 
@@ -150,6 +150,14 @@ Use `sley --help` for the complete command index.
 
 ## Developer Integrations
 
+### Modular CLI
+
+`bin/sley` is a minimal public launcher. Internal implementation is grouped by
+owned command family under `lib/sley/`; shared dependency, argument, JSON,
+numeric-bound, and temporary-cleanup behavior lives in one lifecycle module.
+`make cli-modules` validates module boundaries and replays exact pre-extraction
+golden stdout, stderr, exit, signal, multicall, and clean-package behavior.
+
 ### Staged-change guard
 
 `git-sley-guard` checks affected staged Sley targets and contract changes from
@@ -160,7 +168,9 @@ the Git index before a commit enters project history.
 `sley-mcp-bridge` provides bounded query, lint, planning, dry-run graft,
 verification, and governed local transaction calls inside an explicitly
 configured repository root. Grant issuance and revocation-record creation stay
-CLI-only operator actions.
+CLI-only operator actions. The bridge continues reading protocol frames while
+one serial tool call runs, so an MCP cancellation notification can terminate
+and reap the active tool process group.
 
 ### Structural comparison
 
@@ -174,8 +184,10 @@ the stable `sley.worker.v1` JSONL stdio protocol. Their typed models and
 protocol constants are generated from the canonical worker schemas. Run
 `make worker-clients` to build both local packages in clean offline
 environments and exercise handshake, invoke, cancellation, crash recovery,
-health, and shutdown. Neither client retries automatically, and neither
-package is published by this repository workflow.
+health, deadlines, corrupt/oversized frames, late/duplicate responses, and
+shutdown. Timed-out or locally cancelled waits retain only bounded tombstones;
+neither client retries automatically, and neither package is published by this
+repository workflow.
 
 ## Public Evidence
 

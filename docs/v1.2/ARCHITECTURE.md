@@ -36,6 +36,7 @@ verification semantics.
 | Local grant scope, replay, revocation, proof, and budget vocabulary | `loom.authority` | exact request regeneration and explicit assertion assembly |
 | Local adapter identity, seed, replay, lifecycle, and failure vocabulary | `loom.adapter` | bounded seeded verification and redacted record assembly |
 | Bootstrap inventory and self-hosting proof | `loom.bootstrap` | expose status and fail on missing ownership markers |
+| Host CLI family boundaries | `lib/sley/README.md` and golden CLI fixtures | keep `bin/sley` as a minimal launcher; centralize lifecycle helpers and load one implementation module per bounded command family |
 | Benchmark task/oracle truth | frozen SleyBench manifests and independent oracles | isolated execution only |
 | Product authority | incumbent product contract until promotion | no implicit cutover |
 

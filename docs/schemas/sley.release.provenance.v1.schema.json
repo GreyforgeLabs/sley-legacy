@@ -7,8 +7,8 @@
   "properties": {
     "schema": {"const": "sley.release.provenance.v1"},
     "status": {"enum": ["release_candidate", "test_only"]},
-    "release": {"const": "1.2.0"},
-    "artifact_id": {"const": "sley-1.2.0-linux-x86_64"},
+    "release": {"const": "1.2.1"},
+    "artifact_id": {"const": "sley-1.2.1-linux-x86_64"},
     "source": {
       "type": "object",
       "required": ["commit", "payload_tree_digest", "dirty"],
@@ -23,7 +23,7 @@
       "type": "object",
       "required": ["path", "digest", "size"],
       "properties": {
-        "path": {"const": "sley-1.2.0-linux-x86_64.tar.gz"},
+        "path": {"const": "sley-1.2.1-linux-x86_64.tar.gz"},
         "digest": {"$ref": "#/$defs/digest"},
         "size": {"type": "integer", "minimum": 1}
       },

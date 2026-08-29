@@ -1,7 +1,7 @@
 {
   "schema": "sley.operational.evidence_registry.v1",
   "status": "decision_recorded",
-  "release": "1.2.0",
+  "release": "1.2.1",
   "identity": {
     "registry_source_commit": "54e732b1d6f47c843450c6380c30316bb1afc4d4",
     "reference_replay_digest": "sha256:bfcbc417f417891dc042aeb8ed5b34290525870edd70ca17f29f7152e34ae564",

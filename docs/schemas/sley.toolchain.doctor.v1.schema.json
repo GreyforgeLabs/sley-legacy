@@ -7,8 +7,8 @@
   "properties": {
     "schema": {"const": "sley.toolchain.doctor.v1"},
     "status": {"enum": ["ready", "blocked"]},
-    "sley_version": {"const": "sley 1.2.0"},
-    "release": {"const": "1.2.0"},
+    "sley_version": {"const": "sley 1.2.1"},
+    "release": {"const": "1.2.1"},
     "root": {"type": "string", "minLength": 1},
     "dependencies": {
       "type": "array",

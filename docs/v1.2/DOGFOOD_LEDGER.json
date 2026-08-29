@@ -1,7 +1,7 @@
 {
   "schema": "greyforge.sley12.dogfood_ledger.plan.v0",
   "status": "active_evidence",
-  "release": "1.2.0",
+  "release": "1.2.1",
   "updated": "2026-08-26",
   "schema_registration": "internal_unregistered_planning_contract",
   "candidates": [

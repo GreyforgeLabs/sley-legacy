@@ -99,6 +99,11 @@ assert_has "$mcp" mcp-bridge
 assert_has "$mcp" fmt
 assert_lacks "$mcp" transaction-contracts
 
+cli_modules="$(plan bin/sley lib/sley/dispatch.sh scripts/test-sley-cli-modules.sh fixtures/golden/cli/help.stdout)"
+assert_has "$cli_modules" cli-modules
+assert_has "$cli_modules" fmt
+assert_lacks "$cli_modules" test
+
 adapter="$(plan self-hosted/src/loom/adapter.sley docs/schemas/sley.adapter.manifest.v0.schema.json fixtures/contracts/adapter_manifest_local_replay.json scripts/test-sley-adapter-replay.sh)"
 assert_has "$adapter" adapter-replay
 assert_has "$adapter" contracts

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sley-worker-client"
-version = "1.2.0"
+version = "1.2.1"
 description = "Reference Python stdio client for sley.worker.v1"
 readme = "README.md"
 requires-python = ">=3.12"

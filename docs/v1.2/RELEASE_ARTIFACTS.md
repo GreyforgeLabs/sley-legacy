@@ -5,7 +5,7 @@ Supported target: Linux x86_64
 Updated: 2026-08-26
 
 Sley 1.2 ships one supported, self-contained source distribution:
-`sley-1.2.0-linux-x86_64.tar.gz`. macOS, Windows, containers, package
+`sley-1.2.1-linux-x86_64.tar.gz`. macOS, Windows, containers, package
 managers, signatures, and public distribution channels are post-GA work.
 
 ## Build
@@ -48,7 +48,7 @@ doctor, checker, contract fixtures, and Python/Node worker-client gate.
 For a clean extracted archive:
 
 ```bash
-export PATH="$(pwd)/sley-1.2.0-linux-x86_64/bin:$PATH"
+export PATH="$(pwd)/sley-1.2.1-linux-x86_64/bin:$PATH"
 sley doctor --toolchain --json
 sley --version
 ```

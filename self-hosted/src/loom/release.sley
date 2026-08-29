@@ -1,11 +1,11 @@
 module loom.release
 
 export task release_version -> Text {
-  return "1.2.0"
+  return "1.2.1"
 }
 
 export task artifact_id -> Text {
-  return "sley-1.2.0-linux-x86_64"
+  return "sley-1.2.1-linux-x86_64"
 }
 
 export task platform_os -> Text {
@@ -53,7 +53,7 @@ export task required_tools -> List<Text> {
 }
 
 export task archive_entrypoints -> List<Text> {
-  return ["bin/sley", "bin/sley-contract", "bin/sley-conformance", "bin/sley-lsp", "bin/sley-mcp-bridge", "scripts/sley-worker-local.sh", "clients/python/sley_worker_client/client.py", "clients/node/index.mjs"]
+  return ["bin/sley", "lib/sley/dispatch.sh", "bin/sley-contract", "bin/sley-conformance", "bin/sley-lsp", "bin/sley-mcp-bridge", "scripts/sley-worker-local.sh", "clients/python/sley_worker_client/client.py", "clients/node/index.mjs"]
 }
 
 export task release_metadata_paths -> List<Text> {

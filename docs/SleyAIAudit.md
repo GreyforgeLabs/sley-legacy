@@ -34,7 +34,7 @@ source, and the downstream parity report.
 
 | Capability | Current evidence | Finding |
 | --- | --- | --- |
-| Versioned language authority | `self-hosted/src/loom/bootstrap.sley`; `docs/SleyLanguageSpec.md` | Present. The executable version is `sley 1.2.0`; the language spec documents the current source, type, effect, graph, and runtime model. |
+| Versioned language authority | `self-hosted/src/loom/bootstrap.sley`; `docs/SleyLanguageSpec.md` | Present. The executable version is `sley 1.2.1`; the language spec documents the current source, type, effect, graph, and runtime model. |
 | Compact machine onboarding | `llms.txt`; `docs/AgentQuickstart.md` | Partial. Both are useful, but neither is a version-coupled repository operating contract for an unfamiliar coding model. |
 | Structured diagnostics | `sley check --json`; `docs/schemas/sley.diagnostics.report.v0.schema.json` | Present. Diagnostics and repair hints have a schema-backed root. |
 | AST and graph exposure | `sley ast --json`; `sley graph --json`; `sley query --json` | Present. Full and bounded structural projections use stable schema IDs. |

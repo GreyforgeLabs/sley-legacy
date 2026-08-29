@@ -20,8 +20,10 @@ grep -Fq -- '--repo-root is internal' "$TEST_ROOT/root-bypass.err"
 "$ROOT_DIR/bin/sley" release build --output-dir "$OUT_ONE" --json > "$TEST_ROOT/build-one.json"
 "$ROOT_DIR/bin/sley" release build --output-dir "$OUT_TWO" --json > "$TEST_ROOT/build-two.json"
 
-artifact_id="sley-1.2.0-linux-x86_64"
+artifact_id="sley-1.2.1-linux-x86_64"
 archive="$artifact_id.tar.gz"
+tar -tzf "$OUT_ONE/$archive" | grep -Fx "$artifact_id/lib/sley/dispatch.sh" >/dev/null
+tar -tzf "$OUT_ONE/$archive" | grep -Fx "$artifact_id/lib/sley/bootstrap.sh" >/dev/null
 
 "$ROOT_DIR/bin/sley-contract" validate --schema-dir "$ROOT_DIR/docs/schemas" --schema sley.release.provenance.v1 "$TEST_ROOT/build-one.json" --json >/dev/null
 "$ROOT_DIR/bin/sley-contract" validate --schema-dir "$ROOT_DIR/docs/schemas" --schema sley.release.manifest.v1 "$OUT_ONE/$artifact_id.manifest.json" --json >/dev/null

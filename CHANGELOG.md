@@ -3,6 +3,22 @@
 All notable Sley changes for the current release-candidate line are tracked
 here. Dates use UTC-independent calendar dates from the local repo history.
 
+## v1.2.1 - 2026-08-29
+
+- Sealed staged Git-index validation through descriptor-relative, no-follow
+  copying with regular-file/type manifests and adversarial symlink, special-
+  file, and replacement-race coverage.
+- Hardened the Python and Node worker clients with per-request deadlines,
+  caller-local cancellation, outbound bounds, bounded late-response
+  tombstones, strict handshake/isolation validation, reject-all fatal framing,
+  and deterministic process-group reaping.
+- Added real MCP queued and active-call cancellation with an isolated child-
+  subreaper supervisor, exact terminal states, late-output suppression, and
+  active/queued/completed lifecycle proofs.
+- Replaced the 22,282-line CLI monolith with a minimal public launcher, shared
+  lifecycle helpers, bounded command-family modules, change-aware validation,
+  and pre-extraction golden behavior/package tests.
+
 ## v1.2.0 - 2026-08-26
 
 - Added one deterministic supported Linux x86_64 release archive with a strict

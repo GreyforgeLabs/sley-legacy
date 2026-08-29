@@ -7,8 +7,8 @@
   "properties": {
     "schema": {"const": "sley.release.license_inventory.v1"},
     "status": {"const": "complete"},
-    "release": {"const": "1.2.0"},
-    "artifact_id": {"const": "sley-1.2.0-linux-x86_64"},
+    "release": {"const": "1.2.1"},
+    "artifact_id": {"const": "sley-1.2.1-linux-x86_64"},
     "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "project_license": {
       "type": "object",
@@ -28,7 +28,7 @@
         "required": ["name", "version", "path", "license_expression", "bundled"],
         "properties": {
           "name": {"type": "string", "minLength": 1},
-          "version": {"const": "1.2.0"},
+          "version": {"const": "1.2.1"},
           "path": {"type": "string", "minLength": 1},
           "license_expression": {"const": "Apache-2.0"},
           "bundled": {"const": true}

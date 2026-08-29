@@ -55,14 +55,22 @@ payload, issue, cache, and isolation models plus:
 - load, capabilities, invoke, cancel, reset, drain, health, and shutdown;
 - ordered event and response retention under an explicit host memory bound;
 - strict protocol, schema discriminator, UTF-8 JSONL, and event-sequence
-  checks.
+  checks;
+- bounded outbound frames, default per-request deadlines, and caller-local
+  cancellation;
+- bounded tombstones that discard responses arriving after a local wait ended;
+- fatal stream/process failures that reject all pending requests and reap the
+  worker process group.
 
 ## Cancellation and retry
 
-Cancellation is a separate canonical control request bound to an active
-request ID. Client wait timeouts never become worker cancellation or timeout
-results. The invoke response remains authoritative and is not suppressed by a
-successful cancel response.
+Worker cancellation is a separate canonical control request bound to an active
+request ID. A client deadline or caller-local cancellation does not claim that
+the worker request itself was cancelled. It terminates only that local wait,
+removes the pending entry, and records a bounded tombstone so the eventual late
+response cannot revive the completed promise or poison correlation. Callers
+that need worker cancellation must issue the canonical `cancel` request before
+abandoning the response they intend to observe.
 
 Neither client automatically retries any request. A response marked
 `retryable: true` is information for an explicit host policy, not permission
@@ -79,9 +87,12 @@ project, and runs both clients against the canonical local worker.
 
 Each clean environment proves handshake, load, capabilities, successful
 invoke, deterministic source rejection, preemptive cancellation, retryable
-child-crash reporting without replay, health, and graceful shutdown. Worker
-request counts prove that the clients did not retry. Private seeded values are
-absent from retained streams.
+child-crash reporting without replay, health, and graceful shutdown. An
+adversarial matrix adds never/late/duplicate/malformed/oversized responses,
+hundreds of timed-out requests, local cancellation, invalid handshake
+capabilities, outbound bounds, unexpected exit, reject-all behavior, and
+process reaping. Worker request counts prove that the clients did not retry.
+Private seeded values are absent from retained streams.
 
 Recovery is deletion of the two local client directories and their validation
 wiring. The stable protocol and S12-502 worker remain unchanged.
