@@ -1,0 +1,5 @@
+module examples.sley_lsp
+
+task main -> Text {
+  return "Sley LSP"
+}

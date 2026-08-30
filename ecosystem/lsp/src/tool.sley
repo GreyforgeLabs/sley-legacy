@@ -1,0 +1,16 @@
+module sley.tool.sley_lsp
+
+// Source-of-truth implementation stub in Sley.
+// Current Node stdio host is temporary.
+
+export task start -> Text {
+  return "sley-lsp: initialize stdio server pipeline, source-of-truth in Sley"
+}
+
+export task analyze_document -> Text {
+  return "sley-lsp: analyze document diagnostics/symbols pipeline, source-of-truth in Sley"
+}
+
+export task offer_fixes -> Text {
+  return "sley-lsp: code-action proposal pipeline, source-of-truth in Sley"
+}

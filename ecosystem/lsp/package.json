@@ -1,0 +1,22 @@
+{
+  "bin": {
+    "sley-lsp": "./src/server.mjs"
+  },
+  "description": "Language server scaffold for diagnostics, formatting, symbols, hover, and checked repair previews.",
+  "keywords": [
+    "sley",
+    "developer-tools",
+    "language server"
+  ],
+  "license": "Apache-2.0",
+  "name": "sley-lsp",
+  "private": true,
+  "scripts": {
+    "fmt": "node test/check-format.mjs",
+    "smoke": "node test/smoke.mjs",
+    "test": "node test/smoke.mjs",
+    "native": "make native"
+  },
+  "type": "module",
+  "version": "0.0.1-private"
+}
