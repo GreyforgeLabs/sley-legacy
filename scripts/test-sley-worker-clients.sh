@@ -23,7 +23,8 @@ python3 "$ROOT_DIR/clients/generate-worker-clients.py" --check
 PYTHONPYCACHEPREFIX="$WORKDIR/pycache" python3 -m compileall -q \
   "$ROOT_DIR/clients/generate-worker-clients.py" \
   "$ROOT_DIR/clients/python/sley_worker_client"
-node --check "$ROOT_DIR/clients/node/index.mjs"
+NODE_BIN="$(command -v node)"
+"$NODE_BIN" --check "$ROOT_DIR/clients/node/index.mjs"
 
 mkdir -p "$WORKDIR/python-dist" "$WORKDIR/python-home"
 cp -R "$ROOT_DIR/clients/python" "$WORKDIR/python-source"
@@ -84,7 +85,7 @@ env -i \
   PATH="/usr/bin:/bin" \
   LANG="C.UTF-8" \
   LC_ALL="C.UTF-8" \
-  node "$WORKDIR/node-env/integration.mjs" "$ROOT_DIR"
+  "$NODE_BIN" "$WORKDIR/node-env/integration.mjs" "$ROOT_DIR"
 
 assert_no_source_build_residue
 echo "generated Python and Node worker clients passed offline package and lifecycle tests"
