@@ -1,0 +1,183 @@
+==================
+top-level constructs
+==================
+module app.main
+import app.shared as shared
+@doc: "top level"
+export type Label = Text
+type User = {
+  slot name: Text
+}
+effect Audit
+export task main -> Bool uses Audit {
+  if true {
+    return true
+  }
+  return false
+}
+---
+
+(source_file
+  (module_declaration
+    (qualified_identifier
+      (identifier)
+      (identifier)))
+  (import_declaration
+    (qualified_identifier
+      (identifier)
+      (identifier))
+    (identifier))
+  (annotation
+    (qualified_identifier
+      (identifier))
+    (string))
+  (type_alias
+    (identifier)
+    (type_expression
+      (qualified_identifier
+        (identifier))))
+  (type_declaration
+    (identifier)
+    (slot_declaration
+      (identifier)
+      (type_expression
+        (qualified_identifier
+          (identifier)))))
+  (effect_declaration
+    (identifier))
+  (task_declaration
+    (identifier)
+    (type_expression
+      (qualified_identifier
+        (identifier)))
+    (qualified_identifier
+      (identifier))
+    (block
+      (if_statement
+        (boolean_expression
+          (expression
+            (bool)))
+        (block
+          (return_statement
+            (expression
+              (bool)))))
+      (return_statement
+        (expression
+          (bool))))))
+
+==================
+boolean comparator and grouping
+==================
+task main -> Bool {
+  if left == right {
+    return true
+  }
+  if (left) and right {
+    return true
+  }
+  return false
+}
+---
+
+(source_file
+  (task_declaration
+    (identifier)
+    (type_expression
+      (qualified_identifier
+        (identifier)))
+    (block
+      (if_statement
+        (boolean_expression
+          (expression
+            (identifier))
+          (comparator)
+          (expression
+            (identifier)))
+        (block
+          (return_statement
+            (expression
+              (bool)))))
+      (if_statement
+        (boolean_expression
+          (expression
+            (grouped_expression
+              (expression
+                (identifier))))
+          (comparator)
+          (expression
+            (identifier)))
+        (block
+          (return_statement
+            (expression
+              (bool)))))
+      (return_statement
+        (expression
+          (bool))))))
+
+==================
+invalid adjacent expressions
+==================
+task main -> Bool {
+  if left right {
+    return false
+  }
+  return true
+}
+---
+
+(source_file
+  (task_declaration
+    (identifier)
+    (type_expression
+      (qualified_identifier
+        (identifier)))
+    (block
+      (if_statement
+        (ERROR
+          (expression
+            (identifier)))
+        (boolean_expression
+          (expression
+            (identifier)))
+        (block
+          (return_statement
+            (expression
+              (bool)))))
+      (return_statement
+        (expression
+          (bool))))))
+
+==================
+invalid chained comparators
+==================
+task main -> Bool {
+  if left == right and other {
+    return false
+  }
+  return true
+}
+---
+
+(source_file
+  (task_declaration
+    (identifier)
+    (type_expression
+      (qualified_identifier
+        (identifier)))
+    (block
+      (if_statement
+        (boolean_expression
+          (expression
+            (identifier))
+          (comparator)
+          (expression
+            (identifier)))
+        (ERROR
+          (identifier))
+        (block
+          (return_statement
+            (expression
+              (bool)))))
+      (return_statement
+        (expression
+          (bool))))))

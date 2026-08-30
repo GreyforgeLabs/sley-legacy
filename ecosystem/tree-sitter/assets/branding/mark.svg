@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Tree-sitter Sley mark">
+  <rect width="1024" height="1024" rx="96" fill="#071014"/>
+  <path d="M156 626 C236 484 318 368 456 364 C612 360 686 494 850 370" fill="none" stroke="#3f8cff" stroke-width="34" stroke-linecap="round"/>
+  <path d="M154 456 C272 554 382 594 512 526 C638 460 720 454 870 568" fill="none" stroke="#21d18b" stroke-width="26" stroke-linecap="round"/>
+  <g fill="#d8e0df" stroke="#071014" stroke-width="12">
+    <circle cx="156" cy="456" r="42"/>
+    <circle cx="456" cy="364" r="42"/>
+    <circle cx="512" cy="526" r="42"/>
+    <circle cx="870" cy="568" r="42"/>
+  </g>
+  <text x="512" y="742" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="112" font-weight="800" fill="#f3f7f4" letter-spacing="0">TS</text>
+  <text x="512" y="824" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="600" fill="#9fb6b3" letter-spacing="0">Sley Tools</text>
+</svg>

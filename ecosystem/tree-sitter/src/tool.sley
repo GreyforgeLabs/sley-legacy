@@ -1,0 +1,16 @@
+module sley.tool.tree_sitter_sley
+
+// Source-of-truth implementation stub in Sley.
+// JS/Tree-sitter grammar remains temporary until parser emit lands.
+
+export task build_grammar -> Text {
+  return "tree-sitter-sley: grammar pipeline contract, source-of-truth in Sley"
+}
+
+export task run_highlight -> Text {
+  return "tree-sitter-sley: highlight pipeline contract, source-of-truth in Sley"
+}
+
+export task test_grammar -> Text {
+  return "tree-sitter-sley: grammar test contract, source-of-truth in Sley"
+}

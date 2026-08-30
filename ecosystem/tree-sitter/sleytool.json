@@ -1,0 +1,14 @@
+{
+  "consumed_roots": [
+    "human-reviewable .sley source"
+  ],
+  "future_url": "https://sley.greyforge.tech/tools/tree-sitter-sley",
+  "github": "https://github.com/GreyforgeLabs/tree-sitter-sley",
+  "name": "tree-sitter-sley",
+  "primary_user": "editor users, documentation authors, and review tool builders",
+  "priority": "P0",
+  "schema": "sley.tool.manifest.v0",
+  "status": "private_sley_native_source",
+  "title": "Tree-sitter Sley",
+  "utility": "syntax grammar"
+}
