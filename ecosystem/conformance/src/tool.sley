@@ -1,0 +1,16 @@
+module sley.tool.sley_conformance
+
+// Source-of-truth implementation stub in Sley.
+// Current JS aggregator is temporary.
+
+export task report -> Text {
+  return "sley-conformance: report command pipeline, source-of-truth in Sley"
+}
+
+export task coverage -> Text {
+  return "sley-conformance: coverage command pipeline, source-of-truth in Sley"
+}
+
+export task status -> Text {
+  return "sley-conformance: health command pipeline, source-of-truth in Sley"
+}
