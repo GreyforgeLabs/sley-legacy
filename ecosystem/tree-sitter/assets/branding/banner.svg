@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" role="img" aria-label="Tree-sitter Sley banner">
+  <defs>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#21d18b"/>
+      <stop offset="1" stop-color="#3f8cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1500" height="500" fill="#071014"/>
+  <rect x="40" y="40" width="1420" height="420" rx="28" fill="#0d1f25" stroke="#16343b" stroke-width="2"/>
+  <path d="M90 340 C260 190 380 250 520 145 C690 15 840 255 1410 110" fill="none" stroke="url(#line)" stroke-width="20" stroke-linecap="round" opacity="0.9"/>
+  <g fill="#d8e0df">
+    <circle cx="120" cy="325" r="22"/>
+    <circle cx="520" cy="145" r="22"/>
+    <circle cx="1388" cy="108" r="22"/>
+  </g>
+  <text x="84" y="150" font-family="Inter, Arial, sans-serif" font-size="44" font-weight="700" fill="#21d18b" letter-spacing="0">Sley Tools</text>
+  <text x="84" y="250" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800" fill="#f3f7f4" letter-spacing="0">Tree-sitter Sley</text>
+  <text x="84" y="325" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="500" fill="#9fb6b3" letter-spacing="0">Tree-sitter grammar, highlight queries, and editor parser scaffolding for Sley source.</text>
+  <text x="84" y="424" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="600" fill="#d8e0df" letter-spacing="0">P0 - syntax grammar</text>
+</svg>

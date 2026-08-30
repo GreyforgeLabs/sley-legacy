@@ -1,0 +1,5 @@
+module examples.tree_sitter_sley
+
+task main -> Text {
+  return "Tree-sitter Sley"
+}
