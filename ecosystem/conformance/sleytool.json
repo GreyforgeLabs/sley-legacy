@@ -1,0 +1,20 @@
+{
+  "consumed_roots": [
+    "sley.cli_smoke.manifest.v0",
+    "sley.ast.program.v0",
+    "sley.diagnostics.report.v0",
+    "sley.query.report.v0",
+    "sley.lint.report.v0",
+    "sley.verify.report.v0",
+    "sley.zjx.envelope.v0"
+  ],
+  "future_url": "https://sley.greyforge.tech/tools/sley-conformance",
+  "github": "https://github.com/GreyforgeLabs/sley-conformance",
+  "name": "sley-conformance",
+  "primary_user": "compiler maintainers",
+  "priority": "P0",
+  "schema": "sley.tool.manifest.v0",
+  "status": "private_sley_native_source",
+  "title": "Sley Conformance",
+  "utility": "conformance dashboard"
+}

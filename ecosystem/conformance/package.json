@@ -1,0 +1,22 @@
+{
+  "bin": {
+    "sley-conformance": "./src/cli.mjs"
+  },
+  "description": "Static coverage and release-readiness reports for Sley schemas, fixtures, contracts, and CLI smokes.",
+  "keywords": [
+    "sley",
+    "developer-tools",
+    "conformance dashboard"
+  ],
+  "license": "Apache-2.0",
+  "name": "sley-conformance",
+  "private": true,
+  "scripts": {
+    "fmt": "node test/check-format.mjs",
+    "smoke": "node test/smoke.mjs",
+    "test": "node test/smoke.mjs",
+    "native": "make native"
+  },
+  "type": "module",
+  "version": "0.0.1-private"
+}

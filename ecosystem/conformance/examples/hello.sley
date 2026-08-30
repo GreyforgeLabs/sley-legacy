@@ -1,0 +1,5 @@
+module examples.sley_conformance
+
+task main -> Text {
+  return "Sley Conformance"
+}
