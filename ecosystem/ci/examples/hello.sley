@@ -1,0 +1,5 @@
+module examples.sley_ci
+
+task main -> Text {
+  return "Sley CI"
+}

@@ -1,0 +1,16 @@
+module sley.tool.sley_ci
+
+// Source-of-truth implementation stub in Sley.
+// Temporary host shims are retained while we wait for a tool emit target.
+
+export task check -> Text {
+  return "sley-ci: check gate (format/check/lint), source-of-truth in Sley"
+}
+
+export task verify -> Text {
+  return "sley-ci: verify gate (query/lint/plan/runtime), source-of-truth in Sley"
+}
+
+export task smoke -> Text {
+  return "sley-ci: smoke manifest gate, source-of-truth in Sley"
+}

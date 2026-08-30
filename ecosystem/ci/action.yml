@@ -1,0 +1,26 @@
+name: Sley CI
+description: Run deterministic Sley compiler gates
+inputs:
+  target:
+    description: Sley file or project directory
+    required: false
+    default: "."
+  sley-bin:
+    description: Sley executable
+    required: false
+    default: "sley"
+  allow-missing:
+    description: Explicitly allow a missing Sley or jq dependency
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Run Sley CI
+      shell: bash
+      env:
+        SLEY_BIN: ${{ inputs.sley-bin }}
+        SLEY_CI_TARGET: ${{ inputs.target }}
+        SLEY_ALLOW_MISSING: ${{ inputs.allow-missing }}
+      run: |
+        "$GITHUB_ACTION_PATH/bin/sley-ci" check "$SLEY_CI_TARGET"

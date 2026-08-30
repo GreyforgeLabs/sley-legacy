@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  format|check|lint)
+    exit 0
+    ;;
+  *)
+    printf 'unexpected action smoke command: %s\n' "${1:-}" >&2
+    exit 2
+    ;;
+esac
