@@ -10,3 +10,7 @@ You may obtain a copy of the license at:
 All rights under the copyright and related
 intellectual property laws are retained by Greyforge Labs unless explicitly
 granted under the terms of the Apache 2.0 license contained in the LICENSE file.
+
+This consolidated legacy repository contains imported component histories with
+their original license and notice files preserved in place. LICENSE_SCOPE.md
+records component-specific scope, including paths with no source license grant.
