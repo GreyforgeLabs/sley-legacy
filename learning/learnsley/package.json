@@ -1,0 +1,16 @@
+{
+  "name": "learnsley",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Linux-native LearnSley MVP that teaches Sley with the real compiler.",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs",
+    "check": "node --check server.mjs && node --check public/app.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

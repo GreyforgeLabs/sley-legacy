@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LearnSley</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">LearnSley</p>
+          <h1>Welcome to LearnSley!</h1>
+        </div>
+        <div class="status-strip" aria-live="polite">
+          <span id="levelBadge">Level 1</span>
+          <span id="xpBadge">0 XP</span>
+          <span id="chainBadge">Chain 0</span>
+          <span id="armorBadge">Armor 2</span>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="rail" aria-label="Trials">
+          <div class="rail-head">
+            <span>Campaign</span>
+            <strong id="campaignCount">0/0</strong>
+          </div>
+          <nav id="trialList" class="trial-list"></nav>
+        </aside>
+
+        <section class="lesson">
+          <div class="lesson-head">
+            <div>
+              <p id="trialMeta" class="eyebrow">Trial</p>
+              <h2 id="trialTitle">Loading</h2>
+            </div>
+            <div id="concepts" class="concepts"></div>
+          </div>
+
+          <div class="brief">
+            <p id="instructions"></p>
+            <p id="task"></p>
+            <p id="misconception"></p>
+          </div>
+
+          <div class="editor-toolbar">
+            <button id="runButton" class="button primary" type="button">Run</button>
+            <button id="sealButton" class="button seal" type="button">Seal</button>
+            <button id="formatButton" class="button" type="button">Format</button>
+            <button id="graphButton" class="button" type="button">Graph</button>
+            <button id="hintButton" class="button" type="button">Hint</button>
+            <button id="resetButton" class="button danger" type="button">Reset</button>
+          </div>
+
+          <textarea id="editor" spellcheck="false" aria-label="Sley editor"></textarea>
+        </section>
+
+        <aside class="result-panel" aria-label="Results">
+          <section class="panel">
+            <h3>Output</h3>
+            <pre id="output"></pre>
+          </section>
+          <section class="panel">
+            <h3>Diagnostics</h3>
+            <pre id="diagnostics"></pre>
+          </section>
+          <section class="panel">
+            <h3>Graph</h3>
+            <pre id="graph"></pre>
+          </section>
+          <section class="panel">
+            <h3>Hint</h3>
+            <p id="hintText">No hint used.</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
+
