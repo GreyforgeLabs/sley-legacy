@@ -1,0 +1,16 @@
+module sley.tool.sley_workbench
+
+// Source-of-truth implementation stub in Sley.
+// Current Node HTTP + static UI host is temporary.
+
+export task launch -> Text {
+  return "sley-workbench: launch local workbench server, source-of-truth in Sley"
+}
+
+export task load_views -> Text {
+  return "sley-workbench: load graph/query/lint/verify views, source-of-truth in Sley"
+}
+
+export task apply_preview -> Text {
+  return "sley-workbench: apply checked graft preview, source-of-truth in Sley"
+}

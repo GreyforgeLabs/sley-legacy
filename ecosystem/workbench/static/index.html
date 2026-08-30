@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sley Workbench</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <p>Sley Tools</p>
+        <h1>Sley Workbench</h1>
+        <input id="target" type="text" value="." aria-label="Sley target path" placeholder="Target path">
+      </header>
+      <p id="status" class="status">status: idle</p>
+      <nav>
+        <button data-command="doctor">Doctor</button>
+        <button data-command="query">Query</button>
+        <button data-command="lint">Lint</button>
+        <button data-command="plan">Plan</button>
+        <button data-command="graph">Graph</button>
+        <button data-command="verify">Verify</button>
+        <button data-command="seal">Seal</button>
+        <button data-command="zjx">ZJX</button>
+        <button data-command="check">Check</button>
+      </nav>
+      <pre id="output">Select an inspection command.</pre>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
