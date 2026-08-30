@@ -1,0 +1,17 @@
+{
+  "name": "sley-audit",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Static security audit for cleartext logging in the Sley ecosystem.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "audit": "node src/audit.mjs",
+    "fmt": "node --check src/audit.mjs && node --check test/smoke.mjs",
+    "smoke": "node test/smoke.mjs",
+    "test": "node test/smoke.mjs"
+  },
+  "bin": {
+    "sley-audit": "bin/sley-audit"
+  }
+}
