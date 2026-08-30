@@ -1,0 +1,6 @@
+*.js linguist-language=JavaScript
+*.mjs linguist-language=JavaScript
+*.json linguist-language=JSON
+*.md linguist-detectable=false
+*.sley linguist-language=Sley
+*.toml linguist-language=TOML

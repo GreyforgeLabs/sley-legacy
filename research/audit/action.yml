@@ -1,0 +1,32 @@
+name: Sley Audit
+description: Run a bounded Sley source audit and fail on high-severity findings
+inputs:
+  target:
+    description: Repository or directory to audit
+    required: false
+    default: "."
+  fail-on-error:
+    description: Fail the action when high-severity findings are present
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Run Sley Audit
+      shell: bash
+      env:
+        SLEY_AUDIT_TARGET: ${{ inputs.target }}
+        SLEY_AUDIT_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+      run: |
+        case "$SLEY_AUDIT_FAIL_ON_ERROR" in
+          true)
+            "$GITHUB_ACTION_PATH/bin/sley-audit" --ci --json --path "$SLEY_AUDIT_TARGET"
+            ;;
+          false)
+            "$GITHUB_ACTION_PATH/bin/sley-audit" --report-only --json --path "$SLEY_AUDIT_TARGET"
+            ;;
+          *)
+            echo "fail-on-error must be true or false" >&2
+            exit 2
+            ;;
+        esac

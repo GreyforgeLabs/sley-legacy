@@ -1,0 +1,15 @@
+{
+  "schema": "sley.tool.manifest.v0",
+  "name": "sley-audit",
+  "title": "Sley Audit",
+  "status": "private_sley_native_source",
+  "utility": "cleartext logging and debug-format leakage audit",
+  "primary_user": "security maintainers and CI operators",
+  "priority": "P0",
+  "consumed_roots": [
+    "sley.ast.program.v0",
+    "sley.diagnostics.report.v0"
+  ],
+  "future_url": "https://sley.greyforge.tech/tools/sley-audit",
+  "github": "https://github.com/GreyforgeLabs/sley-audit"
+}
