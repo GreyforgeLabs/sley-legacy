@@ -46,9 +46,9 @@
   "evidence": [
     {
       "id": "foreign_source_free_public_gate",
-      "claim": "The public self-hosting gate blocks forbidden foreign-language implementation files.",
+      "claim": "The public self-hosting gate blocks forbidden foreign-language implementation files inside the Sley 1.x compiler/runtime boundary while excluding documented consolidated legacy components.",
       "status": "expected_pass",
-      "paths": ["scripts/check-self-hosted-code.sh"],
+      "paths": ["scripts/check-self-hosted-code.sh", "MIGRATION_MAP.md"],
       "audit_command": ["./scripts/check-self-hosted-code.sh"]
     },
     {

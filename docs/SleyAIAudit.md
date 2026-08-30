@@ -68,8 +68,9 @@ scripts/check-self-hosted-code.sh
 Repository evidence also includes the schema map in `docs/contracts.md`, the
 agent loop in `docs/AgentQuickstart.md`, and the local v1 target inventory in
 `Makefile`. The provider runner, production trusted-solution replay, and full
-private audit remain in operator custody outside this foreign-language-free
-public tree.
+private audit remain in operator custody outside the foreign-language-free
+Sley 1.x compiler/runtime boundary. Consolidated legacy components are outside
+that gate and retain their original implementation languages.
 
 ## Gap Analysis
 
