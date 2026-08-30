@@ -33,7 +33,9 @@ provider model with no persistent local session. Version 1 changes only
 controller validation so a
 read-only tool target may be `.` or an actual owned path in the isolated
 workspace; command shapes and case/run allowlists remain fixed. The adapter
-implementation remains outside this foreign-language-free public repository.
+implementation remains outside the foreign-language-free Sley 1.x
+compiler/runtime boundary. Consolidated legacy components are outside that
+boundary.
 Version 2 changes only the K3 model-facing turn contract: a response chooses
 `tool` or `submit`, and a tool response must stop and wait for the next prompt.
 The strict parser still rejects multiple objects. Each turn receives

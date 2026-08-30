@@ -44,15 +44,16 @@ for ext in "${FORBIDDEN_EXTENSIONS[@]}"; do
       FOUND=1
     fi
   done < <(find . \
-    \( -path "./.git" -o -path "./target" -o -path "./node_modules" \) -prune -o \
+    \( -path "./.git" -o -path "./target" -o -path "./node_modules" \
+       -o -path "./ecosystem" -o -path "./learning" -o -path "./research" \) -prune -o \
     -type f -name "$ext" -print)
 done
 
 if [[ "$FOUND" -eq 1 ]]; then
   echo "" >&2
   echo "Self-hosted gate failed: forbidden foreign-language source files are present." >&2
-  echo "Keep compiler/runtime implementation in .sley plus the permitted POSIX shell and worker-client surfaces." >&2
+  echo "Keep the Sley 1.x compiler/runtime boundary in .sley plus the permitted POSIX shell and worker-client surfaces." >&2
   exit 1
 fi
 
-echo "Self-hosted gate passed: no forbidden foreign-language source files outside the worker-client boundary."
+echo "Self-hosted gate passed: no forbidden foreign-language source files inside the Sley 1.x compiler/runtime boundary."

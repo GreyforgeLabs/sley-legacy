@@ -168,7 +168,7 @@ Sley comparison:
 - The official materials found here do not establish Sley-style
   compiler-mediated structural editing, checked graft previews, deterministic
   authority gates, trace/seal proof surfaces, or a foreign-language-free
-  public bootstrap gate.
+  Sley compiler/runtime bootstrap gate.
 
 Safe public wording: Codong is an AI-native claimant focused on one-correct-way
 syntax and token reduction. Under Sley's criteria, the missing evidence is a

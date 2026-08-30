@@ -60,8 +60,9 @@ for a maximum planned matrix ceiling of $20.
   malformed responses, scope failures, and tool-protocol failures remained in
   the denominator.
 - The reusable provider runner and full private replay tooling remain in
-  permission-restricted operator custody outside the public Sley tree so the
-  repository's foreign-language-free gate stays true.
+permission-restricted operator custody outside the Sley 1.x compiler/runtime
+boundary so its foreign-language-free gate stays true. Consolidated legacy
+components are outside that boundary.
 
 Calibration found and corrected two evaluator defects before scored evidence:
 OpenClaw appended local guard output after its JSON envelope, and the first K1

@@ -26,5 +26,5 @@ This project supports agent-native development by reducing post-hoc triage and p
 ## Public discovery surface
 
 - Homepage: [GitHub repository](https://github.com/GreyforgeLabs/sley-audit)
-- Parent language: [Sley](https://github.com/GreyforgeLabs/sley)
+- Parent language: [Sley (Legacy)](https://github.com/GreyforgeLabs/sley-legacy)
 - Related surfaces: [Sley public site](https://sleylang.org/), [OpenForge listing](https://greyforge.tech/openforge)

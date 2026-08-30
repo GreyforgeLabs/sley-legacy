@@ -41,7 +41,7 @@ Sley's public category rests on five connected properties:
 
 | Claim | Repository evidence | Local check |
 | --- | --- | --- |
-| The implementation tree is foreign-source-free under the Sley self-hosting gate. | `scripts/check-self-hosted-code.sh` | `./scripts/check-self-hosted-code.sh` |
+| The Sley 1.x compiler/runtime boundary is foreign-source-free under the self-hosting gate; consolidated legacy components are explicitly out of scope. | `scripts/check-self-hosted-code.sh`; `MIGRATION_MAP.md` | `./scripts/check-self-hosted-code.sh` |
 | The self-hosted Sley compiler owns parser, checker, lint, runtime, bootstrap, and report semantics. | `self-hosted/src/loom/`, `scripts/self-hosted-test.sh` | `scripts/self-hosted-test.sh` |
 | Sley exposes a runnable local command surface. | `bin/sley`, `bin/sley-*`, `Makefile` | `bin/sley --version` |
 | Structural inspection uses machine-checkable report contracts. | `docs/schemas/`, `fixtures/contracts/`, `docs/contracts.md` | `bin/sley query --json --kind calls examples/project` |
