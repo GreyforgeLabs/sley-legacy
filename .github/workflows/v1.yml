@@ -19,5 +19,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install gate dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ripgrep
+
       - name: Run Sley v1 gate
         uses: ./.github/actions/sley-v1
