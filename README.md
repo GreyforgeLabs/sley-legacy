@@ -1,9 +1,9 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/GreyforgeLabs/sley/public/assets/branding/canonical/sley_loom_graph_banner_1500x500.png" alt="Sley Loom banner" width="100%" />
+  <img src="https://raw.githubusercontent.com/GreyforgeLabs/sley-legacy/public/assets/branding/canonical/sley_loom_graph_banner_1500x500.png" alt="Sley Loom banner" width="100%" />
 </p>
 
 <p align="center">
-  <strong>Sley</strong><br />
+  <strong>Sley (Legacy)</strong><br />
   Software change, made structural.
 </p>
 
@@ -17,11 +17,11 @@
 <p align="center">
   <img alt="Sley v1 Gate" src="https://img.shields.io/badge/Sley%20v1%20Gate-38%2F38-22c55e" />
   <img alt="Self-hosted" src="https://img.shields.io/badge/compiler-self--hosted-22d3ee" />
-  <img alt="License" src="https://img.shields.io/github/license/GreyforgeLabs/sley" />
+  <img alt="License" src="https://img.shields.io/github/license/GreyforgeLabs/sley-legacy" />
 </p>
 
 <!-- SEO / discovery metadata -->
-<meta name="description" content="Sley 1.2.1 completes Greyforge Labs' open human-readable structural language while active research moves to the clean machine-native Sley 2.x architecture." />
+<meta name="description" content="Sley Legacy preserves Greyforge Labs' completed Sley 1.x human-readable structural language and its historical ecosystem." />
 <meta name="keywords" content="Sley 1.2.1, Sley 2.0, self-hosted programming language, agent-native structural programming, machine-native programming, compiler-mediated software change, Greyforge Labs" />
 <link rel="canonical" href="https://sleylang.org/" />
 <meta property="og:title" content="Sley | Software Change, Made Structural" />
@@ -29,13 +29,13 @@
 <meta property="og:url" content="https://sleylang.org/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Sley" />
-<meta property="og:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/public/assets/branding/canonical/sley_loom_graph_board.png" />
+<meta property="og:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley-legacy/public/assets/branding/canonical/sley_loom_graph_board.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Sley | Software Change, Made Structural" />
 <meta name="twitter:description" content="Structure for autonomous software change. Review for the humans who own it." />
-<meta name="twitter:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley/public/assets/branding/canonical/sley_loom_graph_board.png" />
+<meta name="twitter:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley-legacy/public/assets/branding/canonical/sley_loom_graph_board.png" />
 
-# Sley
+# Sley (Legacy)
 
 Sley is a self-hosted, agent-native structural programming language for
 compiler-mediated, human-reviewed software change.
@@ -46,13 +46,14 @@ handoff. Human-readable source stays central while the compiler exposes the
 program structure tools need to work precisely.
 
 > [!IMPORTANT]
-> **Sley 1.2.1 completes the human-readable 1.x architecture.** Greyforge has
-> frozen active feature development of this line and moved language research
-> to a clean machine-native Sley 2.x architecture. The Apache-2.0 1.x
-> repository remains available for use, study, extension, experimentation, and
-> forks. Human governance remains required in 2.x, but direct readability of
-> the canonical raw program representation is no longer a mandatory design
-> constraint. Compatibility is not promised. Read the
+> **Sley 1.2.1 completes the human-readable 1.x architecture.** This lineage is
+> frozen and retained for historical use, study, experimentation,
+> compatibility, and existing users. Active language development is the
+> intentionally incompatible machine-native Sley 2.x lineage at
+> [`GreyforgeLabs/sley`](https://github.com/GreyforgeLabs/sley). The existing
+> Sley 1.x license terms remain unchanged. Human governance remains required in
+> 2.x, but direct readability of the canonical raw program representation is no
+> longer a mandatory design constraint. Read the
 > [architectural-transition Chronicle](https://greyforge.tech/chronicles/sley-120-machine-native-break).
 
 ## Why Sley
@@ -88,7 +89,7 @@ bootstrap, and report semantics in Sley source. The public command layer turns
 that language-owned implementation into a practical local workflow and
 verification surface.
 
-Canonical release: [`v1.2.1`](https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.1),
+Canonical release tag: [`v1.2.1`](https://github.com/GreyforgeLabs/sley-legacy/releases/tag/v1.2.1),
 published August 29, 2026. The release records 11 of 11 release-packet checks
 and 4 of 4 public-release checks.
 
@@ -217,9 +218,19 @@ repository workflow.
   private held-out material is intentionally absent from this repository.
 - `scripts/` contains the deterministic local proof gates.
 - `examples/` contains projects and workflow demonstrations.
+- `ecosystem/` contains the preserved Sley 1.x contract kit, CI integration,
+  Tree-sitter grammar, LSP, workbench, and conformance histories.
+- `learning/learnsley/` contains the preserved LearnSley history.
+- `research/audit/` contains the preserved Sley Audit history.
+- [`MIGRATION_MAP.md`](MIGRATION_MAP.md) records source repositories, immutable
+  source tips, destination paths, omitted refs, licenses, and tombstone status.
+- [`LICENSE_SCOPE.md`](LICENSE_SCOPE.md) records the license boundary for every
+  imported component without changing any source license.
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+The Sley 1.x root is Apache-2.0. Imported component licenses remain controlling
+inside their preserved subtrees. See [LICENSE](LICENSE), [NOTICE](NOTICE), and
+[LICENSE_SCOPE.md](LICENSE_SCOPE.md).
 
 Autonomy, Engineered.

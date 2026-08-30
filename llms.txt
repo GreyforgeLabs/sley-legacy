@@ -1,7 +1,7 @@
 # Sley Repository Facts
 
 Canonical site: https://sleylang.org/
-Repository: https://github.com/GreyforgeLabs/sley/tree/public
+Repository: https://github.com/GreyforgeLabs/sley-legacy/tree/public
 Organization: Greyforge Labs - https://greyforge.tech/
 License: Apache-2.0
 Release: Sley 1.2.1 local release candidate
@@ -91,13 +91,13 @@ make v1
 - Product home: https://sleylang.org/
 - Architectural transition: https://greyforge.tech/chronicles/sley-120-machine-native-break
 - Transition source note: https://greyforge.tech/research/sley-machine-native-break-source-note-2026-08-27.md
-- Release v1.2.1: https://github.com/GreyforgeLabs/sley/releases/tag/v1.2.1
+- Release v1.2.1: https://github.com/GreyforgeLabs/sley-legacy/releases/tag/v1.2.1
 - Technical brief: https://sleylang.org/docs
 - Workflow walkthrough: https://sleylang.org/tutorial
 - FAQ: https://sleylang.org/faq
-- Claim evidence: https://github.com/GreyforgeLabs/sley/blob/public/docs/SleyClaimEvidence.md
-- Language specification: https://github.com/GreyforgeLabs/sley/blob/public/docs/SleyLanguageSpec.md
-- Contract reference: https://github.com/GreyforgeLabs/sley/blob/public/docs/contracts.md
+- Claim evidence: https://github.com/GreyforgeLabs/sley-legacy/blob/public/docs/SleyClaimEvidence.md
+- Language specification: https://github.com/GreyforgeLabs/sley-legacy/blob/public/docs/SleyLanguageSpec.md
+- Contract reference: https://github.com/GreyforgeLabs/sley-legacy/blob/public/docs/contracts.md
 
 ## Citation Discipline
 
