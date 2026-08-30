@@ -1,0 +1,16 @@
+module sley.tool.contract_kit
+
+// Source-of-truth implementation stub in Sley.
+// Temporary host shims in JS/Rust are retained until Sley has an emit target for tools.
+
+export task inventory -> Text {
+  return "sley-contract-kit: inventory command contract, source-of-truth in Sley"
+}
+
+export task validate -> Text {
+  return "sley-contract-kit: validate command contract, source-of-truth in Sley"
+}
+
+export task check_fixtures -> Text {
+  return "sley-contract-kit: check-fixtures command contract, source-of-truth in Sley"
+}

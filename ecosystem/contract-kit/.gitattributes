@@ -1,0 +1,9 @@
+# Keep temporary host and orchestration files out of primary language stats
+*.js linguist-vendored
+*.mjs linguist-vendored
+*.ts linguist-vendored
+*.json linguist-vendored
+*.md linguist-detectable=false
+
+# Promote the source-of-truth Sley surface to its own language classification
+*.sley linguist-language=Sley
