@@ -1,0 +1,409 @@
+[
+  {
+    "id": "sley.enter.return_text",
+    "title": "Return Text",
+    "campaign": "Enter The Loom",
+    "arc": "First Task",
+    "difficulty": 1,
+    "estimatedMinutes": 3,
+    "concepts": [
+      "task",
+      "main",
+      "Text",
+      "return"
+    ],
+    "mode": "code",
+    "instructions": "Welcome to Sley! Let's start with a simple task. Change the code so that the main task returns exactly what the seal requires.",
+    "task": "Your goal: Make the main task return the text \"hello, Sley\" (with a comma and exact capitalization).",
+    "misconception": "Tip: In Sley, text is always wrapped in double quotes. Keep the quotes intact!",
+    "expectedBehavior": "Running the program returns a Text value.",
+    "starter": "task main -> Text {\n  return \"change me\"\n}\n",
+    "hints": [
+      "Let's look at the line that says 'return \"change me\"'.",
+      "We want it to return our new greeting instead.",
+      "Try changing it to: return \"hello, Sley\""
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Text",
+        "value": "hello, Sley"
+      }
+    },
+    "rewards": {
+      "xp": 15,
+      "shards": 2
+    }
+  },
+  {
+    "id": "sley.tasks.first_take",
+    "title": "First Take",
+    "campaign": "Tasks And Takes",
+    "arc": "Explicit Inputs",
+    "difficulty": 1,
+    "estimatedMinutes": 5,
+    "concepts": [
+      "task",
+      "take",
+      "call",
+      "Text"
+    ],
+    "mode": "code",
+    "instructions": "Great job! Now, tasks can receive inputs. In Sley, we declare these inputs inside the task using `take`.",
+    "task": "Your goal: Fix the `greet` task so it accepts a name and returns \"hello Ada\".",
+    "misconception": "Tip: Make sure you put the `take` statement at the very top of the task block, before returning anything.",
+    "expectedBehavior": "Running main calls greet with one Text input.",
+    "starter": "task greet -> Text {\n  return \"hello\"\n}\n\ntask main -> Text {\n  return call greet(\"Ada\")\n}\n",
+    "hints": [
+      "The `greet` task is being called with \"Ada\", but it doesn't know how to receive inputs yet.",
+      "Add `take name: Text` as the first line inside the `greet` task.",
+      "Then, update the return to add the name, like this: return \"hello \" + name"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Text",
+        "value": "hello Ada"
+      }
+    },
+    "rewards": {
+      "xp": 20,
+      "shards": 2
+    }
+  },
+  {
+    "id": "sley.bindings.mutable_total",
+    "title": "Mutable Total",
+    "campaign": "Binding Ontology",
+    "arc": "Bind, State, Tally",
+    "difficulty": 2,
+    "estimatedMinutes": 5,
+    "concepts": [
+      "bind",
+      "tally",
+      "set",
+      "Int"
+    ],
+    "mode": "code",
+    "instructions": "Awesome! Let's learn about variables. In Sley, `bind` is used for values that never change (immutable). For values that *do* change, like a score or total, we use `tally`.",
+    "task": "Your goal: Change the binding type so that we can successfully update the `total` and return 1.",
+    "misconception": "Tip: If you want to update a value using `set`, you must declare it with a mutable binding like `tally` instead of `bind`.",
+    "expectedBehavior": "The program updates total once and returns the updated Int.",
+    "starter": "task main -> Int {\n  bind total = 0\n  set total = total + 1\n  return total\n}\n",
+    "hints": [
+      "The compiler is complaining because `total` was declared with `bind`, which means it can't be changed.",
+      "Change the word `bind` to `tally` on the first line of the task.",
+      "It should look like this: tally total = 0"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Int",
+        "value": 1
+      }
+    },
+    "rewards": {
+      "xp": 25,
+      "shards": 3
+    }
+  },
+  {
+    "id": "sley.collections.tally_list",
+    "title": "Tally A List",
+    "campaign": "Collections And Control Flow",
+    "arc": "Each Loops",
+    "difficulty": 2,
+    "estimatedMinutes": 6,
+    "concepts": [
+      "List",
+      "each",
+      "tally",
+      "call"
+    ],
+    "mode": "code",
+    "instructions": "You're doing great. Now let's loop through a list of numbers! The `each` keyword lets us go through a list one item at a time.",
+    "task": "Your goal: Provide a list of numbers to the `sum` task so that the final total is exactly 10.",
+    "misconception": "Tip: You can create a list right in the call using square brackets, like `[1, 2, 3]`.",
+    "expectedBehavior": "Running main calls sum with a list and returns the accumulated total.",
+    "starter": "task sum -> Int {\n  take values: List<Int>\n\n  tally total = 0\n  each value in values {\n    set total = total + value\n  }\n  return total\n}\n\ntask main -> Int {\n  return 0\n}\n",
+    "hints": [
+      "The `sum` task is perfectly fine. We just need to call it from `main`.",
+      "Try calling it with a list of numbers that add up to 10.",
+      "For example: return call sum([5, 5]) or return call sum([2, 3, 5])"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Int",
+        "value": 10
+      }
+    },
+    "rewards": {
+      "xp": 25,
+      "shards": 3
+    }
+  },
+  {
+    "id": "sley.diagnostics.explain_bind",
+    "title": "Explain A Diagnostic",
+    "campaign": "Binding Ontology",
+    "arc": "Diagnostics",
+    "difficulty": 2,
+    "estimatedMinutes": 4,
+    "concepts": [
+      "diagnostics",
+      "bind",
+      "tally",
+      "set"
+    ],
+    "mode": "explanation",
+    "instructions": "You're getting the hang of it! Sometimes it helps to explain concepts in your own words. Let's do a quick knowledge check.",
+    "task": "Your goal: Explain why `set` cannot modify `bind total`, and mention which keyword to use instead for a running total.",
+    "misconception": "Tip: Focus on the fact that `bind` is strictly immutable (cannot change), and `tally` is designed for changing states.",
+    "expectedBehavior": "A passing answer mentions immutable bind and a mutable accumulator binding such as tally.",
+    "starter": "The compiler says set cannot modify bind total because ...",
+    "hints": [
+      "You need to use three specific keywords in your answer.",
+      "Make sure you mention that `bind` is immutable or cannot be modified.",
+      "Also mention that you should use `tally` for an accumulator."
+    ],
+    "seal": {
+      "kind": "keywords",
+      "required": [
+        [
+          "bind"
+        ],
+        [
+          "immutable",
+          "cannot modify",
+          "not mutable"
+        ],
+        [
+          "tally",
+          "state"
+        ]
+      ]
+    },
+    "rewards": {
+      "xp": 15,
+      "shards": 1
+    }
+  },
+  {
+    "id": "sley.control_flow.if_else",
+    "title": "Conditionals",
+    "campaign": "Collections And Control Flow",
+    "arc": "If Expressions",
+    "difficulty": 2,
+    "estimatedMinutes": 5,
+    "concepts": [
+      "if",
+      "else",
+      "Text"
+    ],
+    "mode": "code",
+    "instructions": "Let's make some decisions! You can use an `if` expression to choose between different outcomes.",
+    "task": "Your goal: Complete the `classify` task. It should return \"excellent\" if the score is 90 or higher, and \"steady\" otherwise.",
+    "misconception": "Tip: `if` is an expression in Sley. This means you return the entire `if` block, and both branches must provide a value.",
+    "expectedBehavior": "Running main calls classify with 95 and returns \"excellent\".",
+    "starter": "task classify -> Text {\n  take score: Int\n\n  return \"change me\"\n}\n\ntask main -> Text {\n  return call classify(95)\n}\n",
+    "hints": [
+      "Instead of returning \"change me\", let's return the `if` statement.",
+      "Type out: return if score >= 90 { \"excellent\" } else { \"steady\" }",
+      "Make sure the spelling matches exactly!"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Text",
+        "value": "excellent"
+      }
+    },
+    "rewards": {
+      "xp": 25,
+      "shards": 3
+    }
+  },
+  {
+    "id": "sley.errors.result_flow",
+    "title": "Result and Flow",
+    "campaign": "Error Handling",
+    "arc": "Result Types",
+    "difficulty": 3,
+    "estimatedMinutes": 6,
+    "concepts": [
+      "Result",
+      "Ok",
+      "Err",
+      "?"
+    ],
+    "mode": "code",
+    "instructions": "Errors happen, and Sley handles them gracefully with `Result`. If a task might fail, it returns a Result. You can easily unwrap a successful value using the `?` operator.",
+    "task": "Your goal: Add the `?` operator to unwrap the score from `parse_score` so you can add 1 to it.",
+    "misconception": "Tip: The `?` operator goes right at the end of the call, like `call my_task()?`. It automatically handles failures for you!",
+    "expectedBehavior": "The program successfully unwraps the Ok value and adds 1 to it.",
+    "starter": "task parse_score -> Result<Int, Error> {\n  take raw: Text\n  return Ok(41)\n}\n\ntask main -> Result<Int, Error> {\n  bind score = call parse_score(\"41\")\n  return Ok(score + 1)\n}\n",
+    "hints": [
+      "Look at the line where `parse_score` is called.",
+      "Currently, `score` holds a Result, not a plain number. We need the number!",
+      "Change it to: bind score = call parse_score(\"41\")?"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Result",
+        "ok": true,
+        "value": {
+          "kind": "Int",
+          "value": 42
+        }
+      }
+    },
+    "rewards": {
+      "xp": 30,
+      "shards": 4
+    }
+  },
+  {
+    "id": "sley.types.record",
+    "title": "Record Types",
+    "campaign": "Data Modeling",
+    "arc": "Records",
+    "difficulty": 2,
+    "estimatedMinutes": 5,
+    "concepts": [
+      "type",
+      "slot",
+      "record"
+    ],
+    "mode": "code",
+    "instructions": "Let's define some data structures! We use `type` to create records, and `slot` to declare fields inside them.",
+    "task": "Your goal: The `User` type is missing its `score` field. Add it so the code compiles and returns Ada's score.",
+    "misconception": "Tip: Fields inside a `type` block are declared by writing `slot name: Type`.",
+    "expectedBehavior": "The program creates a User record and returns its score field.",
+    "starter": "type User = {\n  slot name: Text\n}\n\ntask get_score -> Int {\n  take u: User\n  return u.score\n}\n\ntask main -> Int {\n  bind u = User { name: \"Ada\", score: 42 }\n  return call get_score(u)\n}\n",
+    "hints": [
+      "Inside the `User` block, we already have a `name` slot.",
+      "Underneath the `name` slot, add a new line for the score.",
+      "Type: slot score: Int"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Int",
+        "value": 42
+      }
+    },
+    "rewards": {
+      "xp": 25,
+      "shards": 3
+    }
+  },
+  {
+    "id": "sley.control_flow.while",
+    "title": "While Loops",
+    "campaign": "Collections And Control Flow",
+    "arc": "While Loops",
+    "difficulty": 2,
+    "estimatedMinutes": 6,
+    "concepts": [
+      "while",
+      "state",
+      "set"
+    ],
+    "mode": "code",
+    "instructions": "If you need a loop that runs until a condition is met, use a `while` loop!",
+    "task": "Your goal: Replace the \"change me\" placeholder with a condition that loops until `count` reaches 5.",
+    "misconception": "Tip: The condition goes right after the `while` keyword, like `while count < 5 { ... }`.",
+    "expectedBehavior": "The program returns 5.",
+    "starter": "task main -> Int {\n  state count = 0\n  while \"change me\" {\n    set count = count + 1\n  }\n  return count\n}\n",
+    "hints": [
+      "We want to loop as long as `count` is less than 5.",
+      "Replace \"change me\" with `count < 5`.",
+      "It should look like: while count < 5 {"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Int",
+        "value": 5
+      }
+    },
+    "rewards": {
+      "xp": 20,
+      "shards": 2
+    }
+  },
+  {
+    "id": "sley.collections.each_loop",
+    "title": "Each Loops",
+    "campaign": "Collections And Control Flow",
+    "arc": "Each Loops",
+    "difficulty": 3,
+    "estimatedMinutes": 6,
+    "concepts": [
+      "each",
+      "tally",
+      "List"
+    ],
+    "mode": "code",
+    "instructions": "Let's combine loops and totals! Use an `each` loop to go through all the numbers in the list.",
+    "task": "Your goal: Complete the `sum` task by using an `each` loop to add every number to the `total`.",
+    "misconception": "Tip: The `each` loop syntax is: `each item in list { ... }`. You don't need any index variables!",
+    "expectedBehavior": "The sum task returns 15.",
+    "starter": "task sum -> Int {\n  take values: List<Int>\n  tally total = 0\n\n  return total\n}\n\ntask main -> Int {\n  return call sum([4, 5, 6])\n}\n",
+    "hints": [
+      "We need to loop through the `values` list. We can call each item `v`.",
+      "Start the loop with: each v in values {",
+      "Inside the loop, update the total: set total = total + v",
+      "Don't forget to close the loop with a `}`!"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Int",
+        "value": 15
+      }
+    },
+    "rewards": {
+      "xp": 25,
+      "shards": 3
+    }
+  },
+  {
+    "id": "sley.collections.map",
+    "title": "Maps",
+    "campaign": "Collections And Control Flow",
+    "arc": "Maps",
+    "difficulty": 2,
+    "estimatedMinutes": 5,
+    "concepts": [
+      "Map",
+      "map",
+      "Text",
+      "Int"
+    ],
+    "mode": "code",
+    "instructions": "Time to map things out! Maps let you look up values using text keys, like a dictionary.",
+    "task": "Your goal: Replace the placeholder string with an actual map that stores Ada's score (42).",
+    "misconception": "Tip: In Sley, map literals start with the `map` keyword followed by braces: `map { \"Key\": Value }`.",
+    "expectedBehavior": "The task returns 42.",
+    "starter": "task main -> Int {\n  bind scores = \"change me\"\n  return scores[\"Ada\"]\n}\n",
+    "hints": [
+      "We need to replace \"change me\" with a map literal.",
+      "We want to associate \"Ada\" with the number 42.",
+      "Change it to: bind scores = map { \"Ada\": 42 }"
+    ],
+    "seal": {
+      "kind": "runtime",
+      "expected": {
+        "kind": "Int",
+        "value": 42
+      }
+    },
+    "rewards": {
+      "xp": 25,
+      "shards": 3
+    }
+  }
+]
