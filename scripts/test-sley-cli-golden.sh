@@ -56,12 +56,10 @@ if [[ -d "$ROOT_DIR/lib/sley" ]]; then
 fi
 assert_command version 0 "$package_root/bin/sley" --version
 
-SLEY_DISABLE_SOURCE_CACHE=1 "$ROOT_DIR/bin/sley" --version \
-  > "$WORK_DIR/signal.stdout" 2> "$WORK_DIR/signal.stderr" &
-signal_pid=$!
-kill -TERM "$signal_pid"
 signal_status=0
-if wait "$signal_pid"; then
+if SLEY_DISABLE_SOURCE_CACHE=1 timeout --preserve-status --signal=TERM 0.1s \
+  "$ROOT_DIR/bin/sley" --version \
+  > "$WORK_DIR/signal.stdout" 2> "$WORK_DIR/signal.stderr"; then
   signal_status=0
 else
   signal_status=$?
