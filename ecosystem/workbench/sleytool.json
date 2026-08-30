@@ -1,0 +1,23 @@
+{
+  "consumed_roots": [
+    "sley.ast.program.v0",
+    "sley.symbol_graph.v0",
+    "sley.symbol_graph.slice.v0",
+    "sley.query.report.v0",
+    "sley.lint.report.v0",
+    "sley.doctor.report.v0",
+    "sley.edit_plan.report.v0",
+    "sley.verify.report.v0",
+    "sley.trace.seal.v0",
+    "sley.zjx.envelope.v0"
+  ],
+  "future_url": "https://sley.greyforge.tech/tools/sley-workbench",
+  "github": "https://github.com/GreyforgeLabs/sley-workbench",
+  "name": "sley-workbench",
+  "primary_user": "compiler contributors and agent tool builders",
+  "priority": "P0 scaffold",
+  "schema": "sley.tool.manifest.v0",
+  "status": "private_sley_native_source",
+  "title": "Sley Workbench",
+  "utility": "graph and graft workbench"
+}

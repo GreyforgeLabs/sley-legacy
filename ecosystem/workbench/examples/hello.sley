@@ -1,0 +1,5 @@
+module examples.sley_workbench
+
+task main -> Text {
+  return "Sley Workbench"
+}
