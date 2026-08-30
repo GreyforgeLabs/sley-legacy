@@ -1,0 +1,22 @@
+{
+  "bin": {
+    "sley-contract": "./src/cli.mjs"
+  },
+  "description": "Schema inventory, report validation, and contract drift checks for Sley tool authors.",
+  "keywords": [
+    "sley",
+    "developer-tools",
+    "contract validation kit"
+  ],
+  "license": "Apache-2.0",
+  "name": "sley-contract-kit",
+  "private": true,
+  "scripts": {
+    "fmt": "node test/check-format.mjs",
+    "smoke": "node test/smoke.mjs",
+    "test": "node test/smoke.mjs",
+    "native": "make native"
+  },
+  "type": "module",
+  "version": "0.1.1"
+}

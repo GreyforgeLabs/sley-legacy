@@ -1,0 +1,27 @@
+{
+  "consumed_roots": [
+    "sley.ast.program.v0",
+    "sley.diagnostics.report.v0",
+    "sley.symbol_graph.v0",
+    "sley.symbol_graph.slice.v0",
+    "sley.query.report.v0",
+    "sley.lint.report.v0",
+    "sley.doctor.report.v0",
+    "sley.edit_plan.report.v0",
+    "sley.verify.report.v0",
+    "sley.project.scaffold.v0",
+    "sley.graft.outcome.v0",
+    "sley.trace.receipt.v0",
+    "sley.trace.seal.v0",
+    "sley.zjx.envelope.v0"
+  ],
+  "future_url": "https://sley.greyforge.tech/tools/sley-contract-kit",
+  "github": "https://github.com/GreyforgeLabs/sley-contract-kit",
+  "name": "sley-contract-kit",
+  "primary_user": "tool authors and compiler contributors",
+  "priority": "P0",
+  "schema": "sley.tool.manifest.v0",
+  "status": "private_sley_native_source",
+  "title": "Sley Contract Kit",
+  "utility": "contract validation kit"
+}

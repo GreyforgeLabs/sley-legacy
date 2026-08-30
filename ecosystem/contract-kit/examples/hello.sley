@@ -1,0 +1,5 @@
+module examples.sley_contract_kit
+
+task main -> Text {
+  return "Sley Contract Kit"
+}
