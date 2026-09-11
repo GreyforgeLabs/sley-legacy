@@ -49,8 +49,8 @@ program structure tools need to work precisely.
 > **Sley 1.2.1 completes the human-readable 1.x architecture.** This lineage is
 > frozen and retained for historical use, study, experimentation,
 > compatibility, and existing users. Active language development is the
-> intentionally incompatible machine-native Sley 2.x lineage at
-> [`GreyforgeLabs/sley`](https://github.com/GreyforgeLabs/sley). The existing
+> intentionally incompatible machine-native Sley 2.x lineage, developed privately
+> by Greyforge Labs; its public record is [sleylang.org](https://sleylang.org/docs). The existing
 > Sley 1.x license terms remain unchanged. Human governance remains required in
 > 2.x, but direct readability of the canonical raw program representation is no
 > longer a mandatory design constraint. Read the
