@@ -8,6 +8,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/sley-lang/sley"><b>Sley 2 (current)</b></a> |
   <a href="https://sleylang.org/">Website</a> |
   <a href="https://sleylang.org/docs">Technical brief</a> |
   <a href="https://sleylang.org/tutorial">Workflow walkthrough</a> |
@@ -19,21 +20,6 @@
   <img alt="Self-hosted" src="https://img.shields.io/badge/compiler-self--hosted-22d3ee" />
   <img alt="License" src="https://img.shields.io/github/license/GreyforgeLabs/sley-legacy" />
 </p>
-
-<!-- SEO / discovery metadata -->
-<meta name="description" content="Sley Legacy preserves Greyforge Labs' completed Sley 1.x human-readable structural language and its historical ecosystem." />
-<meta name="keywords" content="Sley 1.2.1, Sley 2.0, self-hosted programming language, agent-native structural programming, machine-native programming, compiler-mediated software change, Greyforge Labs" />
-<link rel="canonical" href="https://sleylang.org/" />
-<meta property="og:title" content="Sley | Software Change, Made Structural" />
-<meta property="og:description" content="The completed human-readable Sley 1.x line and the architectural transition to machine-native Sley 2.x." />
-<meta property="og:url" content="https://sleylang.org/" />
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Sley" />
-<meta property="og:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley-legacy/public/assets/branding/canonical/sley_loom_graph_board.png" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Sley | Software Change, Made Structural" />
-<meta name="twitter:description" content="Structure for autonomous software change. Review for the humans who own it." />
-<meta name="twitter:image" content="https://raw.githubusercontent.com/GreyforgeLabs/sley-legacy/public/assets/branding/canonical/sley_loom_graph_board.png" />
 
 # Sley (Legacy)
 
@@ -49,8 +35,8 @@ program structure tools need to work precisely.
 > **Sley 1.2.1 completes the human-readable 1.x architecture.** This lineage is
 > frozen and retained for historical use, study, experimentation,
 > compatibility, and existing users. Active language development is the
-> intentionally incompatible machine-native Sley 2.x lineage, developed privately
-> by Greyforge Labs; its public record is [sleylang.org](https://sleylang.org/docs). The existing
+> intentionally incompatible machine-native Sley 2.x lineage, developed in the open at
+> [sley-lang/sley](https://github.com/sley-lang/sley) and documented at [sleylang.org](https://sleylang.org/docs). The existing
 > Sley 1.x license terms remain unchanged. Human governance remains required in
 > 2.x, but direct readability of the canonical raw program representation is no
 > longer a mandatory design constraint. Read the
