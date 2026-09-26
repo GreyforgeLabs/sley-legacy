@@ -6,8 +6,8 @@ ecosystem for existing users, compatibility work, study, experimentation, and
 forks.
 
 Active Sley development continues in the separate, intentionally incompatible
-machine-native Sley 2.x lineage. Sley 2 is developed privately by Greyforge
-Labs; its public record is <https://sleylang.org/docs>.
+machine-native Sley 2.x lineage. Sley 2 is developed in the open at
+<https://github.com/sley-lang/sley> and documented at <https://sleylang.org/docs>.
 
 Sley 2 does not inherit the Sley 1.x textual syntax, compiler, conventional
 LSP, Tree-sitter grammar, or compatibility tooling. Those components remain
