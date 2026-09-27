@@ -19,6 +19,10 @@ assert_no_source_build_residue() {
 
 assert_no_source_build_residue
 
+# Initialize the source-task cache before timed worker lifecycle checks. The
+# full v1 gate does this in earlier targets; this target must also run alone.
+"$ROOT_DIR/bin/sley" --version >/dev/null
+
 python3 "$ROOT_DIR/clients/generate-worker-clients.py" --check
 PYTHONPYCACHEPREFIX="$WORKDIR/pycache" python3 -m compileall -q \
   "$ROOT_DIR/clients/generate-worker-clients.py" \
