@@ -29,6 +29,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes ripgrep
+          npm install --global --ignore-scripts typescript@5.9.3
 
       - name: Run Sley v1 gate
         uses: ./.github/actions/sley-v1
