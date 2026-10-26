@@ -10,8 +10,8 @@
 <p align="center">
   <a href="https://github.com/sley-lang/sley"><b>Sley 2 (current)</b></a> |
   <a href="https://sleylang.org/">Website</a> |
-  <a href="https://sleylang.org/docs">Technical brief</a> |
-  <a href="https://sleylang.org/tutorial">Workflow walkthrough</a> |
+  <a href="https://sleylang.org/legacy">Sley 1.x page</a> |
+  <a href="https://github.com/GreyforgeLabs/sley-legacy/releases/tag/v1.2.1">Release 1.2.1</a> |
   <a href="https://greyforge.tech/">Greyforge Labs</a>
 </p>
 
@@ -44,22 +44,17 @@ program structure tools need to work precisely.
 
 ## Why Sley
 
-Sley is built around the full software-change lifecycle:
+Sley is built around the full software-change lifecycle. A tool or agent
+queries program shape, relationships, diagnostics and bounded context; it
+expresses a narrow candidate transformation before anything is accepted; the
+consequential effects stay behind explicit, machine-readable gates; and the
+accepted work carries its checks, provenance, traces, seals and handoff
+evidence. External development tools connect through bounded, read-only
+structural surfaces.
 
-- **Inspect structure:** query program shape, relationships, diagnostics, and
-  bounded context.
-- **Plan the delta:** express narrow candidate transformations before accepted
-  mutation.
-- **Check authority:** keep consequential effects behind explicit,
-  machine-readable gates.
-- **Verify the result:** carry checks, provenance, traces, seals, and handoff
-  evidence with accepted work.
-- **Integrate safely:** connect external development tools through bounded,
-  read-only structural surfaces.
+## Sley 1.2.1 (final)
 
-## Sley 1.2 Release Candidate
-
-The 2026-08-26 release-candidate inventory contains:
+The 1.2 release inventory, recorded on 2026-08-26:
 
 | Evidence | Verified count |
 | --- | ---: |
@@ -83,10 +78,22 @@ and 4 of 4 public-release checks.
 
 The supported distribution is the self-contained Linux x86_64 archive. It
 requires Bash 5, jq 1.6, Git 2, Python 3.12 with `jsonschema`, GNU tar 1.30,
-gzip 1.10, Make 4, Node 20, npm 10, and `sha256sum`.
+gzip 1.10, Make 4, Node 20, npm 10, and `sha256sum`. Download, verify and
+unpack it:
 
 ```bash
+curl -fsSLO https://github.com/GreyforgeLabs/sley-legacy/releases/download/v1.2.1/sley-1.2.1-linux-x86_64.tar.gz
+curl -fsSLO https://github.com/GreyforgeLabs/sley-legacy/releases/download/v1.2.1/sley-1.2.1-linux-x86_64.tar.gz.sha256
+sha256sum -c sley-1.2.1-linux-x86_64.tar.gz.sha256
+tar xzf sley-1.2.1-linux-x86_64.tar.gz
+cd sley-1.2.1-linux-x86_64
 export PATH="$(pwd)/bin:$PATH"
+sley --version
+```
+
+Then, from the unpacked directory:
+
+```bash
 make quick
 sley doctor --toolchain --json
 sley doctor --json examples/project
@@ -112,8 +119,7 @@ make release-security-check
 ```
 
 Those commands create and validate checksums, provenance, the versioned
-manifest, license inventory, and SPDX 2.3 SBOM. They do not authorize a tag,
-push, upload, publication, deployment, or announcement.
+manifest, license inventory, and SPDX 2.3 SBOM.
 
 Use `make check-changed` for change-aware validation and reserve `make v1` for
 authoritative integration or release boundaries. See
@@ -132,8 +138,6 @@ The public command surface covers five connected lanes:
 | Operate | `run`, staged-change guard, bounded governed tool bridge, local workbench |
 
 Use `sley --help` for the complete command index.
-
-**Agent-first. Human-readable. Change you can prove.**
 
 ## Developer Integrations
 
@@ -180,8 +184,8 @@ repository workflow.
 
 - [Architectural transition Chronicle](https://greyforge.tech/chronicles/sley-120-machine-native-break)
 - [Machine-native transition source note](https://greyforge.tech/research/sley-machine-native-break-source-note-2026-08-27.md)
-- [Sley technical brief](https://sleylang.org/docs)
-- [Workflow walkthrough](https://sleylang.org/tutorial)
+- [Sley 1.x on sleylang.org](https://sleylang.org/legacy)
+- [Sley 2 documentation](https://sleylang.org/docs) and [walkthrough](https://sleylang.org/tutorial), for the current lineage
 - [Claim evidence](docs/SleyClaimEvidence.md)
 - [Language specification](docs/SleyLanguageSpec.md)
 - [Contract reference](docs/contracts.md)
